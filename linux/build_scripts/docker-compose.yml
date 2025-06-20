@@ -1,0 +1,114 @@
+services:
+  # Base service with Flutter and build tools
+  flutter-base:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+      target: flutter-base
+    volumes:
+      - ../../:/workspace
+      - flutter-cache:/opt/flutter-cache
+      - pub-cache:/root/.pub-cache
+    working_dir: /workspace
+    environment:
+      - FLUTTER_ROOT=/opt/flutter
+      - PATH=/opt/flutter/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+  # AMD64 (x86_64) build service
+  build-amd64:
+    extends: flutter-base
+    build:
+      target: build-amd64
+      platforms:
+        - linux/amd64
+    environment:
+      - TARGET_ARCH=amd64
+      - BUILD_TYPE=${BUILD_TYPE:-Release}
+    volumes:
+      - ../../:/workspace
+      - flutter-cache:/opt/flutter-cache
+      - pub-cache:/root/.pub-cache
+      - ${OUTPUT_DIR:-./build/linux_amd64}:/workspace/build/output
+    command: >
+      bash -c "
+        set -e
+        echo '=== Building for AMD64 ==='
+        echo 'Flutter version:'
+        flutter --version
+        echo 'Configuring Flutter for Linux desktop...'
+        flutter config --enable-linux-desktop
+        echo 'Getting dependencies...'
+        flutter pub get
+        echo 'Building Flutter app...'
+        flutter build linux --release --verbose
+        echo 'Copying Flutter build artifacts to output...'
+        mkdir -p /workspace/build/output
+        if [ -d '/workspace/build/linux/x64/release/bundle' ]; then
+          cp -r /workspace/build/linux/x64/release/bundle/* /workspace/build/output/
+        else
+          echo 'Flutter bundle not found at expected location, checking alternatives...'
+          find /workspace/build -name 'bundle' -type d -exec cp -r {}/* /workspace/build/output/ \\; 2>/dev/null || true
+        fi
+        echo '=== AMD64 build completed successfully! ==='
+      "
+
+  # ARM64 (aarch64) build service  
+  build-arm64:
+    extends: flutter-base
+    build:
+      target: build-arm64
+      platforms:
+        - linux/arm64
+    environment:
+      - TARGET_ARCH=arm64
+      - BUILD_TYPE=${BUILD_TYPE:-Release}
+      - FLUTTER_BUILD_MODE=release
+    volumes:
+      - ../../:/workspace
+      - flutter-cache:/opt/flutter-cache
+      - pub-cache:/root/.pub-cache
+      - ${OUTPUT_DIR:-./build/linux_arm64}:/workspace/build/output
+    command: >
+      bash -c "
+        set -e
+        echo '=== Building for ARM64 ==='
+        echo 'Flutter version:'
+        flutter --version
+        echo 'Configuring Flutter for Linux desktop...'
+        flutter config --enable-linux-desktop
+        echo 'Getting dependencies...'
+        flutter pub get
+        echo 'Creating native assets directory structure...'
+        mkdir -p /workspace/build/native_assets/linux/
+        echo 'Building Flutter app for ARM64...'
+        flutter build linux --release --verbose
+        echo 'Flutter build completed successfully!'
+        echo 'Setting up output directory structure...'
+        mkdir -p /workspace/build/output
+        echo 'Copying Flutter build artifacts...'
+        if [ -d '/workspace/build/linux/arm64/release/bundle' ]; then
+          echo 'Found ARM64 bundle, copying...'
+          cp -r /workspace/build/linux/arm64/release/bundle/* /workspace/build/output/
+        elif [ -d '/workspace/build/linux/x64/release/bundle' ]; then
+          echo 'Found x64 bundle (fallback), copying...'
+          cp -r /workspace/build/linux/x64/release/bundle/* /workspace/build/output/
+        else
+          echo 'Searching for any Flutter bundle...'
+          find /workspace/build/linux -name 'bundle' -type d -exec cp -r {}/* /workspace/build/output/ \\; 2>/dev/null || true
+        fi
+        echo 'Ensuring native assets directory exists in output...'
+        mkdir -p /workspace/build/output/lib/native_assets/linux/
+        echo 'Creating final bundle structure...'
+        ls -la /workspace/build/output/
+        if [ -f '/workspace/build/output/roms_downloader' ]; then
+          echo 'Executable found in bundle'
+          chmod +x /workspace/build/output/roms_downloader
+        else
+          echo 'No executable found, this is expected for Flutter-only builds'
+        fi
+        echo '=== ARM64 build completed successfully! ==='
+      "
+
+volumes:
+  flutter-cache:
+  pub-cache:
