@@ -12,7 +12,7 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final appState = ref.watch(appStateProvider);
     final appStateNotifier = ref.read(appStateProvider.notifier);
-    final filteredCatalog = appStateNotifier.getFilteredCatalog();
+    final filteredCatalog = appState.filteredCatalog;
     final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
 
     return Scaffold(
@@ -40,7 +40,7 @@ class HomeScreen extends ConsumerWidget {
               loading: appState.loading,
               onConsoleSelect: (console) {
                 if (!appState.downloading && !appState.loading) {
-                  appStateNotifier.loadCatalog(console);
+                  appStateNotifier.loadCatalog(console.id);
                 }
               },
               onFilterChange: (text) {
@@ -49,7 +49,6 @@ class HomeScreen extends ConsumerWidget {
               onDownloadStart: appStateNotifier.startDownloads,
               onDirectoryChange: appStateNotifier.handleDirectoryChange,
             ),
-
             Expanded(
               child: appState.loading || filteredCatalog.isEmpty
                   ? const Center(
@@ -68,15 +67,12 @@ class HomeScreen extends ConsumerWidget {
                       selectedGames: appState.selectedGames,
                       gameFileStatus: appState.gameFileStatus,
                       downloading: appState.downloading,
-                      gameStats: appState.gameStats,
                       onToggleSelection: appStateNotifier.toggleGameSelection,
                     ),
             ),
-
             Footer(
               downloading: appState.downloading,
               loading: appState.loading,
-              downloadStats: appState.downloadStats,
               gameCount: filteredCatalog.length,
               selectedGamesCount: appState.selectedGames.length,
             ),

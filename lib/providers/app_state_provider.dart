@@ -1,209 +1,301 @@
+import 'dart:async';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
+import 'package:path/path.dart' as path;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:background_downloader/background_downloader.dart';
 import 'package:roms_downloader/models/app_models.dart';
 import 'package:roms_downloader/services/catalog_service.dart';
-import 'package:roms_downloader/services/download_service.dart';
 import 'package:roms_downloader/services/directory_service.dart';
-import 'package:roms_downloader/services/game_state_service.dart';
+import 'package:roms_downloader/services/download_service.dart';
 
 final appStateProvider = StateNotifierProvider<AppStateNotifier, AppState>((ref) {
-  return AppStateNotifier(
-    catalogService: ref.watch(catalogServiceProvider),
-    downloadService: ref.watch(downloadServiceProvider),
-    directoryService: ref.watch(directoryServiceProvider),
-    gameStateService: ref.watch(gameStateServiceProvider),
-  );
+  final catalogService = ref.watch(catalogServiceProvider);
+  final directoryService = ref.watch(directoryServiceProvider);
+  final downloadService = ref.watch(downloadServiceProvider);
+  return AppStateNotifier(catalogService, directoryService, downloadService);
 });
 
 class AppStateNotifier extends StateNotifier<AppState> {
   final CatalogService catalogService;
-  final DownloadService downloadService;
   final DirectoryService directoryService;
-  final GameStateService gameStateService;
+  final DownloadService downloadService;
+  StreamSubscription<TaskUpdate>? _updateSubscription;
 
-  AppStateNotifier({
-    required this.catalogService,
-    required this.downloadService,
-    required this.directoryService,
-    required this.gameStateService,
-  }) : super(const AppState()) {
+  AppStateNotifier(this.catalogService, this.directoryService, this.downloadService) : super(const AppState()) {
     _initialize();
   }
 
   Future<void> _initialize() async {
-    try {
-      state = state.copyWith(
-        downloadDir: await directoryService.getDownloadDir(),
-        consoles: await catalogService.getConsoles(),
-      );
+    await FileDownloader().trackTasks();
 
-      if (state.consoles.isNotEmpty) {
-        await loadCatalog(state.consoles.first);
+    await _requestNotificationPermissions();
+
+    FileDownloader().configure(
+      globalConfig: [
+        (Config.holdingQueue, true),
+        (Config.requestTimeout, 60),
+        (Config.resourceTimeout, 3600),
+      ],
+      androidConfig: [
+        (Config.useCacheDir, Config.never),
+        // (Config.useExternalStorage, Config.whenAble),
+        (Config.runInForeground, Config.whenAble),
+      ],
+    );
+
+    FileDownloader().configureNotification(
+      running: const TaskNotification(
+        'Downloading ROM: {filename}',
+        'Progress: {progress}% • {networkSpeed} • {timeRemaining}',
+      ),
+      complete: const TaskNotification(
+        'Download Complete',
+        '{filename} downloaded successfully',
+      ),
+      error: const TaskNotification(
+        'Download Failed',
+        '{filename} failed to download',
+      ),
+      paused: const TaskNotification(
+        'Download Paused',
+        '{filename} is paused',
+      ),
+      progressBar: true,
+      tapOpensFile: false,
+    );
+
+    await FileDownloader().start();
+
+    _updateSubscription = FileDownloader().updates.listen((update) {
+      switch (update) {
+        case TaskStatusUpdate():
+          _handleStatusUpdate(update);
+        case TaskProgressUpdate():
+          _handleProgressUpdate(update);
       }
-    } catch (e) {
-      print('Initialization error: $e');
+    });
+
+    final downloadDir = await directoryService.getDownloadDir();
+    final consoles = await catalogService.getConsoles();
+
+    state = state.copyWith(
+      downloadDir: downloadDir,
+      consoles: consoles,
+      selectedConsole: consoles.isNotEmpty ? consoles.first : null,
+    );
+
+    if (state.selectedConsole != null) {
+      await loadCatalog(state.selectedConsole!.id);
     }
   }
 
-  Future<void> loadCatalog(Console console) async {
+  Future<void> _requestNotificationPermissions() async {
+    try {
+      final permissionStatus = await FileDownloader().permissions.status(PermissionType.notifications);
+      if (permissionStatus != PermissionStatus.granted) {
+        await FileDownloader().permissions.request(PermissionType.notifications);
+      }
+    } catch (e) {
+      debugPrint('Error requesting notification permissions: $e');
+    }
+  }
+
+  void _handleStatusUpdate(TaskStatusUpdate update) {
+    final taskStatus = Map<String, TaskStatus>.from(state.taskStatus);
+    taskStatus[update.task.taskId] = update.status;
+
+    if (update.status == TaskStatus.complete) {
+      final completedTasks = state.completedTasks.toSet();
+      completedTasks.add(update.task.taskId);
+
+      state = state.copyWith(
+        taskStatus: taskStatus,
+        completedTasks: completedTasks,
+        selectedTasks: state.selectedTasks.where((id) => id != update.task.taskId).toSet(),
+      );
+    } else {
+      state = state.copyWith(taskStatus: taskStatus);
+    }
+
+    _updateDownloadingState();
+  }
+
+  void _handleProgressUpdate(TaskProgressUpdate update) {
+    final taskProgress = Map<String, double>.from(state.taskProgress);
+    taskProgress[update.task.taskId] = update.progress;
+
+    state = state.copyWith(taskProgress: taskProgress);
+  }
+
+  void _updateDownloadingState() {
+    final hasActiveDownloads = state.taskStatus.values.any((status) => status == TaskStatus.running || status == TaskStatus.enqueued);
+
+    if (state.downloading != hasActiveDownloads) {
+      state = state.copyWith(downloading: hasActiveDownloads);
+    }
+  }
+
+  Future<void> loadCatalog(String consoleId) async {
+    if (state.loading) return;
+
+    final console = state.consoles.firstWhere((c) => c.id == consoleId);
+
     state = state.copyWith(
       loading: true,
-      catalog: [],
-      gameFileStatus: [],
       selectedConsole: console,
-      selectedGames: [],
+      catalog: [],
     );
 
     try {
-      final result = await catalogService.loadCatalog(console.id);
-      final fileStatus = await gameStateService.checkFilesExist(result);
+      final catalog = await catalogService.loadCatalog(consoleId);
+      await _checkCompletedFiles(catalog);
 
       state = state.copyWith(
-        catalog: result,
-        gameFileStatus: fileStatus,
+        catalog: catalog,
         loading: false,
       );
     } catch (e) {
-      // Catalog loading in background, start polling
-      _monitorCatalogLoading();
+      debugPrint('Error loading catalog: $e');
+      state = state.copyWith(
+        loading: false,
+        catalog: [],
+      );
     }
   }
 
-  void _monitorCatalogLoading() {
-    Future.delayed(const Duration(seconds: 1), () async {
-      if (!state.loading) return;
+  Future<void> _checkCompletedFiles(List<Game> catalog) async {
+    final completedTasks = <String>{};
 
-      try {
-        final loadingStatus = await catalogService.getLoadingStatus();
+    for (final game in catalog) {
+      final taskId = game.taskId(state.selectedConsole!.id);
+      final filePath = path.join(state.downloadDir, game.filename);
 
-        if (loadingStatus == null) {
-          final updatedCatalog = await catalogService.getCatalog();
-          final fileStatus = await gameStateService.checkFilesExist(updatedCatalog);
-
-          state = state.copyWith(
-            catalog: updatedCatalog,
-            gameFileStatus: fileStatus,
-            loading: false,
-          );
-        } else {
-          // Still loading, continue polling
-          _monitorCatalogLoading();
-        }
-      } catch (e) {
-        final updatedCatalog = await catalogService.getCatalog();
-        if (updatedCatalog.isNotEmpty) {
-          state = state.copyWith(
-            catalog: updatedCatalog,
-            gameFileStatus: await gameStateService.checkFilesExist(updatedCatalog),
-            loading: false,
-          );
-        } else {
-          _monitorCatalogLoading();
-        }
+      if (File(filePath).existsSync()) {
+        completedTasks.add(taskId);
       }
-    });
-  }
+    }
 
-  Future<void> refreshCatalog() async {
-    final updatedCatalog = await catalogService.getCatalog();
-    final fileStatus = await gameStateService.checkFilesExist(updatedCatalog);
-    state = state.copyWith(catalog: updatedCatalog, gameFileStatus: fileStatus);
+    state = state.copyWith(completedTasks: completedTasks);
   }
 
   Future<void> handleDirectoryChange() async {
     final selected = await directoryService.selectDownloadDirectory();
     if (selected != null) {
       state = state.copyWith(downloadDir: selected);
-      await refreshCatalog();
+      if (state.catalog.isNotEmpty) {
+        await _checkCompletedFiles(state.catalog);
+      }
     }
+  }
+
+  void updateFilterText(String filter) {
+    state = state.copyWith(filterText: filter);
+  }
+
+  void toggleGameSelection(int gameIndex) {
+    if (gameIndex >= state.catalog.length) return;
+
+    final game = state.catalog[gameIndex];
+    final taskId = game.taskId(state.selectedConsole!.id);
+
+    if (state.completedTasks.contains(taskId)) return;
+
+    final selectedTasks = Set<String>.from(state.selectedTasks);
+    if (selectedTasks.contains(taskId)) {
+      selectedTasks.remove(taskId);
+    } else {
+      selectedTasks.add(taskId);
+    }
+
+    state = state.copyWith(selectedTasks: selectedTasks);
   }
 
   Future<void> startDownloads() async {
-    if (state.selectedGames.isEmpty) return;
+    if (state.selectedTasks.isEmpty || state.downloading) return;
 
-    state = state.copyWith(
-      downloading: true,
-      downloadStats: const DownloadStats(),
-      gameStats: {},
-    );
+    final tasks = <DownloadTask>[];
 
-    await downloadService.selectGames(state.selectedGames);
-    await downloadService.startDownloads();
-    _monitorDownloadProgress();
-  }
+    debugPrint('Starting downloads to directory: ${state.downloadDir}');
 
-  void _monitorDownloadProgress() {
-    Future.delayed(const Duration(milliseconds: 500), () async {
-      if (!state.downloading) return;
+    for (final taskId in state.selectedTasks) {
+      final parts = taskId.split('/');
+      if (parts.length != 2) continue;
 
-      try {
-        final isStillDownloading = await downloadService.isDownloading();
-        final isComplete = await downloadService.checkDownloadCompletion();
+      final fileName = parts[1];
+      final game = state.catalog.firstWhere(
+        (g) => g.filename == fileName,
+        orElse: () => throw Exception('Game not found for taskId: $taskId'),
+      );
 
-        if (!isStillDownloading || isComplete) {
-          await _resetDownloadState();
-          return;
-        }
+      debugPrint('Creating download task for: $taskId -> ${state.downloadDir}/$fileName');
 
-        state = state.copyWith(
-          downloadStats: await downloadService.getDownloadStats(),
-          gameStats: await _getUpdatedGameStats(),
-        );
+      final downloadTask = DownloadTask(
+        taskId: taskId,
+        url: game.url,
+        filename: fileName,
+        baseDirectory: BaseDirectory.root,
+        directory: state.downloadDir,
+        group: state.selectedConsole!.id,
+        updates: Updates.statusAndProgress,
+        allowPause: true,
+        priority: 5,
+        retries: 3,
+        headers: {'User-Agent': 'Mozilla/5.0 (compatible; Flutter app)'},
+      );
 
-        // Continue polling
-        _monitorDownloadProgress();
-      } catch (e) {
-        print('Error monitoring download: $e');
-        if (!await downloadService.isDownloading()) {
-          await _resetDownloadState();
-        } else {
-          _monitorDownloadProgress();
+      tasks.add(downloadTask);
+      downloadService.registerTask(taskId, downloadTask);
+    }
+
+    try {
+      final results = await FileDownloader().enqueueAll(tasks);
+
+      final taskStatus = Map<String, TaskStatus>.from(state.taskStatus);
+      for (int i = 0; i < tasks.length; i++) {
+        if (results[i]) {
+          taskStatus[tasks[i].taskId] = TaskStatus.enqueued;
         }
       }
-    });
-  }
 
-  Future<Map<int, GameDownloadState>> _getUpdatedGameStats() async {
-    final newGameStats = <int, GameDownloadState>{};
-    for (final gameIdx in state.selectedGames.take(10)) {
-      try {
-        newGameStats[gameIdx] = await downloadService.getGameStats(gameIdx);
-      } catch (_) {}
+      state = state.copyWith(taskStatus: taskStatus, downloading: true);
+    } catch (e) {
+      debugPrint('Error starting downloads: $e');
     }
-    return {...state.gameStats, ...newGameStats};
   }
 
-  Future<void> _resetDownloadState() async {
-    await downloadService.resetDownloadState();
-    gameStateService.cleanupCompletedDownloads();
+  Future<void> pauseTask(String taskId) async {
+    await downloadService.pauseTask(taskId);
+  }
+
+  Future<void> resumeTask(String taskId) async {
+    await downloadService.resumeTask(taskId);
+  }
+
+  Future<void> cancelTask(String taskId) async {
+    await downloadService.cancelTask(taskId);
+    _removeTask(taskId);
+  }
+
+  void _removeTask(String taskId) {
+    final taskStatus = Map<String, TaskStatus>.from(state.taskStatus);
+    final taskProgress = Map<String, double>.from(state.taskProgress);
+    final selectedTasks = Set<String>.from(state.selectedTasks);
+
+    taskStatus.remove(taskId);
+    taskProgress.remove(taskId);
+    selectedTasks.remove(taskId);
 
     state = state.copyWith(
-      downloading: false,
-      gameStats: {},
-      selectedGames: [],
-      downloadStats: const DownloadStats(),
+      taskStatus: taskStatus,
+      taskProgress: taskProgress,
+      selectedTasks: selectedTasks,
     );
-
-    await refreshCatalog();
   }
 
-  void toggleGameSelection(int idx) {
-    if (state.gameFileStatus.length > idx && state.gameFileStatus[idx]) return;
-
-    final isSelected = state.selectedGames.contains(idx);
-    final newSelection = isSelected ? state.selectedGames.where((i) => i != idx).toList() : [...state.selectedGames, idx];
-
-    downloadService.selectGames(newSelection);
-    state = state.copyWith(selectedGames: newSelection);
-  }
-
-  void updateFilterText(String text) {
-    state = state.copyWith(filterText: text);
-  }
-
-  List<Game> getFilteredCatalog() {
-    if (state.filterText.isEmpty) return state.catalog;
-
-    final filterTextLower = state.filterText.toLowerCase();
-    return state.catalog.where((game) => game.title.toLowerCase().contains(filterTextLower)).toList();
+  @override
+  void dispose() {
+    _updateSubscription?.cancel();
+    super.dispose();
   }
 }

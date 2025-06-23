@@ -1,123 +1,53 @@
-import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path/path.dart' as path;
-import 'package:roms_downloader/models/app_models.dart';
-import 'package:roms_downloader/services/directory_service.dart';
+import 'package:background_downloader/background_downloader.dart';
+// import 'package:roms_downloader/models/app_models.dart';
 
 final gameStateServiceProvider = Provider<GameStateService>((ref) {
-  final directoryService = ref.watch(directoryServiceProvider);
-  return GameStateService(directoryService);
+  return GameStateService();
 });
 
+enum GameDownloadStatus {
+  ready,
+  queued,
+  downloading,
+  processing,
+  completed,
+  inLibrary,
+  error,
+  paused,
+}
+
 class GameStateService {
-  final DirectoryService directoryService;
-  final Map<int, GameDownloadState> _gameStates = {};
-  final Map<int, bool> _libraryStatus = {};
+  GameDownloadStatus getStatusFromTaskStatus(TaskStatus? taskStatus, bool isCompleted) {
+    if (isCompleted) return GameDownloadStatus.inLibrary;
 
-  GameStateService(this.directoryService);
-
-  GameDownloadStatus getStatus(int gameIndex, Game game) {
-    if (_libraryStatus.containsKey(gameIndex) && _libraryStatus[gameIndex] == true) {
-      return GameDownloadStatus.inLibrary;
-    }
-
-    if (_gameStates.containsKey(gameIndex)) {
-      return _gameStates[gameIndex]!.status;
-    }
-
-    return GameDownloadStatus.ready;
-  }
-
-  double getProgress(int gameIndex) {
-    if (_gameStates.containsKey(gameIndex)) {
-      return _gameStates[gameIndex]!.progress;
-    }
-    return 0.0;
-  }
-
-  void updateGameState(int gameIndex, GameDownloadStatus status, [double progress = 0.0]) {
-    final currentState = _gameStates[gameIndex] ?? const GameDownloadState();
-    _gameStates[gameIndex] = currentState.copyWith(
-      status: status,
-      progress: progress,
-    );
-
-    if (status == GameDownloadStatus.completed) {
-      _libraryStatus[gameIndex] = true;
+    switch (taskStatus) {
+      case TaskStatus.enqueued:
+        return GameDownloadStatus.queued;
+      case TaskStatus.running:
+        return GameDownloadStatus.downloading;
+      case TaskStatus.complete:
+        return GameDownloadStatus.completed;
+      case TaskStatus.paused:
+        return GameDownloadStatus.paused;
+      case TaskStatus.failed:
+      case TaskStatus.canceled:
+        return GameDownloadStatus.error;
+      case TaskStatus.notFound:
+        return GameDownloadStatus.error;
+      case TaskStatus.waitingToRetry:
+        return GameDownloadStatus.queued;
+      default:
+        return GameDownloadStatus.ready;
     }
   }
 
-  GameDownloadState getGameDownloadState(int gameIndex) {
-    return _gameStates[gameIndex] ?? const GameDownloadState();
+  double getProgressFromTaskProgress(double? taskProgress) {
+    return taskProgress ?? 0.0;
   }
 
-  void updateGameDownloadStats(int gameIndex, int downloadedBytes, int totalBytes, [int? speed]) {
-    final currentState = _gameStates[gameIndex] ?? const GameDownloadState();
-    _gameStates[gameIndex] = currentState.copyWith(
-      downloadedBytes: downloadedBytes,
-      totalBytes: totalBytes,
-      speed: speed,
-    );
-  }
-
-  Future<List<bool>> checkFilesExist(List<Game> catalog) async {
-    final downloadDir = await directoryService.getDownloadDir();
-    final results = <bool>[];
-
-    for (int i = 0; i < catalog.length; i++) {
-      final game = catalog[i];
-      final uri = Uri.parse(game.url);
-      final filename = uri.pathSegments.last;
-      final filePath = path.join(downloadDir, filename);
-      final exists = File(filePath).existsSync();
-
-      _libraryStatus[i] = exists;
-      results.add(exists);
-    }
-
-    return results;
-  }
-
-  Future<bool> isInLibrary(int gameIndex, Game game) async {
-    if (_libraryStatus.containsKey(gameIndex)) {
-      return _libraryStatus[gameIndex]!;
-    }
-
-    final downloadDir = await directoryService.getDownloadDir();
-    final uri = Uri.parse(game.url);
-    final filename = uri.pathSegments.last;
-    final filePath = path.join(downloadDir, filename);
-    final exists = File(filePath).existsSync();
-
-    _libraryStatus[gameIndex] = exists;
-    return exists;
-  }
-
-  void resetStates() {
-    _gameStates.clear();
-  }
-
-  void cleanupCompletedDownloads() {
-    _gameStates.forEach((gameIndex, state) {
-      if (state.status == GameDownloadStatus.completed) {
-        _libraryStatus[gameIndex] = true;
-      }
-    });
-
-    _gameStates.removeWhere((key, value) =>
-        value.status == GameDownloadStatus.downloading || value.status == GameDownloadStatus.queued || value.status == GameDownloadStatus.processing);
-  }
-
-  bool isGameActive(int gameIndex) {
-    if (!_gameStates.containsKey(gameIndex)) return false;
-
-    final status = _gameStates[gameIndex]!.status;
-    return status == GameDownloadStatus.downloading || status == GameDownloadStatus.queued || status == GameDownloadStatus.processing;
-  }
-
-  String getDisplayStatus(int gameIndex, Game game) {
-    final status = getStatus(gameIndex, game);
-
+  String getDisplayStatusFromTaskStatus(TaskStatus? taskStatus, bool isCompleted) {
+    final status = getStatusFromTaskStatus(taskStatus, isCompleted);
     switch (status) {
       case GameDownloadStatus.ready:
         return "Ready";
@@ -131,30 +61,27 @@ class GameStateService {
         return "Complete";
       case GameDownloadStatus.inLibrary:
         return "In Library";
+      case GameDownloadStatus.paused:
+        return "Paused";
       case GameDownloadStatus.error:
         return "Error";
     }
   }
 
-  bool isInteractable(int gameIndex, Game game, bool isCancelling) {
-    final status = getStatus(gameIndex, game);
+  bool isInteractableFromTaskStatus(TaskStatus? taskStatus, bool isCompleted, bool isCancelling) {
+    final status = getStatusFromTaskStatus(taskStatus, isCompleted);
     return status != GameDownloadStatus.inLibrary && status != GameDownloadStatus.downloading && status != GameDownloadStatus.processing && !isCancelling;
   }
 
-  bool shouldShowProgressBar(int gameIndex, GameDownloadState? gameStats) {
-    if (gameStats != null && gameStats.downloadedBytes > 0) {
-      return true;
+  bool shouldShowProgressBarFromTaskStatus(TaskStatus? taskStatus, double? progress) {
+    if (progress != null && progress > 0) return true;
+
+    switch (taskStatus) {
+      case TaskStatus.running:
+      case TaskStatus.enqueued:
+        return true;
+      default:
+        return false;
     }
-
-    if (!_gameStates.containsKey(gameIndex)) {
-      return false;
-    }
-
-    final status = _gameStates[gameIndex]!.status;
-    return status == GameDownloadStatus.downloading || status == GameDownloadStatus.processing;
-  }
-
-  Map<int, GameDownloadState> getAllGameStates() {
-    return Map.from(_gameStates);
   }
 }
