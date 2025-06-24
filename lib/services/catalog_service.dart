@@ -1,15 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:roms_downloader/data/consoles.dart';
 import 'package:roms_downloader/models/app_models.dart';
-
-// Do we really need this? Cant we just use the CatalogService directly? Are we using riverpod correctly?
-final catalogServiceProvider = Provider<CatalogService>((ref) {
-  return CatalogService();
-});
 
 class CatalogService {
   Future<List<Console>> getConsoles() async {

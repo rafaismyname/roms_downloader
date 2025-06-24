@@ -1,10 +1,4 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:background_downloader/background_downloader.dart';
-// import 'package:roms_downloader/models/app_models.dart';
-
-final gameStateServiceProvider = Provider<GameStateService>((ref) {
-  return GameStateService();
-});
 
 enum GameDownloadStatus {
   ready,

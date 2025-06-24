@@ -30,7 +30,7 @@ class GameRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final appState = ref.watch(appStateProvider);
     final appStateNotifier = ref.watch(appStateProvider.notifier);
-    final gameStateService = ref.watch(gameStateServiceProvider);
+    final gameStateService = GameStateService();
 
     final taskId = game.taskId(appState.selectedConsole?.id ?? '');
     final taskStatus = appState.taskStatus[taskId];

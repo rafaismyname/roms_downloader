@@ -10,9 +10,9 @@ import 'package:roms_downloader/services/directory_service.dart';
 import 'package:roms_downloader/services/download_service.dart';
 
 final appStateProvider = StateNotifierProvider<AppStateNotifier, AppState>((ref) {
-  final catalogService = ref.watch(catalogServiceProvider);
-  final directoryService = ref.watch(directoryServiceProvider);
-  final downloadService = ref.watch(downloadServiceProvider);
+  final catalogService = CatalogService();
+  final directoryService = DirectoryService();
+  final downloadService = DownloadService();
   return AppStateNotifier(catalogService, directoryService, downloadService);
 });
 
@@ -20,59 +20,23 @@ class AppStateNotifier extends StateNotifier<AppState> {
   final CatalogService catalogService;
   final DirectoryService directoryService;
   final DownloadService downloadService;
-  StreamSubscription<TaskUpdate>? _updateSubscription;
+
+  final Map<String, DownloadTask> _downloadTasks = {};
+  StreamSubscription<TaskUpdate>? _downloadUpdateSubscription;
 
   AppStateNotifier(this.catalogService, this.directoryService, this.downloadService) : super(const AppState()) {
     _initialize();
   }
 
   Future<void> _initialize() async {
-    await FileDownloader().trackTasks();
-
-    await _requestNotificationPermissions();
-
-    FileDownloader().configure(
-      globalConfig: [
-        (Config.holdingQueue, true),
-        (Config.requestTimeout, 60),
-        (Config.resourceTimeout, 3600),
-      ],
-      androidConfig: [
-        (Config.useCacheDir, Config.never),
-        // (Config.useExternalStorage, Config.whenAble),
-        (Config.runInForeground, Config.whenAble),
-      ],
-    );
-
-    FileDownloader().configureNotification(
-      running: const TaskNotification(
-        'Downloading ROM: {filename}',
-        'Progress: {progress}% • {networkSpeed} • {timeRemaining}',
-      ),
-      complete: const TaskNotification(
-        'Download Complete',
-        '{filename} downloaded successfully',
-      ),
-      error: const TaskNotification(
-        'Download Failed',
-        '{filename} failed to download',
-      ),
-      paused: const TaskNotification(
-        'Download Paused',
-        '{filename} is paused',
-      ),
-      progressBar: true,
-      tapOpensFile: false,
-    );
-
-    await FileDownloader().start();
-
-    _updateSubscription = FileDownloader().updates.listen((update) {
+    final fileDownloader = await DownloadService().initialize();
+    
+    _downloadUpdateSubscription = fileDownloader.updates.listen((update) {
       switch (update) {
         case TaskStatusUpdate():
-          _handleStatusUpdate(update);
+          _handleDownloadStatusUpdate(update);
         case TaskProgressUpdate():
-          _handleProgressUpdate(update);
+          _handleDownloadProgressUpdate(update);
       }
     });
 
@@ -90,18 +54,7 @@ class AppStateNotifier extends StateNotifier<AppState> {
     }
   }
 
-  Future<void> _requestNotificationPermissions() async {
-    try {
-      final permissionStatus = await FileDownloader().permissions.status(PermissionType.notifications);
-      if (permissionStatus != PermissionStatus.granted) {
-        await FileDownloader().permissions.request(PermissionType.notifications);
-      }
-    } catch (e) {
-      debugPrint('Error requesting notification permissions: $e');
-    }
-  }
-
-  void _handleStatusUpdate(TaskStatusUpdate update) {
+  void _handleDownloadStatusUpdate(TaskStatusUpdate update) {
     final taskStatus = Map<String, TaskStatus>.from(state.taskStatus);
     taskStatus[update.task.taskId] = update.status;
 
@@ -121,7 +74,7 @@ class AppStateNotifier extends StateNotifier<AppState> {
     _updateDownloadingState();
   }
 
-  void _handleProgressUpdate(TaskProgressUpdate update) {
+  void _handleDownloadProgressUpdate(TaskProgressUpdate update) {
     final taskProgress = Map<String, double>.from(state.taskProgress);
     taskProgress[update.task.taskId] = update.progress;
 
@@ -214,88 +167,77 @@ class AppStateNotifier extends StateNotifier<AppState> {
   Future<void> startDownloads() async {
     if (state.selectedTasks.isEmpty || state.downloading) return;
 
-    final tasks = <DownloadTask>[];
+    final downloadTaskStatuses = Map<String, TaskStatus>.from(state.taskStatus);
 
     debugPrint('Starting downloads to directory: ${state.downloadDir}');
-
-    for (final taskId in state.selectedTasks) {
-      final parts = taskId.split('/');
-      if (parts.length != 2) continue;
-
-      final fileName = parts[1];
-      final game = state.catalog.firstWhere(
-        (g) => g.filename == fileName,
-        orElse: () => throw Exception('Game not found for taskId: $taskId'),
-      );
-
-      debugPrint('Creating download task for: $taskId -> ${state.downloadDir}/$fileName');
-
-      final downloadTask = DownloadTask(
-        taskId: taskId,
-        url: game.url,
-        filename: fileName,
-        baseDirectory: BaseDirectory.root,
-        directory: state.downloadDir,
-        group: state.selectedConsole!.id,
-        updates: Updates.statusAndProgress,
-        allowPause: true,
-        priority: 5,
-        retries: 3,
-        headers: {'User-Agent': 'Mozilla/5.0 (compatible; Flutter app)'},
-      );
-
-      tasks.add(downloadTask);
-      downloadService.registerTask(taskId, downloadTask);
-    }
-
     try {
-      final results = await FileDownloader().enqueueAll(tasks);
+      for (final taskId in state.selectedTasks) {
+        final parts = taskId.split('/');
+        if (parts.length != 2) continue;
 
-      final taskStatus = Map<String, TaskStatus>.from(state.taskStatus);
-      for (int i = 0; i < tasks.length; i++) {
-        if (results[i]) {
-          taskStatus[tasks[i].taskId] = TaskStatus.enqueued;
+        final fileName = parts[1];
+        final game = state.catalog.firstWhere(
+          (g) => g.filename == fileName,
+          orElse: () => throw Exception('Game not found for taskId: $taskId'),
+        );
+
+        debugPrint('Creating download task for: $taskId -> ${state.downloadDir}/$fileName');
+
+        _downloadTasks[taskId] = downloadService.createDownloadTask(
+          taskId: taskId,
+          url: game.url,
+          fileName: fileName,
+          directory: state.downloadDir,
+          group: state.selectedConsole!.id,
+        );
+
+        final enqueued = await downloadService.enqueuedTask(_downloadTasks[taskId]!);
+        if (enqueued) {
+          downloadTaskStatuses[taskId] = TaskStatus.enqueued;
         }
       }
 
-      state = state.copyWith(taskStatus: taskStatus, downloading: true);
+      state = state.copyWith(taskStatus: downloadTaskStatuses, downloading: true);
     } catch (e) {
       debugPrint('Error starting downloads: $e');
     }
   }
 
   Future<void> pauseTask(String taskId) async {
-    await downloadService.pauseTask(taskId);
+    final task = _downloadTasks[taskId];
+    if (task != null) await downloadService.pauseTask(task);
   }
 
   Future<void> resumeTask(String taskId) async {
-    await downloadService.resumeTask(taskId);
+    final task = _downloadTasks[taskId];
+    if (task != null) await downloadService.resumeTask(task);
   }
 
   Future<void> cancelTask(String taskId) async {
-    await downloadService.cancelTask(taskId);
-    _removeTask(taskId);
+    final task = _downloadTasks[taskId];
+    if (task != null) await downloadService.cancelTask(task);
+    _removeDownloadTask(taskId);
   }
 
-  void _removeTask(String taskId) {
-    final taskStatus = Map<String, TaskStatus>.from(state.taskStatus);
-    final taskProgress = Map<String, double>.from(state.taskProgress);
-    final selectedTasks = Set<String>.from(state.selectedTasks);
+  void _removeDownloadTask(String taskId) {
+    final downloadTasksStatuses = Map<String, TaskStatus>.from(state.taskStatus);
+    final downloadTasksProgresses = Map<String, double>.from(state.taskProgress);
+    final selectedDownloadTasks = Set<String>.from(state.selectedTasks);
 
-    taskStatus.remove(taskId);
-    taskProgress.remove(taskId);
-    selectedTasks.remove(taskId);
+    downloadTasksStatuses.remove(taskId);
+    downloadTasksProgresses.remove(taskId);
+    selectedDownloadTasks.remove(taskId);
 
     state = state.copyWith(
-      taskStatus: taskStatus,
-      taskProgress: taskProgress,
-      selectedTasks: selectedTasks,
+      taskStatus: downloadTasksStatuses,
+      taskProgress: downloadTasksProgresses,
+      selectedTasks: selectedDownloadTasks,
     );
   }
 
   @override
   void dispose() {
-    _updateSubscription?.cancel();
+    _downloadUpdateSubscription?.cancel();
     super.dispose();
   }
 }
