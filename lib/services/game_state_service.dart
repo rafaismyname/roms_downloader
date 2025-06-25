@@ -67,9 +67,7 @@ class GameStateService {
     return status != GameDownloadStatus.inLibrary && status != GameDownloadStatus.downloading && status != GameDownloadStatus.processing && !isCancelling;
   }
 
-  bool shouldShowProgressBarFromTaskStatus(TaskStatus? taskStatus, double? progress) {
-    if (progress != null && progress > 0) return true;
-
+  bool shouldShowProgressBarFromTaskStatus(TaskStatus? taskStatus) {
     switch (taskStatus) {
       case TaskStatus.running:
       case TaskStatus.enqueued:

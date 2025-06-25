@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:background_downloader/background_downloader.dart';
-class DownloadService {
 
+class DownloadService {
   Future<FileDownloader> initialize() async {
     await FileDownloader().trackTasks();
 
@@ -46,7 +46,6 @@ class DownloadService {
     return FileDownloader();
   }
 
-  // TODO1: implement notification service
   Future<void> _requestNotificationPermissions() async {
     try {
       final permissionStatus = await FileDownloader().permissions.status(PermissionType.notifications);
@@ -93,5 +92,9 @@ class DownloadService {
 
   Future<bool> cancelTask(DownloadTask task) async {
     return await FileDownloader().cancel(task);
+  }
+
+  Future<bool> cancelTaskById(String taskId) async {
+    return await FileDownloader().cancelTaskWithId(taskId);
   }
 }

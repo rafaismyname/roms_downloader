@@ -1,32 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:background_downloader/background_downloader.dart';
-import 'package:roms_downloader/models/app_models.dart';
-import 'package:roms_downloader/providers/app_state_provider.dart';
+import 'package:roms_downloader/models/download_model.dart';
+import 'package:roms_downloader/providers/download_provider.dart';
 
 class Footer extends ConsumerWidget {
-  final bool downloading;
   final bool loading;
   final int gameCount;
-  final int selectedGamesCount;
 
   const Footer({
     super.key,
-    required this.downloading,
     required this.loading,
     required this.gameCount,
-    required this.selectedGamesCount,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final appState = ref.watch(appStateProvider);
+    final downloadState = ref.watch(downloadProvider);
     final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
 
-    final activeDownloads = appState.taskStatus.values.where((status) => status == TaskStatus.running || status == TaskStatus.enqueued).length;
+    final activeDownloads = downloadState.taskStatus.values.where((status) => status == TaskStatus.running || status == TaskStatus.enqueued).length;
 
-    final overallProgress = _calculateOverallProgress(appState);
-    final showProgressBar = downloading && selectedGamesCount > 0;
+    final overallProgress = _calculateOverallProgress(downloadState);
+    final showProgressBar = downloadState.downloading && downloadState.selectedTasks.isNotEmpty;
 
     return Container(
       padding: EdgeInsets.symmetric(
@@ -49,7 +45,7 @@ class Footer extends ConsumerWidget {
           Text(
             loading
                 ? "Loading catalog..."
-                : downloading && activeDownloads > 0
+                : downloadState.downloading && activeDownloads > 0
                     ? "Downloading $activeDownloads games"
                     : "$gameCount games available",
             style: TextStyle(
@@ -94,8 +90,8 @@ class Footer extends ConsumerWidget {
     );
   }
 
-  double _calculateOverallProgress(AppState appState) {
-    final progressValues = appState.taskProgress.values.where((p) => p > 0);
+  double _calculateOverallProgress(DownloadState downloadState) {
+    final progressValues = downloadState.taskProgress.values.where((p) => p > 0);
     if (progressValues.isEmpty) return 0.0;
 
     final sum = progressValues.reduce((a, b) => a + b);

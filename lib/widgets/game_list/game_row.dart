@@ -1,47 +1,37 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:background_downloader/background_downloader.dart';
-import 'package:roms_downloader/models/app_models.dart';
+import 'package:roms_downloader/models/game_model.dart';
 import 'package:roms_downloader/services/game_state_service.dart';
 import 'package:roms_downloader/utils/formatters.dart';
-import 'package:roms_downloader/providers/app_state_provider.dart';
+import 'package:roms_downloader/providers/download_provider.dart';
 
 class GameRow extends ConsumerWidget {
   final Game game;
-  final int gameIndex;
-  final bool isSelected;
-  final bool isDownloaded;
-  final bool downloading;
-  final Function(int) onToggleSelection;
   final bool isLandscape;
 
   const GameRow({
     super.key,
     required this.game,
-    required this.gameIndex,
-    required this.isSelected,
-    required this.isDownloaded,
-    required this.downloading,
-    required this.onToggleSelection,
     required this.isLandscape,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final appState = ref.watch(appStateProvider);
-    final appStateNotifier = ref.watch(appStateProvider.notifier);
+    final downloadNotifier = ref.watch(downloadProvider.notifier);
     final gameStateService = GameStateService();
 
-    final taskId = game.taskId(appState.selectedConsole?.id ?? '');
-    final taskStatus = appState.taskStatus[taskId];
-    final taskProgress = appState.taskProgress[taskId];
-    final isCompleted = appState.completedTasks.contains(taskId);
+    final taskId = game.taskId;
+    final taskStatus = ref.watch(taskStatusProvider(taskId));
+    final taskProgress = ref.watch(taskProgressProvider(taskId));
+    final isCompleted = ref.watch(taskCompletionProvider(taskId));
+    final isTaskSelected = ref.watch(taskSelectionProvider(taskId));
 
     final status = gameStateService.getStatusFromTaskStatus(taskStatus, isCompleted);
     final progress = gameStateService.getProgressFromTaskProgress(taskProgress);
     final displayStatus = gameStateService.getDisplayStatusFromTaskStatus(taskStatus, isCompleted);
-    final showProgressBar = gameStateService.shouldShowProgressBarFromTaskStatus(taskStatus, taskProgress);
-    final isInteractable = !downloading && gameStateService.isInteractableFromTaskStatus(taskStatus, isCompleted, false);
+    final showProgressBar = gameStateService.shouldShowProgressBarFromTaskStatus(taskStatus);
+    final isInteractable = gameStateService.isInteractableFromTaskStatus(taskStatus, isCompleted, false);
 
     return Container(
       padding: EdgeInsets.symmetric(
@@ -49,7 +39,7 @@ class GameRow extends ConsumerWidget {
         vertical: isLandscape ? 6 : 12,
       ),
       decoration: BoxDecoration(
-        color: isSelected ? Theme.of(context).colorScheme.primaryContainer.withAlpha(50) : null,
+        color: isTaskSelected ? Theme.of(context).colorScheme.primaryContainer.withAlpha(50) : null,
         border: Border(
           bottom: BorderSide(
             color: Theme.of(context).dividerColor,
@@ -65,8 +55,8 @@ class GameRow extends ConsumerWidget {
               SizedBox(
                 width: 40,
                 child: Checkbox(
-                  value: isSelected,
-                  onChanged: isInteractable ? (_) => onToggleSelection(gameIndex) : null,
+                  value: isTaskSelected,
+                  onChanged: isInteractable ? (_) => downloadNotifier.toggleTaskSelection(taskId) : null,
                 ),
               ),
               Expanded(
@@ -74,8 +64,8 @@ class GameRow extends ConsumerWidget {
                   game.title,
                   style: TextStyle(
                     fontSize: isLandscape ? 13 : 15,
-                    color: isDownloaded ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface,
-                    fontWeight: isDownloaded ? FontWeight.bold : FontWeight.normal,
+                    color: isCompleted ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface,
+                    fontWeight: isCompleted ? FontWeight.bold : FontWeight.normal,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -114,7 +104,7 @@ class GameRow extends ConsumerWidget {
                           if (taskStatus == TaskStatus.running)
                             IconButton(
                               icon: const Icon(Icons.pause, size: 20),
-                              onPressed: () => appStateNotifier.pauseTask(taskId),
+                              onPressed: () => downloadNotifier.pauseTask(taskId),
                               visualDensity: VisualDensity.compact,
                               padding: EdgeInsets.zero,
                               constraints: const BoxConstraints(),
@@ -122,7 +112,7 @@ class GameRow extends ConsumerWidget {
                             ),
                           IconButton(
                             icon: const Icon(Icons.cancel, size: 20),
-                            onPressed: () => appStateNotifier.cancelTask(taskId),
+                            onPressed: () => downloadNotifier.cancelTask(taskId),
                             visualDensity: VisualDensity.compact,
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
@@ -133,7 +123,7 @@ class GameRow extends ConsumerWidget {
                     if (taskStatus == TaskStatus.paused)
                       IconButton(
                         icon: const Icon(Icons.play_arrow, size: 20),
-                        onPressed: () => appStateNotifier.resumeTask(taskId),
+                        onPressed: () => downloadNotifier.resumeTask(taskId),
                         visualDensity: VisualDensity.compact,
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),

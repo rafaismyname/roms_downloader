@@ -34,19 +34,14 @@ class HomeScreen extends ConsumerWidget {
               consoles: appState.consoles,
               selectedConsole: appState.selectedConsole,
               filterText: appState.filterText,
-              downloading: appState.downloading,
-              selectedGamesCount: appState.selectedGames.length,
               downloadDir: appState.downloadDir,
               loading: appState.loading,
               onConsoleSelect: (console) {
-                if (!appState.downloading && !appState.loading) {
-                  appStateNotifier.loadCatalog(console.id);
-                }
+                appStateNotifier.loadCatalog(console.id);
               },
               onFilterChange: (text) {
                 appStateNotifier.updateFilterText(text);
               },
-              onDownloadStart: appStateNotifier.startDownloads,
               onDirectoryChange: appStateNotifier.handleDirectoryChange,
             ),
             Expanded(
@@ -63,18 +58,11 @@ class HomeScreen extends ConsumerWidget {
                     )
                   : GameList(
                       games: filteredCatalog,
-                      allGames: appState.catalog,
-                      selectedGames: appState.selectedGames,
-                      gameFileStatus: appState.gameFileStatus,
-                      downloading: appState.downloading,
-                      onToggleSelection: appStateNotifier.toggleGameSelection,
                     ),
             ),
             Footer(
-              downloading: appState.downloading,
               loading: appState.loading,
               gameCount: filteredCatalog.length,
-              selectedGamesCount: appState.selectedGames.length,
             ),
           ],
         ),

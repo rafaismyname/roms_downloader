@@ -1,23 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:roms_downloader/models/app_models.dart';
+import 'package:roms_downloader/models/game_model.dart';
 import 'package:roms_downloader/widgets/game_list/game_row.dart';
 
 class GameList extends StatelessWidget {
   final List<Game> games;
-  final List<Game> allGames;
-  final List<int> selectedGames;
-  final List<bool> gameFileStatus;
-  final bool downloading;
-  final Function(int) onToggleSelection;
 
   const GameList({
     super.key,
     required this.games,
-    required this.allGames,
-    required this.selectedGames,
-    required this.gameFileStatus,
-    required this.downloading,
-    required this.onToggleSelection,
   });
 
   @override
@@ -85,19 +75,7 @@ class GameList extends StatelessWidget {
             itemCount: games.length,
             itemBuilder: (context, index) {
               final game = games[index];
-              final gameIndex = allGames.indexWhere((g) => g.title == game.title);
-              final isSelected = selectedGames.contains(gameIndex);
-              final isDownloaded = gameIndex < gameFileStatus.length && gameFileStatus[gameIndex];
-
-              return GameRow(
-                game: game,
-                gameIndex: gameIndex,
-                isSelected: isSelected,
-                isDownloaded: isDownloaded,
-                downloading: downloading,
-                onToggleSelection: onToggleSelection,
-                isLandscape: isLandscape,
-              );
+              return GameRow(game: game, isLandscape: isLandscape);
             },
           ),
         ),

@@ -3,7 +3,8 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:roms_downloader/data/consoles.dart';
-import 'package:roms_downloader/models/app_models.dart';
+import 'package:roms_downloader/models/console_model.dart';
+import 'package:roms_downloader/models/game_model.dart';
 
 class CatalogService {
   Future<List<Console>> getConsoles() async {
@@ -95,6 +96,7 @@ class CatalogService {
         title: cleanTitle,
         url: fullUrl,
         size: sizeBytes,
+        consoleId: console.id,
       ));
     }
 

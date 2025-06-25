@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:roms_downloader/models/app_models.dart';
+import 'package:roms_downloader/models/console_model.dart';
 
 class ConsoleDropdown extends StatelessWidget {
   final List<Console> consoles;
