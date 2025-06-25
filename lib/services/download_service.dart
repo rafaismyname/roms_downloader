@@ -1,11 +1,8 @@
-import 'package:flutter/foundation.dart';
 import 'package:background_downloader/background_downloader.dart';
 
 class DownloadService {
   Future<FileDownloader> initialize() async {
     await FileDownloader().trackTasks();
-
-    await _requestNotificationPermissions();
 
     FileDownloader().configure(
       globalConfig: [
@@ -15,8 +12,7 @@ class DownloadService {
       ],
       androidConfig: [
         (Config.useCacheDir, Config.never),
-        // (Config.useExternalStorage, Config.whenAble),
-        (Config.runInForeground, Config.whenAble),
+        (Config.runInForeground, Config.always),
       ],
     );
 
@@ -44,17 +40,6 @@ class DownloadService {
     await FileDownloader().start();
 
     return FileDownloader();
-  }
-
-  Future<void> _requestNotificationPermissions() async {
-    try {
-      final permissionStatus = await FileDownloader().permissions.status(PermissionType.notifications);
-      if (permissionStatus != PermissionStatus.granted) {
-        await FileDownloader().permissions.request(PermissionType.notifications);
-      }
-    } catch (e) {
-      debugPrint('Error requesting notification permissions: $e');
-    }
   }
   
   DownloadTask createDownloadTask({

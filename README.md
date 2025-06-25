@@ -28,7 +28,7 @@ I do not own nor recommend those sources. As a matter of fact, the first step in
 - [ ] Independent downloads (start a new download while other is ongoing)
 - [ ] Unzip downloaded files (according to definitions per console (what files should be extracted, formats, etc.))
 - [ ] In-Library detection should be per title, and not per file existence (eg.: ignore extension)
-- [ ] Background Downloader
+- [x] Background Downloader
 - [ ] Background Unzip
 - [ ] Select all
 - [ ] Sort list

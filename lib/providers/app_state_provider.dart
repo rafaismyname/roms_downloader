@@ -3,22 +3,27 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:roms_downloader/models/app_state_model.dart';
 import 'package:roms_downloader/services/catalog_service.dart';
 import 'package:roms_downloader/services/directory_service.dart';
+import 'package:roms_downloader/services/permission_service.dart';
 
 final appStateProvider = StateNotifierProvider<AppStateNotifier, AppState>((ref) {
   final catalogService = CatalogService();
   final directoryService = DirectoryService();
-  return AppStateNotifier(catalogService, directoryService);
+  final permissionService = PermissionService();
+  return AppStateNotifier(catalogService, directoryService, permissionService);
 });
 
 class AppStateNotifier extends StateNotifier<AppState> {
   final CatalogService catalogService;
   final DirectoryService directoryService;
+  final PermissionService permissionService;
 
-  AppStateNotifier(this.catalogService, this.directoryService) : super(const AppState()) {
+  AppStateNotifier(this.catalogService, this.directoryService, this.permissionService) : super(const AppState()) {
     _initialize();
   }
 
   Future<void> _initialize() async {
+    await permissionService.ensurePermissions();
+
     final downloadDir = await directoryService.getDownloadDir();
     final consoles = await catalogService.getConsoles();
 

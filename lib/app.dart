@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:roms_downloader/screens/home_screen.dart';
 
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 class RomsDownloaderApp extends StatelessWidget {
   const RomsDownloaderApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: 'ROMs Downloader',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
