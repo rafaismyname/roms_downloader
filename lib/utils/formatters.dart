@@ -1,6 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:roms_downloader/models/app_models.dart';
+import 'package:roms_downloader/services/game_state_service.dart';
 
 String formatBytes(int bytes, {int decimals = 1}) {
   if (bytes <= 0) return '0 B';
@@ -11,15 +11,28 @@ String formatBytes(int bytes, {int decimals = 1}) {
   return '${(bytes / math.pow(k, i)).toStringAsFixed(dm)} ${sizes[i]}';
 }
 
-String formatSpeed(int bytesPerSecond) {
-  if (bytesPerSecond < 1024) {
-    return '$bytesPerSecond B/s';
-  } else if (bytesPerSecond < 1024 * 1024) {
-    return '${(bytesPerSecond / 1024).toStringAsFixed(1)} KB/s';
-  } else if (bytesPerSecond < 1024 * 1024 * 1024) {
-    return '${(bytesPerSecond / (1024 * 1024)).toStringAsFixed(1)} MB/s';
+String formatNetworkSpeed(double megabytesPerSecond) {
+  if (megabytesPerSecond <= 0) return '-- MB/s';
+  if (megabytesPerSecond >= 1) {
+    return '${megabytesPerSecond.toStringAsFixed(1)} MB/s';
   } else {
-    return '${(bytesPerSecond / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB/s';
+    return '${(megabytesPerSecond * 1000).toStringAsFixed(0)} KB/s';
+  }
+}
+
+String formatTimeRemaining(Duration duration) {
+  if (duration == Duration.zero) return '';
+
+  final hours = duration.inHours;
+  final minutes = duration.inMinutes.remainder(60);
+  final seconds = duration.inSeconds.remainder(60);
+
+  if (hours > 0) {
+    return '${hours}h ${minutes}m';
+  } else if (minutes > 0) {
+    return '${minutes}m ${seconds}s';
+  } else {
+    return '${seconds}s';
   }
 }
 
@@ -29,9 +42,16 @@ Color getStatusColor(BuildContext context, GameDownloadStatus status) {
       return Theme.of(context).colorScheme.onSurfaceVariant;
     case GameDownloadStatus.queued:
       return Theme.of(context).colorScheme.tertiary;
+    case GameDownloadStatus.downloading:
+      return Theme.of(context).colorScheme.primary;
+    case GameDownloadStatus.paused:
+      return Theme.of(context).colorScheme.secondary;
+    case GameDownloadStatus.completed:
+    case GameDownloadStatus.inLibrary:
+      return Theme.of(context).colorScheme.primary;
     case GameDownloadStatus.error:
       return Theme.of(context).colorScheme.error;
     default:
-      return Theme.of(context).colorScheme.primary;
+      return Theme.of(context).colorScheme.onSurfaceVariant;
   }
 }

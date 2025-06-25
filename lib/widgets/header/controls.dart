@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:roms_downloader/models/app_models.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:roms_downloader/models/console_model.dart';
+import 'package:roms_downloader/models/download_model.dart';
+import 'package:roms_downloader/providers/download_provider.dart';
 import 'package:roms_downloader/widgets/header/console_dropdown.dart';
 import 'package:roms_downloader/widgets/header/download_button.dart';
 import 'package:roms_downloader/widgets/header/download_directory.dart';
 import 'package:roms_downloader/widgets/header/search_field.dart';
 
-class Controls extends StatelessWidget {
+class Controls extends ConsumerWidget {
   final List<Console> consoles;
   final Console? selectedConsole;
   final String filterText;
-  final bool downloading;
   final bool loading;
-  final int selectedGamesCount;
   final String downloadDir;
   final Function(Console) onConsoleSelect;
   final Function(String) onFilterChange;
-  final VoidCallback onDownloadStart;
   final VoidCallback onDirectoryChange;
 
   const Controls({
@@ -23,21 +23,18 @@ class Controls extends StatelessWidget {
     required this.consoles,
     required this.selectedConsole,
     required this.filterText,
-    required this.downloading,
     required this.loading,
-    required this.selectedGamesCount,
     required this.downloadDir,
     required this.onConsoleSelect,
     required this.onFilterChange,
-    required this.onDownloadStart,
     required this.onDirectoryChange,
   });
 
-  bool get _isInteractive => !downloading && !loading;
-  bool get _canDownload => _isInteractive && selectedGamesCount > 0;
-
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final downloadState = ref.watch(downloadProvider);
+    final downloadNotifier = ref.read(downloadProvider.notifier);
+
     final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
     final isDesktop = Theme.of(context).platform == TargetPlatform.windows ||
         Theme.of(context).platform == TargetPlatform.macOS ||
@@ -57,11 +54,13 @@ class Controls extends StatelessWidget {
               ),
             )
           : null,
-      child: useCompactLayout ? _buildCompactContent(context) : _buildSpacedContent(context),
+      child: useCompactLayout ? _buildCompactContent(context, downloadState, downloadNotifier) : _buildSpacedContent(context, downloadState, downloadNotifier),
     );
   }
 
-  Widget _buildCompactContent(BuildContext context) {
+  Widget _buildCompactContent(BuildContext context, DownloadState downloadState, DownloadNotifier downloadNotifier) {
+    final isInteractive = !downloadState.downloading && !loading;
+    final canDownload = isInteractive && downloadState.selectedTasks.isNotEmpty;
     return Row(
       children: [
         Expanded(
@@ -69,7 +68,7 @@ class Controls extends StatelessWidget {
           child: ConsoleDropdown(
             consoles: consoles,
             selectedConsole: selectedConsole,
-            isInteractive: _isInteractive,
+            isInteractive: isInteractive,
             isCompact: true,
             onConsoleSelect: onConsoleSelect,
           ),
@@ -79,7 +78,7 @@ class Controls extends StatelessWidget {
           flex: 20,
           child: SearchField(
             initialText: filterText,
-            isEnabled: _isInteractive,
+            isEnabled: isInteractive,
             isCompact: true,
             onChanged: onFilterChange,
           ),
@@ -89,7 +88,7 @@ class Controls extends StatelessWidget {
           flex: 20,
           child: DownloadDirectory(
             downloadDir: downloadDir,
-            isInteractive: _isInteractive,
+            isInteractive: isInteractive,
             onDirectoryChange: onDirectoryChange,
             displayMode: DirectoryDisplayMode.compact,
           ),
@@ -97,17 +96,19 @@ class Controls extends StatelessWidget {
         const SizedBox(width: 8),
         DownloadButton(
           isCompact: true,
-          isEnabled: _canDownload,
-          isDownloading: downloading,
+          isEnabled: canDownload,
+          isDownloading: downloadState.downloading,
           isLoading: loading,
-          selectedCount: selectedGamesCount,
-          onPressed: onDownloadStart,
+          selectedCount: downloadState.selectedTasks.length,
+          onPressed: () => downloadNotifier.startSelectedDownloads(downloadDir, selectedConsole?.id),
         ),
       ],
     );
   }
 
-  Widget _buildSpacedContent(BuildContext context) {
+  Widget _buildSpacedContent(BuildContext context, DownloadState downloadState, DownloadNotifier downloadNotifier) {
+    final isInteractive = !downloadState.downloading && !loading;
+    final canDownload = isInteractive && downloadState.selectedTasks.isNotEmpty;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -116,13 +117,13 @@ class Controls extends StatelessWidget {
           firstWidget: ConsoleDropdown(
             consoles: consoles,
             selectedConsole: selectedConsole,
-            isInteractive: _isInteractive,
+            isInteractive: isInteractive,
             isCompact: false,
             onConsoleSelect: onConsoleSelect,
           ),
           secondWidget: SearchField(
             initialText: filterText,
-            isEnabled: _isInteractive,
+            isEnabled: isInteractive,
             isCompact: false,
             onChanged: onFilterChange,
           ),
@@ -135,17 +136,17 @@ class Controls extends StatelessWidget {
           context,
           firstWidget: DownloadDirectory(
             downloadDir: downloadDir,
-            isInteractive: _isInteractive,
+            isInteractive: isInteractive,
             onDirectoryChange: onDirectoryChange,
             displayMode: DirectoryDisplayMode.full,
           ),
           secondWidget: DownloadButton(
             isCompact: false,
-            isEnabled: _canDownload,
-            isDownloading: downloading,
+            isEnabled: canDownload,
+            isDownloading: downloadState.downloading,
             isLoading: loading,
-            selectedCount: selectedGamesCount,
-            onPressed: onDownloadStart,
+            selectedCount: downloadState.selectedTasks.length,
+            onPressed: () => downloadNotifier.startSelectedDownloads(downloadDir, selectedConsole?.id),
           ),
           firstFlex: 3,
           secondFlex: 2,

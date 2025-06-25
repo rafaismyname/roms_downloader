@@ -1,13 +1,9 @@
 import 'dart:io';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-final directoryServiceProvider = Provider<DirectoryService>((ref) {
-  return DirectoryService();
-});
 
 class DirectoryService {
   Future<String> getDownloadDir() async {
@@ -47,7 +43,7 @@ class DirectoryService {
           if (!status.isGranted) {
             final storageStatus = await Permission.storage.request();
             if (!storageStatus.isGranted) {
-              print('Storage permission denied');
+              debugPrint('Storage permission denied');
               return null;
             }
           }
@@ -63,7 +59,7 @@ class DirectoryService {
       await prefs.setString('downloadDir', selectedDirectory);
       return selectedDirectory;
     } catch (e) {
-      print('Error selecting directory: $e');
+      debugPrint('Error selecting directory: $e');
       return null;
     }
   }

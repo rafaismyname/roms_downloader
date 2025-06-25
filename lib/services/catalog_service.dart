@@ -1,25 +1,14 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:roms_downloader/models/app_models.dart';
-import 'package:roms_downloader/services/directory_service.dart';
 import 'package:roms_downloader/data/consoles.dart';
-
-final catalogServiceProvider = Provider<CatalogService>((ref) {
-  final directoryService = ref.watch(directoryServiceProvider);
-  return CatalogService(directoryService);
-});
+import 'package:roms_downloader/models/console_model.dart';
+import 'package:roms_downloader/models/game_model.dart';
 
 class CatalogService {
-  final DirectoryService directoryService;
-  String? _loadingStatus;
-  List<Game> _catalog = [];
-
-  CatalogService(this.directoryService);
-
   Future<List<Console>> getConsoles() async {
+    // TODO1: fetch from json instead of hardcoded list
     return getConsolesList();
   }
 
@@ -35,51 +24,48 @@ class CatalogService {
       try {
         final jsonStr = await cacheFile.readAsString();
         final List<dynamic> jsonList = jsonDecode(jsonStr);
-        _catalog = jsonList.map((json) => Game.fromJson(json)).toList();
-        _loadingStatus = null;
-        return _catalog;
+        return jsonList.map((json) => Game.fromJson(json)).toList();
       } catch (e) {
-        print('Error reading cache: $e');
+        debugPrint('Error reading cache: $e');
+        await cacheFile.delete();
       }
     }
 
-    _loadingStatus = "Preparing to load ${console.name}...";
-
-    _fetchCatalog(console);
-
-    throw Exception("Loading catalog...");
+    return _fetchCatalog(console);
   }
 
-  Future<void> _fetchCatalog(Console console) async {
+  Future<List<Game>> _fetchCatalog(Console console) async {
+    final client = HttpClient();
+    client.connectionTimeout = const Duration(seconds: 30);
+    client.userAgent = 'Mozilla/5.0 (compatible; Flutter app)';
+
+    List<Game> catalog = [];
+
     try {
-      final client = http.Client();
-      final response = await client.get(
-        Uri.parse(console.url),
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (compatible; Flutter app)',
-        },
-      ).timeout(const Duration(seconds: 30));
+      final request = await client.getUrl(Uri.parse(console.url));
+      final response = await request.close();
 
-      if (response.statusCode == 200) {
-        final html = response.body;
-        final games = _parseHtml(html, console);
-
-        final cacheFile = await _getCacheFile(console.cacheFile);
-        await cacheFile.writeAsString(jsonEncode(games.map((g) => g.toJson()).toList()));
-
-        _catalog = games;
-        _loadingStatus = null;
-      } else {
-        throw Exception('Failed to load catalog: ${response.statusCode}');
+      if (response.statusCode != 200) {
+        throw Exception('HTTP ${response.statusCode}: Failed to fetch catalog from ${console.url}');
       }
-      client.close();
+
+      final html = await response.transform(utf8.decoder).join();
+      catalog = _parseHtml(html, console);
+
+      final cacheFile = await _getCacheFile(console.cacheFile);
+      await cacheFile.writeAsString(jsonEncode(catalog.map((g) => g.toJson()).toList()));
     } catch (e) {
-      _loadingStatus = "Error: $e";
-      print('Error fetching catalog: $e');
+      debugPrint('Error fetching catalog: $e');
+    } finally {
+      client.close();
     }
+
+    return catalog;
   }
 
   List<Game> _parseHtml(String html, Console console) {
+    // TODO1: Implement named groups for better extensibility (:href, :title, :size)
+    // TODO2: Implement console-specific regex using named groups
     // Format: <tr><td class="link"><a href="URL" title="TITLE">TEXT</a></td><td class="size">SIZE</td>...
     final regExp = RegExp(
       r'<tr><td class="link"><a href="([^"]+)" title="([^"]+)">([^<]+)</a></td><td class="size">([^<]+)</td><td class="date">[^<]*</td></tr>',
@@ -110,6 +96,7 @@ class CatalogService {
         title: cleanTitle,
         url: fullUrl,
         size: sizeBytes,
+        consoleId: console.id,
       ));
     }
 
@@ -155,15 +142,7 @@ class CatalogService {
 
   Future<File> _getCacheFile(String filename) async {
     final dir = await getApplicationDocumentsDirectory();
-    print('Cache directory: ${dir.path}');
+    debugPrint('Catalog Cache directory: ${dir.path}');
     return File('${dir.path}/$filename');
-  }
-
-  Future<List<Game>> getCatalog() async {
-    return _catalog;
-  }
-
-  Future<String?> getLoadingStatus() async {
-    return _loadingStatus;
   }
 }

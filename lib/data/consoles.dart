@@ -1,4 +1,4 @@
-import 'package:roms_downloader/models/app_models.dart';
+import 'package:roms_downloader/models/console_model.dart';
 
 List<Console> getConsolesList() {
   return [
