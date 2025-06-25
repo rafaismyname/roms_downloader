@@ -27,11 +27,13 @@ class GameRow extends ConsumerWidget {
     final isCompleted = ref.watch(taskCompletionProvider(taskId));
     final isTaskSelected = ref.watch(taskSelectionProvider(taskId));
 
+    final progress = taskProgress?.progress ?? 0.0;
+    final networkSpeed = taskProgress?.networkSpeed ?? 0.0;
+    final timeRemaining = taskProgress?.timeRemaining ?? Duration.zero;
     final status = gameStateService.getStatusFromTaskStatus(taskStatus, isCompleted);
-    final progress = gameStateService.getProgressFromTaskProgress(taskProgress);
     final displayStatus = gameStateService.getDisplayStatusFromTaskStatus(taskStatus, isCompleted);
-    final showProgressBar = gameStateService.shouldShowProgressBarFromTaskStatus(taskStatus);
-    final isInteractable = gameStateService.isInteractableFromTaskStatus(taskStatus, isCompleted, false);
+    final showProgressBar = gameStateService.shouldShowProgressBarFromTaskStatus(taskStatus, isCompleted);
+    final isInteractable = gameStateService.isInteractableFromTaskStatus(taskStatus, isCompleted);
 
     return Container(
       padding: EdgeInsets.symmetric(
@@ -152,12 +154,24 @@ class GameRow extends ConsumerWidget {
                   if (progress > 0)
                     Padding(
                       padding: const EdgeInsets.only(top: 2),
-                      child: Text(
-                        '${(progress * 100).toStringAsFixed(1)}%',
-                        style: TextStyle(
-                          fontSize: isLandscape ? 9 : 10,
-                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                        ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            '${(progress * 100).toStringAsFixed(1)}%',
+                            style: TextStyle(
+                              fontSize: isLandscape ? 9 : 10,
+                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                            ),
+                          ),
+                          Text(
+                            '${formatNetworkSpeed(networkSpeed)} • ${formatTimeRemaining(timeRemaining)}',
+                            style: TextStyle(
+                              fontSize: isLandscape ? 9 : 10,
+                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                 ],

@@ -25,7 +25,6 @@ class GameStateService {
       case TaskStatus.paused:
         return GameDownloadStatus.paused;
       case TaskStatus.failed:
-      case TaskStatus.canceled:
         return GameDownloadStatus.error;
       case TaskStatus.notFound:
         return GameDownloadStatus.error;
@@ -34,10 +33,6 @@ class GameStateService {
       default:
         return GameDownloadStatus.ready;
     }
-  }
-
-  double getProgressFromTaskProgress(double? taskProgress) {
-    return taskProgress ?? 0.0;
   }
 
   String getDisplayStatusFromTaskStatus(TaskStatus? taskStatus, bool isCompleted) {
@@ -62,12 +57,13 @@ class GameStateService {
     }
   }
 
-  bool isInteractableFromTaskStatus(TaskStatus? taskStatus, bool isCompleted, bool isCancelling) {
+  bool isInteractableFromTaskStatus(TaskStatus? taskStatus, bool isCompleted) {
     final status = getStatusFromTaskStatus(taskStatus, isCompleted);
-    return status != GameDownloadStatus.inLibrary && status != GameDownloadStatus.downloading && status != GameDownloadStatus.processing && !isCancelling;
+    return status != GameDownloadStatus.inLibrary && status != GameDownloadStatus.downloading && status != GameDownloadStatus.processing;
   }
 
-  bool shouldShowProgressBarFromTaskStatus(TaskStatus? taskStatus) {
+  bool shouldShowProgressBarFromTaskStatus(TaskStatus? taskStatus, bool isCompleted) {
+    if (isCompleted) return false;
     switch (taskStatus) {
       case TaskStatus.running:
       case TaskStatus.enqueued:

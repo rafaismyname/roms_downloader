@@ -2,7 +2,7 @@ import 'package:background_downloader/background_downloader.dart';
 
 class DownloadState {
   final Map<String, TaskStatus> taskStatus;
-  final Map<String, double> taskProgress;
+  final Map<String, TaskProgressUpdate> taskProgress;
   final Set<String> selectedTasks;
   final Set<String> completedTasks;
   final bool downloading;
@@ -17,7 +17,7 @@ class DownloadState {
 
   DownloadState copyWith({
     Map<String, TaskStatus>? taskStatus,
-    Map<String, double>? taskProgress,
+    Map<String, TaskProgressUpdate>? taskProgress,
     Set<String>? selectedTasks,
     Set<String>? completedTasks,
     bool? downloading,

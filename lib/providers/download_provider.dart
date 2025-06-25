@@ -15,7 +15,7 @@ final taskStatusProvider = Provider.family<TaskStatus?, String>((ref, taskId) {
   return downloadState.taskStatus[taskId];
 });
 
-final taskProgressProvider = Provider.family<double?, String>((ref, taskId) {
+final taskProgressProvider = Provider.family<TaskProgressUpdate?, String>((ref, taskId) {
   final downloadState = ref.watch(downloadProvider);
   return downloadState.taskProgress[taskId];
 });
@@ -84,10 +84,13 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
   }
 
   void _handleProgressUpdate(TaskProgressUpdate update) {
-    final taskProgress = Map<String, double>.from(state.taskProgress);
-    taskProgress[update.task.taskId] = update.progress;
+    final taskProgress = Map<String, TaskProgressUpdate>.from(state.taskProgress);
 
-    state = state.copyWith(taskProgress: taskProgress);
+    taskProgress[update.task.taskId] = update;
+
+    state = state.copyWith(
+      taskProgress: taskProgress,
+    );
   }
 
   void _updateDownloadingState() {
@@ -183,7 +186,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
 
     await startDownloads(games, downloadDir, group);
   }
-  
+
   Future<void> pauseTask(String taskId) async {
     final task = _tasks[taskId];
     if (task != null) {
@@ -207,7 +210,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     }
 
     final taskStatus = Map<String, TaskStatus>.from(state.taskStatus);
-    final taskProgress = Map<String, double>.from(state.taskProgress);
+    final taskProgress = Map<String, TaskProgressUpdate>.from(state.taskProgress);
     final selectedTasks = Set<String>.from(state.selectedTasks);
 
     taskStatus.remove(taskId);

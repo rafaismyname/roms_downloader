@@ -11,6 +11,31 @@ String formatBytes(int bytes, {int decimals = 1}) {
   return '${(bytes / math.pow(k, i)).toStringAsFixed(dm)} ${sizes[i]}';
 }
 
+String formatNetworkSpeed(double megabytesPerSecond) {
+  if (megabytesPerSecond <= 0) return '-- MB/s';
+  if (megabytesPerSecond >= 1) {
+    return '${megabytesPerSecond.toStringAsFixed(1)} MB/s';
+  } else {
+    return '${(megabytesPerSecond * 1000).toStringAsFixed(0)} KB/s';
+  }
+}
+
+String formatTimeRemaining(Duration duration) {
+  if (duration == Duration.zero) return '';
+
+  final hours = duration.inHours;
+  final minutes = duration.inMinutes.remainder(60);
+  final seconds = duration.inSeconds.remainder(60);
+
+  if (hours > 0) {
+    return '${hours}h ${minutes}m';
+  } else if (minutes > 0) {
+    return '${minutes}m ${seconds}s';
+  } else {
+    return '${seconds}s';
+  }
+}
+
 Color getStatusColor(BuildContext context, GameDownloadStatus status) {
   switch (status) {
     case GameDownloadStatus.ready:

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:background_downloader/background_downloader.dart';
 import 'package:roms_downloader/models/download_model.dart';
 import 'package:roms_downloader/providers/download_provider.dart';
+import 'package:roms_downloader/utils/formatters.dart';
 
 class Footer extends ConsumerWidget {
   final bool loading;
@@ -22,6 +23,8 @@ class Footer extends ConsumerWidget {
     final activeDownloads = downloadState.taskStatus.values.where((status) => status == TaskStatus.running || status == TaskStatus.enqueued).length;
 
     final overallProgress = _calculateOverallProgress(downloadState);
+    final overallNetworkSpeed = _calculateOverallNetworkSpeed(downloadState);
+    final overallTimeRemaining = _calculateOverallTimeRemaining(downloadState);
     final showProgressBar = downloadState.downloading && downloadState.selectedTasks.isNotEmpty;
 
     return Container(
@@ -69,14 +72,14 @@ class Footer extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Overall Progress ($activeDownloads games):',
+                  '${(overallProgress * 100).toStringAsFixed(1)}% • ${formatNetworkSpeed(overallNetworkSpeed)}',
                   style: TextStyle(
                     fontSize: isLandscape ? 10 : 12,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
                 Text(
-                  '${(overallProgress * 100).toStringAsFixed(1)}%',
+                  'ETA: ${formatTimeRemaining(overallTimeRemaining)}',
                   style: TextStyle(
                     fontSize: isLandscape ? 10 : 12,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -91,10 +94,25 @@ class Footer extends ConsumerWidget {
   }
 
   double _calculateOverallProgress(DownloadState downloadState) {
-    final progressValues = downloadState.taskProgress.values.where((p) => p > 0);
+    final progressValues = downloadState.taskProgress.values.map((p) => p.progress).where((p) => p > 0);
     if (progressValues.isEmpty) return 0.0;
 
     final sum = progressValues.reduce((a, b) => a + b);
     return sum / progressValues.length;
+  }
+
+  double _calculateOverallNetworkSpeed(DownloadState downloadState) {
+    final speedValues = downloadState.taskProgress.values.map((p) => p.networkSpeed).where((s) => s > 0);
+    if (speedValues.isEmpty) return 0.0;
+
+    return speedValues.reduce((a, b) => a + b);
+  }
+
+  Duration _calculateOverallTimeRemaining(DownloadState downloadState) {
+    final timeRemainingValues = downloadState.taskProgress.values.map((p) => p.timeRemaining).where((t) => t != Duration.zero);
+    if (timeRemainingValues.isEmpty) return Duration.zero;
+
+    final totalSeconds = timeRemainingValues.map((d) => d.inSeconds).reduce((a, b) => a + b);
+    return Duration(seconds: (totalSeconds / timeRemainingValues.length).round());
   }
 }
