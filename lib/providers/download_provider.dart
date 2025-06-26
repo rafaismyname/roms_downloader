@@ -135,9 +135,23 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     state = state.copyWith(completedTasks: completedTasks);
   }
 
+  bool isTaskDownloadable(String taskId) {
+    if (state.completedTasks.contains(taskId)) return false;
+    final taskStatus = state.taskStatus[taskId];
+    switch (taskStatus) {
+      case null:
+      case TaskStatus.canceled:
+      case TaskStatus.complete:
+      case TaskStatus.failed:
+        return true;
+      default:
+        return false;
+    }
+  }
+
   Future<void> startDownloads(List<Game> games, String downloadDir, String? group) async {
     final catalogState = _ref.read(catalogProvider);
-    if (catalogState.selectedGames.isEmpty || state.downloading) return;
+    if (catalogState.selectedGames.isEmpty) return;
 
     final taskStatus = Map<String, TaskStatus>.from(state.taskStatus);
 
@@ -145,6 +159,8 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
 
     try {
       for (final taskId in catalogState.selectedGames) {
+        if (!isTaskDownloadable(taskId)) continue;
+
         final parts = taskId.split('/');
         if (parts.length != 2) continue;
 
@@ -172,7 +188,8 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
         }
       }
 
-      state = state.copyWith(taskStatus: taskStatus, downloading: true);
+      state = state.copyWith(taskStatus: taskStatus);
+      // _updateDownloadingState();
     } catch (e) {
       debugPrint('Error starting downloads: $e');
     }
@@ -180,7 +197,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
 
   Future<void> startSelectedDownloads(String downloadDir, String? group) async {
     final catalogState = _ref.read(catalogProvider);
-    if (catalogState.selectedGames.isEmpty || state.downloading) return;
+    if (catalogState.selectedGames.isEmpty) return;
 
     final games = catalogState.games.where((game) => catalogState.selectedGames.contains(game.taskId)).toList();
 
@@ -222,6 +239,11 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       taskStatus: taskStatus,
       taskProgress: taskProgress,
     );
+  }
+
+  bool hasDownloadableSelectedGames() {
+    final catalogState = _ref.read(catalogProvider);
+    return catalogState.selectedGames.any((taskId) => isTaskDownloadable(taskId));
   }
 
   @override

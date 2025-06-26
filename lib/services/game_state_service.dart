@@ -59,7 +59,7 @@ class GameStateService {
 
   bool isInteractableFromTaskStatus(TaskStatus? taskStatus, bool isCompleted) {
     final status = getStatusFromTaskStatus(taskStatus, isCompleted);
-    return status != GameDownloadStatus.inLibrary && status != GameDownloadStatus.downloading && status != GameDownloadStatus.processing;
+    return status == GameDownloadStatus.ready || status == GameDownloadStatus.error;
   }
 
   bool shouldShowProgressBarFromTaskStatus(TaskStatus? taskStatus, bool isCompleted) {
@@ -67,6 +67,8 @@ class GameStateService {
     switch (taskStatus) {
       case TaskStatus.running:
       case TaskStatus.enqueued:
+      case TaskStatus.waitingToRetry:
+      case TaskStatus.paused:
         return true;
       default:
         return false;

@@ -36,16 +36,7 @@ class DownloadButton extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (isDownloading)
-              SizedBox(
-                width: isCompact ? 12 : 16,
-                height: isCompact ? 12 : 16,
-                child: CircularProgressIndicator(
-                  strokeWidth: isCompact ? 2 : 3,
-                  valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.onPrimary),
-                ),
-              )
-            else if (!isLoading)
+            if (!isLoading)
               Icon(
                 Icons.download_rounded,
                 size: isCompact ? 14 : 18,
@@ -53,16 +44,12 @@ class DownloadButton extends StatelessWidget {
             SizedBox(width: isCompact ? 4 : 8),
             Text(
               isCompact
-                  ? (isDownloading
-                      ? "DL..."
-                      : isLoading
-                          ? "..."
-                          : "DL ($selectedCount)")
-                  : (isDownloading
-                      ? "Downloading..."
-                      : isLoading
-                          ? "Loading..."
-                          : "Download Selected"),
+                  ? (isLoading
+                      ? "..."
+                      : "DL ($selectedCount)")
+                  : (isLoading
+                      ? "Loading..."
+                      : "Download Selected"),
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: isCompact ? 11 : 14,

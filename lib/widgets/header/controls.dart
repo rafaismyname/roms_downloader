@@ -69,8 +69,8 @@ class Controls extends ConsumerWidget {
       CatalogState catalogState,
       CatalogNotifier catalogNotifier
   ) {
-    final isInteractive = !downloadState.downloading && !appState.loading;
-    final canDownload = isInteractive && catalogState.selectedGames.isNotEmpty;
+    final isInteractive = !appState.loading && !downloadState.downloading;
+    final canDownload = !appState.loading && downloadNotifier.hasDownloadableSelectedGames();
     return Row(
       children: [
         Expanded(
@@ -124,8 +124,8 @@ class Controls extends ConsumerWidget {
       CatalogState catalogState,
       CatalogNotifier catalogNotifier
   ) {
-    final isInteractive = !downloadState.downloading && !appState.loading;
-    final canDownload = isInteractive && catalogState.selectedGames.isNotEmpty;
+    final isInteractive = !appState.loading && !downloadState.downloading;
+    final canDownload = !appState.loading && downloadNotifier.hasDownloadableSelectedGames();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
