@@ -9,12 +9,10 @@ import 'package:roms_downloader/providers/catalog_provider.dart';
 
 class GameRow extends ConsumerWidget {
   final Game game;
-  final bool isLandscape;
 
   const GameRow({
     super.key,
     required this.game,
-    required this.isLandscape,
   });
 
   @override
@@ -41,7 +39,7 @@ class GameRow extends ConsumerWidget {
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: 16,
-        vertical: isLandscape ? 6 : 12,
+        vertical: 6,
       ),
       decoration: BoxDecoration(
         color: isTaskSelected ? Theme.of(context).colorScheme.primaryContainer.withAlpha(50) : null,
@@ -68,7 +66,7 @@ class GameRow extends ConsumerWidget {
                 child: Text(
                   game.title,
                   style: TextStyle(
-                    fontSize: isLandscape ? 13 : 15,
+                    fontSize: 13,
                     color: isCompleted ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface,
                     fontWeight: isCompleted ? FontWeight.bold : FontWeight.normal,
                   ),
@@ -81,7 +79,7 @@ class GameRow extends ConsumerWidget {
                 child: Text(
                   formatBytes(game.size),
                   style: TextStyle(
-                    fontSize: isLandscape ? 12 : 14,
+                    fontSize: 12,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                   textAlign: TextAlign.center,
@@ -92,7 +90,7 @@ class GameRow extends ConsumerWidget {
                 child: Text(
                   displayStatus,
                   style: TextStyle(
-                    fontSize: isLandscape ? 12 : 14,
+                    fontSize: 12,
                     color: getStatusColor(context, status),
                     fontWeight: FontWeight.w500,
                   ),
@@ -161,7 +159,7 @@ class GameRow extends ConsumerWidget {
                       value: progress,
                       backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                       color: Theme.of(context).colorScheme.primary,
-                      minHeight: isLandscape ? 4 : 5,
+                      minHeight: 4,
                     ),
                   ),
                   if (progress > 0)
@@ -173,14 +171,14 @@ class GameRow extends ConsumerWidget {
                           Text(
                             '${(progress * 100).toStringAsFixed(1)}%',
                             style: TextStyle(
-                              fontSize: isLandscape ? 9 : 10,
+                              fontSize: 9,
                               color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                             ),
                           ),
                           Text(
                             '${formatNetworkSpeed(networkSpeed)} • ${formatTimeRemaining(timeRemaining)}',
                             style: TextStyle(
-                              fontSize: isLandscape ? 9 : 10,
+                              fontSize: 9,
                               color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                             ),
                           ),

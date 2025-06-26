@@ -33,17 +33,11 @@ class Controls extends ConsumerWidget {
     final catalogState = ref.watch(catalogProvider);
     final catalogNotifier = ref.read(catalogProvider.notifier);
 
-    final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
-    final isDesktop = Theme.of(context).platform == TargetPlatform.windows ||
-        Theme.of(context).platform == TargetPlatform.macOS ||
-        Theme.of(context).platform == TargetPlatform.linux;
-    final useCompactLayout = isLandscape && !isDesktop;
-
     final isInteractive = !appState.loading && !downloadState.downloading;
     final canDownload = !appState.loading && downloadNotifier.hasDownloadableSelectedGames();
 
     return Container(
-        padding: EdgeInsets.all(useCompactLayout ? 8 : 16),
+        padding: EdgeInsets.all(8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [

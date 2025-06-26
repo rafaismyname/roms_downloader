@@ -10,21 +10,20 @@ class GameList extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final catalogState = ref.watch(catalogProvider);
     final games = catalogState.filteredGames;
-    final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
 
     return Column(
       children: [
         Container(
           padding: EdgeInsets.symmetric(
             horizontal: 16,
-            vertical: isLandscape ? 6 : 12,
+            vertical: 6,
           ),
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
             border: Border(
               bottom: BorderSide(
                 color: Theme.of(context).dividerColor,
-                width: isLandscape ? 0.5 : 1.0,
+                width: 0.5,
               ),
             ),
           ),
@@ -37,7 +36,7 @@ class GameList extends ConsumerWidget {
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    fontSize: isLandscape ? 12 : 14,
+                    fontSize: 12,
                   ),
                 ),
               ),
@@ -48,7 +47,7 @@ class GameList extends ConsumerWidget {
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    fontSize: isLandscape ? 12 : 14,
+                    fontSize: 12,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -60,7 +59,7 @@ class GameList extends ConsumerWidget {
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    fontSize: isLandscape ? 12 : 14,
+                    fontSize: 12,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -72,7 +71,7 @@ class GameList extends ConsumerWidget {
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    fontSize: isLandscape ? 12 : 14,
+                    fontSize: 12,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -85,7 +84,7 @@ class GameList extends ConsumerWidget {
             itemCount: games.length,
             itemBuilder: (context, index) {
               final game = games[index];
-              return GameRow(game: game, isLandscape: isLandscape);
+              return GameRow(game: game);
             },
           ),
         ),
