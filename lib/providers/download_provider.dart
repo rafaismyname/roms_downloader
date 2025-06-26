@@ -5,33 +5,31 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:background_downloader/background_downloader.dart';
 import 'package:path/path.dart' as path;
 import 'package:roms_downloader/models/app_state_model.dart';
+import 'package:roms_downloader/models/catalog_model.dart';
 import 'package:roms_downloader/models/game_model.dart';
 import 'package:roms_downloader/models/download_model.dart';
 import 'package:roms_downloader/services/download_service.dart';
 import 'package:roms_downloader/providers/app_state_provider.dart';
+import 'package:roms_downloader/providers/catalog_provider.dart';
 
-final taskStatusProvider = Provider.family<TaskStatus?, String>((ref, taskId) {
+final downloadTaskStatusProvider = Provider.family<TaskStatus?, String>((ref, taskId) {
   final downloadState = ref.watch(downloadProvider);
   return downloadState.taskStatus[taskId];
 });
 
-final taskProgressProvider = Provider.family<TaskProgressUpdate?, String>((ref, taskId) {
+final downloadTaskProgressProvider = Provider.family<TaskProgressUpdate?, String>((ref, taskId) {
   final downloadState = ref.watch(downloadProvider);
   return downloadState.taskProgress[taskId];
 });
 
-final taskCompletionProvider = Provider.family<bool, String>((ref, taskId) {
+final downloadTaskCompletionProvider = Provider.family<bool, String>((ref, taskId) {
   final downloadState = ref.watch(downloadProvider);
   return downloadState.completedTasks.contains(taskId);
 });
 
-final taskSelectionProvider = Provider.family<bool, String>((ref, taskId) {
-  final downloadState = ref.watch(downloadProvider);
-  return downloadState.selectedTasks.contains(taskId);
-});
-
 final downloadProvider = StateNotifierProvider<DownloadNotifier, DownloadState>((ref) {
-  return DownloadNotifier(ref);
+  final catalogNotifier = ref.read(catalogProvider.notifier);
+  return DownloadNotifier(ref, catalogNotifier);
 });
 
 class DownloadNotifier extends StateNotifier<DownloadState> {
@@ -40,8 +38,9 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
   StreamSubscription<TaskUpdate>? _updateSubscription;
 
   final DownloadService downloadService = DownloadService();
+  final CatalogNotifier catalogNotifier;
 
-  DownloadNotifier(this._ref) : super(const DownloadState()) {
+  DownloadNotifier(this._ref, this.catalogNotifier) : super(const DownloadState()) {
     _initialize();
   }
 
@@ -57,10 +56,11 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       }
     });
 
-    _listenToAppStateChanges();
+    _listenToStateChanges();
     final appState = _ref.read(appStateProvider);
-    if (appState.catalog.isNotEmpty && appState.downloadDir.isNotEmpty) {
-      _checkCompletedFiles(appState.catalog, appState.downloadDir);
+    final catalogState = _ref.read(catalogProvider);
+    if (catalogState.games.isNotEmpty && appState.downloadDir.isNotEmpty) {
+      _checkCompletedFiles(catalogState.games, appState.downloadDir);
     }
   }
 
@@ -71,7 +71,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     final completedTasks = Set<String>.from(state.completedTasks);
     if (update.status == TaskStatus.complete) {
       completedTasks.add(update.task.taskId);
-      toggleTaskSelection(update.task.taskId);
+      catalogNotifier.deselectGame(update.task.taskId);
       debugPrint('Download completed for ${update.task.taskId}');
     }
 
@@ -101,16 +101,27 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     }
   }
 
-  void _listenToAppStateChanges() {
+  void _listenToStateChanges() {
     _ref.listen<AppState>(appStateProvider, (previous, next) {
-      if (previous == null || previous.catalog != next.catalog || previous.downloadDir != next.downloadDir) {
-        if (next.catalog.isNotEmpty && next.downloadDir.isNotEmpty) {
-          _checkCompletedFiles(next.catalog, next.downloadDir);
+      if (previous == null || previous.downloadDir != next.downloadDir) {
+        final catalogState = _ref.read(catalogProvider);
+        if (catalogState.games.isNotEmpty && next.downloadDir.isNotEmpty) {
+          _checkCompletedFiles(catalogState.games, next.downloadDir);
+        }
+      }
+    });
+
+    _ref.listen<CatalogState>(catalogProvider, (previous, next) {
+      if (previous == null || previous.games != next.games) {
+        final appState = _ref.read(appStateProvider);
+        if (next.games.isNotEmpty && appState.downloadDir.isNotEmpty) {
+          _checkCompletedFiles(next.games, appState.downloadDir);
         }
       }
     });
   }
 
+  // TODO1: Maybe this belongs somewhere else like in Catalog
   Future<void> _checkCompletedFiles(List<Game> catalog, String downloadDir) async {
     final completedTasks = <String>{};
 
@@ -124,27 +135,16 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     state = state.copyWith(completedTasks: completedTasks);
   }
 
-  void toggleTaskSelection(String taskId) {
-    final selectedTasks = Set<String>.from(state.selectedTasks);
-
-    if (selectedTasks.contains(taskId)) {
-      selectedTasks.remove(taskId);
-    } else {
-      selectedTasks.add(taskId);
-    }
-
-    state = state.copyWith(selectedTasks: selectedTasks);
-  }
-
   Future<void> startDownloads(List<Game> games, String downloadDir, String? group) async {
-    if (state.selectedTasks.isEmpty || state.downloading) return;
+    final catalogState = _ref.read(catalogProvider);
+    if (catalogState.selectedGames.isEmpty || state.downloading) return;
 
     final taskStatus = Map<String, TaskStatus>.from(state.taskStatus);
 
     debugPrint('Starting downloads to directory: $downloadDir');
 
     try {
-      for (final taskId in state.selectedTasks) {
+      for (final taskId in catalogState.selectedGames) {
         final parts = taskId.split('/');
         if (parts.length != 2) continue;
 
@@ -179,10 +179,10 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
   }
 
   Future<void> startSelectedDownloads(String downloadDir, String? group) async {
-    if (state.selectedTasks.isEmpty || state.downloading) return;
+    final catalogState = _ref.read(catalogProvider);
+    if (catalogState.selectedGames.isEmpty || state.downloading) return;
 
-    final appState = _ref.read(appStateProvider);
-    final games = appState.catalog.where((game) => state.selectedTasks.contains(game.taskId)).toList();
+    final games = catalogState.games.where((game) => catalogState.selectedGames.contains(game.taskId)).toList();
 
     await startDownloads(games, downloadDir, group);
   }
@@ -211,17 +211,16 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
 
     final taskStatus = Map<String, TaskStatus>.from(state.taskStatus);
     final taskProgress = Map<String, TaskProgressUpdate>.from(state.taskProgress);
-    final selectedTasks = Set<String>.from(state.selectedTasks);
 
     taskStatus.remove(taskId);
     taskProgress.remove(taskId);
-    selectedTasks.remove(taskId);
     _tasks.remove(taskId);
+
+    catalogNotifier.deselectGame(taskId);
 
     state = state.copyWith(
       taskStatus: taskStatus,
       taskProgress: taskProgress,
-      selectedTasks: selectedTasks,
     );
   }
 

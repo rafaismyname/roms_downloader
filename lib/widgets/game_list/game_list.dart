@@ -1,17 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:roms_downloader/models/game_model.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:roms_downloader/providers/catalog_provider.dart';
 import 'package:roms_downloader/widgets/game_list/game_row.dart';
 
-class GameList extends StatelessWidget {
-  final List<Game> games;
-
-  const GameList({
-    super.key,
-    required this.games,
-  });
+class GameList extends ConsumerWidget {
+  const GameList({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final catalogState = ref.watch(catalogProvider);
+    final games = catalogState.filteredGames;
     final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
 
     return Column(

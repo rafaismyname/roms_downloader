@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:roms_downloader/models/app_state_model.dart';
 import 'package:roms_downloader/models/console_model.dart';
 import 'package:roms_downloader/models/download_model.dart';
+import 'package:roms_downloader/models/catalog_model.dart';
+import 'package:roms_downloader/providers/app_state_provider.dart';
 import 'package:roms_downloader/providers/download_provider.dart';
+import 'package:roms_downloader/providers/catalog_provider.dart';
 import 'package:roms_downloader/widgets/header/console_dropdown.dart';
 import 'package:roms_downloader/widgets/header/download_button.dart';
 import 'package:roms_downloader/widgets/header/download_directory.dart';
@@ -11,29 +15,26 @@ import 'package:roms_downloader/widgets/header/search_field.dart';
 class Controls extends ConsumerWidget {
   final List<Console> consoles;
   final Console? selectedConsole;
-  final String filterText;
-  final bool loading;
   final String downloadDir;
   final Function(Console) onConsoleSelect;
-  final Function(String) onFilterChange;
   final VoidCallback onDirectoryChange;
 
   const Controls({
     super.key,
     required this.consoles,
     required this.selectedConsole,
-    required this.filterText,
-    required this.loading,
     required this.downloadDir,
     required this.onConsoleSelect,
-    required this.onFilterChange,
     required this.onDirectoryChange,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final appState = ref.watch(appStateProvider);
     final downloadState = ref.watch(downloadProvider);
     final downloadNotifier = ref.read(downloadProvider.notifier);
+    final catalogState = ref.watch(catalogProvider);
+    final catalogNotifier = ref.read(catalogProvider.notifier);
 
     final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
     final isDesktop = Theme.of(context).platform == TargetPlatform.windows ||
@@ -54,13 +55,22 @@ class Controls extends ConsumerWidget {
               ),
             )
           : null,
-      child: useCompactLayout ? _buildCompactContent(context, downloadState, downloadNotifier) : _buildSpacedContent(context, downloadState, downloadNotifier),
+      child: useCompactLayout
+          ? _buildCompactContent(context, appState, downloadState, downloadNotifier, catalogState, catalogNotifier)
+          : _buildSpacedContent(context, appState, downloadState, downloadNotifier, catalogState, catalogNotifier),
     );
   }
 
-  Widget _buildCompactContent(BuildContext context, DownloadState downloadState, DownloadNotifier downloadNotifier) {
-    final isInteractive = !downloadState.downloading && !loading;
-    final canDownload = isInteractive && downloadState.selectedTasks.isNotEmpty;
+  Widget _buildCompactContent(
+      BuildContext context, 
+      AppState appState, 
+      DownloadState downloadState,
+      DownloadNotifier downloadNotifier,
+      CatalogState catalogState,
+      CatalogNotifier catalogNotifier
+  ) {
+    final isInteractive = !downloadState.downloading && !appState.loading;
+    final canDownload = isInteractive && catalogState.selectedGames.isNotEmpty;
     return Row(
       children: [
         Expanded(
@@ -77,10 +87,10 @@ class Controls extends ConsumerWidget {
         Expanded(
           flex: 20,
           child: SearchField(
-            initialText: filterText,
+            initialText: catalogState.filterText,
             isEnabled: isInteractive,
             isCompact: true,
-            onChanged: onFilterChange,
+            onChanged: (text) => catalogNotifier.updateFilterText(text),
           ),
         ),
         const SizedBox(width: 8),
@@ -98,17 +108,24 @@ class Controls extends ConsumerWidget {
           isCompact: true,
           isEnabled: canDownload,
           isDownloading: downloadState.downloading,
-          isLoading: loading,
-          selectedCount: downloadState.selectedTasks.length,
+          isLoading: appState.loading,
+          selectedCount: catalogState.selectedGames.length,
           onPressed: () => downloadNotifier.startSelectedDownloads(downloadDir, selectedConsole?.id),
         ),
       ],
     );
   }
 
-  Widget _buildSpacedContent(BuildContext context, DownloadState downloadState, DownloadNotifier downloadNotifier) {
-    final isInteractive = !downloadState.downloading && !loading;
-    final canDownload = isInteractive && downloadState.selectedTasks.isNotEmpty;
+  Widget _buildSpacedContent(
+      BuildContext context, 
+      AppState appState, 
+      DownloadState downloadState,
+      DownloadNotifier downloadNotifier,
+      CatalogState catalogState,
+      CatalogNotifier catalogNotifier
+  ) {
+    final isInteractive = !downloadState.downloading && !appState.loading;
+    final canDownload = isInteractive && catalogState.selectedGames.isNotEmpty;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -122,10 +139,10 @@ class Controls extends ConsumerWidget {
             onConsoleSelect: onConsoleSelect,
           ),
           secondWidget: SearchField(
-            initialText: filterText,
+            initialText: catalogState.filterText,
             isEnabled: isInteractive,
             isCompact: false,
-            onChanged: onFilterChange,
+            onChanged: (text) => catalogNotifier.updateFilterText(text),
           ),
           firstFlex: 2,
           secondFlex: 3,
@@ -144,8 +161,8 @@ class Controls extends ConsumerWidget {
             isCompact: false,
             isEnabled: canDownload,
             isDownloading: downloadState.downloading,
-            isLoading: loading,
-            selectedCount: downloadState.selectedTasks.length,
+            isLoading: appState.loading,
+            selectedCount: catalogState.selectedGames.length,
             onPressed: () => downloadNotifier.startSelectedDownloads(downloadDir, selectedConsole?.id),
           ),
           firstFlex: 3,

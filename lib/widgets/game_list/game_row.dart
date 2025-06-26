@@ -5,6 +5,7 @@ import 'package:roms_downloader/models/game_model.dart';
 import 'package:roms_downloader/services/game_state_service.dart';
 import 'package:roms_downloader/utils/formatters.dart';
 import 'package:roms_downloader/providers/download_provider.dart';
+import 'package:roms_downloader/providers/catalog_provider.dart';
 
 class GameRow extends ConsumerWidget {
   final Game game;
@@ -18,14 +19,15 @@ class GameRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final downloadNotifier = ref.watch(downloadProvider.notifier);
+    final downloadNotifier = ref.read(downloadProvider.notifier);
+    final catalogNotifier = ref.read(catalogProvider.notifier);
     final gameStateService = GameStateService();
 
     final taskId = game.taskId;
-    final taskStatus = ref.watch(taskStatusProvider(taskId));
-    final taskProgress = ref.watch(taskProgressProvider(taskId));
-    final isCompleted = ref.watch(taskCompletionProvider(taskId));
-    final isTaskSelected = ref.watch(taskSelectionProvider(taskId));
+    final taskStatus = ref.watch(downloadTaskStatusProvider(taskId));
+    final taskProgress = ref.watch(downloadTaskProgressProvider(taskId));
+    final isCompleted = ref.watch(downloadTaskCompletionProvider(taskId));
+    final isTaskSelected = ref.watch(gameSelectionProvider(taskId));
 
     final progress = taskProgress?.progress ?? 0.0;
     final networkSpeed = taskProgress?.networkSpeed ?? 0.0;
@@ -58,7 +60,7 @@ class GameRow extends ConsumerWidget {
                 width: 40,
                 child: Checkbox(
                   value: isTaskSelected,
-                  onChanged: isInteractable ? (_) => downloadNotifier.toggleTaskSelection(taskId) : null,
+                  onChanged: isInteractable ? (_) => catalogNotifier.toggleGameSelection(taskId) : null,
                 ),
               ),
               Expanded(
