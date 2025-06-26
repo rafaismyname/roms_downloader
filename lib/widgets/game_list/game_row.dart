@@ -36,6 +36,7 @@ class GameRow extends ConsumerWidget {
     final displayStatus = gameStateService.getDisplayStatusFromTaskStatus(taskStatus, isCompleted);
     final showProgressBar = gameStateService.shouldShowProgressBarFromTaskStatus(taskStatus, isCompleted);
     final isInteractable = gameStateService.isInteractableFromTaskStatus(taskStatus, isCompleted);
+    final canStartDownload = downloadNotifier.isTaskDownloadable(taskId);
 
     return Container(
       padding: EdgeInsets.symmetric(
@@ -87,22 +88,32 @@ class GameRow extends ConsumerWidget {
                 ),
               ),
               SizedBox(
-                width: 140,
+                width: 100,
+                child: Text(
+                  displayStatus,
+                  style: TextStyle(
+                    fontSize: isLandscape ? 12 : 14,
+                    color: getStatusColor(context, status),
+                    fontWeight: FontWeight.w500,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              SizedBox(
+                width: 100,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Expanded(
-                      child: Text(
-                        displayStatus,
-                        style: TextStyle(
-                          fontSize: isLandscape ? 12 : 14,
-                          color: getStatusColor(context, status),
-                          fontWeight: FontWeight.w500,
-                        ),
-                        textAlign: TextAlign.center,
+                    if (canStartDownload)
+                      IconButton(
+                        icon: const Icon(Icons.download_rounded, size: 20),
+                        onPressed: () => downloadNotifier.startSingleDownload(game),
+                        visualDensity: VisualDensity.compact,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        tooltip: 'Download',
                       ),
-                    ),
-                    if (taskStatus == TaskStatus.running || taskStatus == TaskStatus.enqueued)
+                    if (taskStatus == TaskStatus.running || taskStatus == TaskStatus.enqueued || taskStatus == TaskStatus.paused)
                       Row(
                         children: [
                           if (taskStatus == TaskStatus.running)
@@ -114,6 +125,15 @@ class GameRow extends ConsumerWidget {
                               constraints: const BoxConstraints(),
                               tooltip: 'Pause',
                             ),
+                          if (taskStatus == TaskStatus.paused)
+                            IconButton(
+                              icon: const Icon(Icons.play_arrow, size: 20),
+                              onPressed: () => downloadNotifier.resumeTask(taskId),
+                              visualDensity: VisualDensity.compact,
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              tooltip: 'Resume',
+                            ),
                           IconButton(
                             icon: const Icon(Icons.cancel, size: 20),
                             onPressed: () => downloadNotifier.cancelTask(taskId),
@@ -123,15 +143,6 @@ class GameRow extends ConsumerWidget {
                             tooltip: 'Cancel',
                           ),
                         ],
-                      ),
-                    if (taskStatus == TaskStatus.paused)
-                      IconButton(
-                        icon: const Icon(Icons.play_arrow, size: 20),
-                        onPressed: () => downloadNotifier.resumeTask(taskId),
-                        visualDensity: VisualDensity.compact,
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        tooltip: 'Resume',
                       ),
                   ],
                 ),

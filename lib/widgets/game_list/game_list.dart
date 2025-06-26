@@ -54,9 +54,21 @@ class GameList extends ConsumerWidget {
                 ),
               ),
               SizedBox(
-                width: 140,
+                width: 100,
                 child: Text(
                   'Status',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontSize: isLandscape ? 12 : 14,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              SizedBox(
+                width: 100,
+                child: Text(
+                  'Actions',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,

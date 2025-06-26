@@ -160,26 +160,18 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
   }
 
   Future<void> startDownloads(List<Game> games, String downloadDir, String? group) async {
-    final catalogState = _ref.read(catalogProvider);
-    if (catalogState.selectedGames.isEmpty) return;
+    if (games.isEmpty) return;
 
     final taskStatus = Map<String, TaskStatus>.from(state.taskStatus);
 
     debugPrint('Starting downloads to directory: $downloadDir');
 
     try {
-      for (final taskId in catalogState.selectedGames) {
+      for (final game in games) {
+        final taskId = game.taskId;
+        final fileName = game.filename;
+
         if (!isTaskDownloadable(taskId)) continue;
-
-        final parts = taskId.split('/');
-        if (parts.length != 2) continue;
-
-        final fileName = parts[1];
-        final game = games.firstWhere(
-          (g) => g.filename == fileName,
-          orElse: () => throw Exception('Game not found for taskId: $taskId'),
-        );
-
         debugPrint('Creating download task for: $taskId -> $downloadDir/$fileName');
 
         final downloadTask = downloadService.createDownloadTask(
@@ -199,7 +191,6 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       }
 
       state = state.copyWith(taskStatus: taskStatus);
-      // _updateDownloadingState();
     } catch (e) {
       debugPrint('Error starting downloads: $e');
     }
@@ -212,6 +203,12 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     final games = catalogState.games.where((game) => catalogState.selectedGames.contains(game.taskId)).toList();
 
     await startDownloads(games, downloadDir, group);
+  }
+
+  Future<void> startSingleDownload(Game game) async {
+    final appState = _ref.read(appStateProvider);
+    await startDownloads([game], appState.downloadDir, game.consoleId);
+    catalogNotifier.deselectGame(game.taskId);
   }
 
   Future<void> pauseTask(String taskId) async {
