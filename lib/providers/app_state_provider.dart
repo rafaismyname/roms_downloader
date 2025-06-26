@@ -16,13 +16,13 @@ final appStateProvider = StateNotifierProvider<AppStateNotifier, AppState>((ref)
 });
 
 class AppStateNotifier extends StateNotifier<AppState> {
-  final Ref<AppState> ref;
+  final Ref _ref;
   final CatalogService catalogService;
   final DirectoryService directoryService;
   final PermissionService permissionService;
   final CatalogNotifier catalogNotifier;
 
-  AppStateNotifier(this.ref, this.catalogService, this.directoryService, this.permissionService, this.catalogNotifier) : super(const AppState()) {
+  AppStateNotifier(this._ref, this.catalogService, this.directoryService, this.permissionService, this.catalogNotifier) : super(const AppState()) {
     _initialize();
   }
 
@@ -44,7 +44,7 @@ class AppStateNotifier extends StateNotifier<AppState> {
   }
 
   void _listenToLoadingNotifications() {
-    ref.listen<CatalogState>(catalogProvider, (previous, next) {
+    _ref.listen<CatalogState>(catalogProvider, (previous, next) {
       if (previous?.loading != next.loading) {
         state = state.copyWith(loading: next.loading);
       }
