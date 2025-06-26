@@ -17,12 +17,14 @@ class Footer extends ConsumerWidget {
     final catalogState = ref.watch(catalogProvider);
     final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
 
-    final activeDownloads = downloadState.taskStatus.values.where((status) => status == TaskStatus.running || status == TaskStatus.enqueued).length;
+    final activeDownloads = downloadState.taskStatus.values
+        .where((status) => status == TaskStatus.running || status == TaskStatus.enqueued || status == TaskStatus.paused || status == TaskStatus.waitingToRetry)
+        .length;
 
     final overallProgress = _calculateOverallProgress(downloadState);
     final overallNetworkSpeed = _calculateOverallNetworkSpeed(downloadState);
     final overallTimeRemaining = _calculateOverallTimeRemaining(downloadState);
-    final showProgressBar = downloadState.downloading && catalogState.selectedGames.isNotEmpty;
+    final showProgressBar = activeDownloads > 0 || downloadState.downloading;
 
     return Container(
       padding: EdgeInsets.symmetric(
@@ -76,7 +78,7 @@ class Footer extends ConsumerWidget {
                   ),
                 ),
                 Text(
-                  'ETA: ${formatTimeRemaining(overallTimeRemaining)}',
+                  'Time Remaining: ${overallTimeRemaining > Duration.zero ? formatTimeRemaining(overallTimeRemaining) : 'N/A'}',
                   style: TextStyle(
                     fontSize: isLandscape ? 10 : 12,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,

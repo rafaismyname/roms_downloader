@@ -21,7 +21,7 @@ String formatNetworkSpeed(double megabytesPerSecond) {
 }
 
 String formatTimeRemaining(Duration duration) {
-  if (duration == Duration.zero) return '';
+  if (duration <= Duration.zero) return '';
 
   final hours = duration.inHours;
   final minutes = duration.inMinutes.remainder(60);

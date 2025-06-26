@@ -85,6 +85,16 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
 
   void _handleProgressUpdate(TaskProgressUpdate update) {
     final taskProgress = Map<String, TaskProgressUpdate>.from(state.taskProgress);
+    final taskStatus = state.taskStatus[update.task.taskId];
+
+    // If task is paused and we receive a progress update with 0 progress,
+    // preserve the last known progress instead of resetting it
+    if (taskStatus == TaskStatus.paused || update.progress <= 0.0) {
+      final lastProgress = state.taskProgress[update.task.taskId];
+      if (lastProgress != null && lastProgress.progress > 0.0) {
+        update = TaskProgressUpdate(lastProgress.task, lastProgress.progress);
+      }
+    }
 
     taskProgress[update.task.taskId] = update;
 
