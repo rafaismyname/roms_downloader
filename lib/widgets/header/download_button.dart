@@ -5,7 +5,6 @@ class DownloadButton extends StatelessWidget {
   final bool isEnabled;
   final bool isDownloading;
   final bool isLoading;
-  final int selectedCount;
   final VoidCallback onPressed;
 
   const DownloadButton({
@@ -14,7 +13,6 @@ class DownloadButton extends StatelessWidget {
     required this.isEnabled,
     required this.isDownloading,
     required this.isLoading,
-    required this.selectedCount,
     required this.onPressed,
   });
 
@@ -33,29 +31,9 @@ class DownloadButton extends StatelessWidget {
           ),
           minimumSize: isCompact ? Size.zero : null,
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (!isLoading)
-              Icon(
-                Icons.download_rounded,
-                size: isCompact ? 14 : 18,
-              ),
-            SizedBox(width: isCompact ? 4 : 8),
-            Text(
-              isCompact
-                  ? (isLoading
-                      ? "..."
-                      : "DL ($selectedCount)")
-                  : (isLoading
-                      ? "Loading..."
-                      : "Download Selected"),
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: isCompact ? 11 : 14,
-              ),
-            ),
-          ],
+        child: Icon(
+          Icons.download_rounded,
+          size: isCompact ? 14 : 18,
         ),
       ),
     );

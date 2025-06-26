@@ -4,7 +4,7 @@ import 'package:roms_downloader/providers/catalog_provider.dart';
 import 'package:roms_downloader/widgets/game_list/game_row.dart';
 
 class GameList extends ConsumerWidget {
-  const GameList({super.key});
+  const GameList({ super.key });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
