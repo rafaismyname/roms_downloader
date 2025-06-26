@@ -2,30 +2,29 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:background_downloader/background_downloader.dart';
 import 'package:roms_downloader/models/download_model.dart';
+import 'package:roms_downloader/providers/app_state_provider.dart';
 import 'package:roms_downloader/providers/download_provider.dart';
+import 'package:roms_downloader/providers/catalog_provider.dart';
 import 'package:roms_downloader/utils/formatters.dart';
 
 class Footer extends ConsumerWidget {
-  final bool loading;
-  final int gameCount;
-
-  const Footer({
-    super.key,
-    required this.loading,
-    required this.gameCount,
-  });
+  const Footer({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final appState = ref.watch(appStateProvider);
     final downloadState = ref.watch(downloadProvider);
+    final catalogState = ref.watch(catalogProvider);
     final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
 
-    final activeDownloads = downloadState.taskStatus.values.where((status) => status == TaskStatus.running || status == TaskStatus.enqueued).length;
+    final activeDownloads = downloadState.taskStatus.values
+        .where((status) => status == TaskStatus.running || status == TaskStatus.enqueued || status == TaskStatus.paused || status == TaskStatus.waitingToRetry)
+        .length;
 
     final overallProgress = _calculateOverallProgress(downloadState);
     final overallNetworkSpeed = _calculateOverallNetworkSpeed(downloadState);
     final overallTimeRemaining = _calculateOverallTimeRemaining(downloadState);
-    final showProgressBar = downloadState.downloading && downloadState.selectedTasks.isNotEmpty;
+    final showProgressBar = activeDownloads > 0 || downloadState.downloading;
 
     return Container(
       padding: EdgeInsets.symmetric(
@@ -46,11 +45,11 @@ class Footer extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            loading
+            appState.loading
                 ? "Loading catalog..."
                 : downloadState.downloading && activeDownloads > 0
                     ? "Downloading $activeDownloads games"
-                    : "$gameCount games available",
+                    : "${catalogState.filteredGames.length} games available",
             style: TextStyle(
               fontSize: isLandscape ? 12 : 14,
               color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -79,7 +78,7 @@ class Footer extends ConsumerWidget {
                   ),
                 ),
                 Text(
-                  'ETA: ${formatTimeRemaining(overallTimeRemaining)}',
+                  'Time Remaining: ${overallTimeRemaining > Duration.zero ? formatTimeRemaining(overallTimeRemaining) : 'N/A'}',
                   style: TextStyle(
                     fontSize: isLandscape ? 10 : 12,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,

@@ -12,7 +12,6 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final appState = ref.watch(appStateProvider);
     final appStateNotifier = ref.read(appStateProvider.notifier);
-    final filteredCatalog = appState.filteredCatalog;
     final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
 
     return Scaffold(
@@ -33,37 +32,25 @@ class HomeScreen extends ConsumerWidget {
             Controls(
               consoles: appState.consoles,
               selectedConsole: appState.selectedConsole,
-              filterText: appState.filterText,
               downloadDir: appState.downloadDir,
-              loading: appState.loading,
-              onConsoleSelect: (console) {
-                appStateNotifier.loadCatalog(console.id);
-              },
-              onFilterChange: (text) {
-                appStateNotifier.updateFilterText(text);
-              },
+              onConsoleSelect: appStateNotifier.selectConsole,
               onDirectoryChange: appStateNotifier.handleDirectoryChange,
             ),
             Expanded(
-              child: appState.loading || filteredCatalog.isEmpty
-                  ? const Center(
+              child: appState.loading
+                  ? Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           CircularProgressIndicator(),
                           SizedBox(height: 16),
-                          Text('Loading catalog...'),
+                          Text('Loading...'),
                         ],
                       ),
                     )
-                  : GameList(
-                      games: filteredCatalog,
-                    ),
+                  : GameList(),
             ),
-            Footer(
-              loading: appState.loading,
-              gameCount: filteredCatalog.length,
-            ),
+            Footer(),
           ],
         ),
       ),
