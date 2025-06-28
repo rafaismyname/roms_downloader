@@ -4,6 +4,7 @@ import 'package:roms_downloader/models/console_model.dart';
 import 'package:roms_downloader/providers/app_state_provider.dart';
 import 'package:roms_downloader/providers/download_provider.dart';
 import 'package:roms_downloader/providers/catalog_provider.dart';
+import 'package:roms_downloader/providers/extraction_provider.dart';
 import 'package:roms_downloader/widgets/header/console_dropdown.dart';
 import 'package:roms_downloader/widgets/header/download_button.dart';
 import 'package:roms_downloader/widgets/header/download_directory.dart';
@@ -32,8 +33,9 @@ class Controls extends ConsumerWidget {
     final downloadNotifier = ref.read(downloadProvider.notifier);
     final catalogState = ref.watch(catalogProvider);
     final catalogNotifier = ref.read(catalogProvider.notifier);
+    final extractionState = ref.watch(extractionProvider);
 
-    final isInteractive = !appState.loading && !downloadState.downloading;
+    final isInteractive = !appState.loading && !downloadState.downloading && !extractionState.isExtracting;
     final canDownload = !appState.loading && downloadNotifier.hasDownloadableSelectedGames();
 
     return Container(

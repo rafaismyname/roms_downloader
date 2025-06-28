@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:background_downloader/background_downloader.dart';
-import 'package:roms_downloader/models/download_model.dart';
+import 'package:roms_downloader/models/game_state_model.dart';
 import 'package:roms_downloader/providers/app_state_provider.dart';
-import 'package:roms_downloader/providers/download_provider.dart';
 import 'package:roms_downloader/providers/catalog_provider.dart';
+import 'package:roms_downloader/providers/game_state_provider.dart';
 import 'package:roms_downloader/utils/formatters.dart';
 
 class Footer extends ConsumerWidget {
@@ -13,18 +12,21 @@ class Footer extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final appState = ref.watch(appStateProvider);
-    final downloadState = ref.watch(downloadProvider);
     final catalogState = ref.watch(catalogProvider);
+    final gameStateManager = ref.watch(gameStateManagerProvider);
     final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
 
-    final activeDownloads = downloadState.taskStatus.values
-        .where((status) => status == TaskStatus.running || status == TaskStatus.enqueued || status == TaskStatus.paused || status == TaskStatus.waitingToRetry)
-        .length;
+    // Get all active games from the unified state system
+    final activeGames = catalogState.games.map((game) => gameStateManager[game.taskId] ?? const GameState()).where((gameState) => gameState.isActive).toList();
 
-    final overallProgress = _calculateOverallProgress(downloadState);
-    final overallNetworkSpeed = _calculateOverallNetworkSpeed(downloadState);
-    final overallTimeRemaining = _calculateOverallTimeRemaining(downloadState);
-    final showProgressBar = activeDownloads > 0 || downloadState.downloading;
+    final downloadingGames = activeGames.where((state) => state.status == GameStatus.downloading || state.status == GameStatus.downloadQueued).length;
+
+    final extractingGames = activeGames.where((state) => state.status == GameStatus.extracting).length;
+
+    final overallProgress = _calculateOverallProgress(activeGames);
+    final overallNetworkSpeed = _calculateOverallNetworkSpeed(activeGames);
+    final overallTimeRemaining = _calculateOverallTimeRemaining(activeGames);
+    final showProgressBar = activeGames.isNotEmpty;
 
     return Container(
       padding: EdgeInsets.symmetric(
@@ -47,9 +49,11 @@ class Footer extends ConsumerWidget {
           Text(
             appState.loading
                 ? "Loading catalog..."
-                : downloadState.downloading && activeDownloads > 0
-                    ? "Downloading $activeDownloads games"
-                    : "${catalogState.filteredGames.length} games available",
+                : downloadingGames > 0
+                    ? "Downloading $downloadingGames games"
+                    : extractingGames > 0
+                        ? "Extracting $extractingGames games"
+                        : "${catalogState.filteredGames.length} games available",
             style: TextStyle(
               fontSize: isLandscape ? 12 : 14,
               color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -92,26 +96,32 @@ class Footer extends ConsumerWidget {
     );
   }
 
-  double _calculateOverallProgress(DownloadState downloadState) {
-    final progressValues = downloadState.taskProgress.values.map((p) => p.progress).where((p) => p > 0);
-    if (progressValues.isEmpty) return 0.0;
+  double _calculateOverallProgress(List<GameState> activeGames) {
+    if (activeGames.isEmpty) return 0.0;
 
-    final sum = progressValues.reduce((a, b) => a + b);
-    return sum / progressValues.length;
+    // Calculate average progress across all active games
+    double totalProgress = 0.0;
+    for (final gameState in activeGames) {
+      totalProgress += gameState.currentProgress;
+    }
+
+    return totalProgress / activeGames.length;
   }
 
-  double _calculateOverallNetworkSpeed(DownloadState downloadState) {
-    final speedValues = downloadState.taskProgress.values.map((p) => p.networkSpeed).where((s) => s > 0);
-    if (speedValues.isEmpty) return 0.0;
+  double _calculateOverallNetworkSpeed(List<GameState> activeGames) {
+    final speedValues = activeGames.where((state) => state.networkSpeed > 0).map((state) => state.networkSpeed);
 
+    if (speedValues.isEmpty) return 0.0;
     return speedValues.reduce((a, b) => a + b);
   }
 
-  Duration _calculateOverallTimeRemaining(DownloadState downloadState) {
-    final timeRemainingValues = downloadState.taskProgress.values.map((p) => p.timeRemaining).where((t) => t != Duration.zero);
+  Duration _calculateOverallTimeRemaining(List<GameState> activeGames) {
+    final timeRemainingValues = activeGames.where((state) => state.timeRemaining > Duration.zero).map((state) => state.timeRemaining);
+
     if (timeRemainingValues.isEmpty) return Duration.zero;
 
     final totalSeconds = timeRemainingValues.map((d) => d.inSeconds).reduce((a, b) => a + b);
+
     return Duration(seconds: (totalSeconds / timeRemainingValues.length).round());
   }
 }

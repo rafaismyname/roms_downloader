@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:background_downloader/background_downloader.dart';
 import 'package:roms_downloader/models/game_model.dart';
-import 'package:roms_downloader/services/game_state_service.dart';
+import 'package:roms_downloader/models/game_state_model.dart';
 import 'package:roms_downloader/utils/formatters.dart';
 import 'package:roms_downloader/providers/download_provider.dart';
 import 'package:roms_downloader/providers/catalog_provider.dart';
+import 'package:roms_downloader/providers/extraction_provider.dart';
+import 'package:roms_downloader/providers/game_state_provider.dart';
 
 class GameRow extends ConsumerWidget {
   final Game game;
@@ -17,24 +18,12 @@ class GameRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final downloadNotifier = ref.read(downloadProvider.notifier);
     final catalogNotifier = ref.read(catalogProvider.notifier);
-    final gameStateService = GameStateService();
+    final downloadNotifier = ref.read(downloadProvider.notifier);
+    final extractionNotifier = ref.read(extractionProvider.notifier);
 
     final taskId = game.taskId;
-    final taskStatus = ref.watch(downloadTaskStatusProvider(taskId));
-    final taskProgress = ref.watch(downloadTaskProgressProvider(taskId));
-    final isCompleted = ref.watch(downloadTaskCompletionProvider(taskId));
-    final isTaskSelected = ref.watch(gameSelectionProvider(taskId));
-
-    final progress = taskProgress?.progress ?? 0.0;
-    final networkSpeed = taskProgress?.networkSpeed ?? 0.0;
-    final timeRemaining = taskProgress?.timeRemaining ?? Duration.zero;
-    final status = gameStateService.getStatusFromTaskStatus(taskStatus, isCompleted);
-    final displayStatus = gameStateService.getDisplayStatusFromTaskStatus(taskStatus, isCompleted);
-    final showProgressBar = gameStateService.shouldShowProgressBarFromTaskStatus(taskStatus, isCompleted);
-    final isInteractable = gameStateService.isInteractableFromTaskStatus(taskStatus, isCompleted);
-    final canStartDownload = downloadNotifier.isTaskDownloadable(taskId);
+    final gameState = ref.watch(gameStateProvider(taskId));
 
     return Container(
       padding: EdgeInsets.symmetric(
@@ -42,7 +31,7 @@ class GameRow extends ConsumerWidget {
         vertical: 6,
       ),
       decoration: BoxDecoration(
-        color: isTaskSelected ? Theme.of(context).colorScheme.primaryContainer.withAlpha(50) : null,
+        color: gameState.isSelected ? Theme.of(context).colorScheme.primaryContainer.withAlpha(50) : null,
         border: Border(
           bottom: BorderSide(
             color: Theme.of(context).dividerColor,
@@ -58,8 +47,8 @@ class GameRow extends ConsumerWidget {
               SizedBox(
                 width: 40,
                 child: Checkbox(
-                  value: isTaskSelected,
-                  onChanged: isInteractable ? (_) => catalogNotifier.toggleGameSelection(taskId) : null,
+                  value: gameState.isSelected,
+                  onChanged: gameState.isInteractable ? (_) => catalogNotifier.toggleGameSelection(taskId) : null,
                 ),
               ),
               Expanded(
@@ -67,8 +56,8 @@ class GameRow extends ConsumerWidget {
                   game.title,
                   style: TextStyle(
                     fontSize: 13,
-                    color: isCompleted ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface,
-                    fontWeight: isCompleted ? FontWeight.bold : FontWeight.normal,
+                    color: gameState.status == GameStatus.extracted ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface,
+                    fontWeight: gameState.status == GameStatus.extracted ? FontWeight.bold : FontWeight.normal,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -88,10 +77,10 @@ class GameRow extends ConsumerWidget {
               SizedBox(
                 width: 100,
                 child: Text(
-                  displayStatus,
+                  gameState.statusText,
                   style: TextStyle(
                     fontSize: 12,
-                    color: getStatusColor(context, status),
+                    color: getStatusColor(context, gameState.status),
                     fontWeight: FontWeight.w500,
                   ),
                   textAlign: TextAlign.center,
@@ -101,53 +90,12 @@ class GameRow extends ConsumerWidget {
                 width: 100,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    if (canStartDownload)
-                      IconButton(
-                        icon: const Icon(Icons.download_rounded, size: 20),
-                        onPressed: () => downloadNotifier.startSingleDownload(game),
-                        visualDensity: VisualDensity.compact,
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        tooltip: 'Download',
-                      ),
-                    if (taskStatus == TaskStatus.running || taskStatus == TaskStatus.enqueued || taskStatus == TaskStatus.paused)
-                      Row(
-                        children: [
-                          if (taskStatus == TaskStatus.running)
-                            IconButton(
-                              icon: const Icon(Icons.pause, size: 20),
-                              onPressed: () => downloadNotifier.pauseTask(taskId),
-                              visualDensity: VisualDensity.compact,
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(),
-                              tooltip: 'Pause',
-                            ),
-                          if (taskStatus == TaskStatus.paused)
-                            IconButton(
-                              icon: const Icon(Icons.play_arrow, size: 20),
-                              onPressed: () => downloadNotifier.resumeTask(taskId),
-                              visualDensity: VisualDensity.compact,
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(),
-                              tooltip: 'Resume',
-                            ),
-                          IconButton(
-                            icon: const Icon(Icons.cancel, size: 20),
-                            onPressed: () => downloadNotifier.cancelTask(taskId),
-                            visualDensity: VisualDensity.compact,
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                            tooltip: 'Cancel',
-                          ),
-                        ],
-                      ),
-                  ],
+                  children: _buildActionButtons(context, gameState, downloadNotifier, extractionNotifier),
                 ),
               ),
             ],
           ),
-          if (showProgressBar)
+          if (gameState.showProgressBar)
             Padding(
               padding: const EdgeInsets.only(left: 40, right: 16, top: 4),
               child: Column(
@@ -156,27 +104,27 @@ class GameRow extends ConsumerWidget {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(2),
                     child: LinearProgressIndicator(
-                      value: progress,
+                      value: gameState.currentProgress,
                       backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                       color: Theme.of(context).colorScheme.primary,
                       minHeight: 4,
                     ),
                   ),
-                  if (progress > 0)
+                  if (gameState.currentProgress > 0)
                     Padding(
                       padding: const EdgeInsets.only(top: 2),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            '${(progress * 100).toStringAsFixed(1)}%',
+                            '${(gameState.currentProgress * 100).toStringAsFixed(1)}%',
                             style: TextStyle(
                               fontSize: 9,
                               color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                             ),
                           ),
                           Text(
-                            '${formatNetworkSpeed(networkSpeed)} • ${formatTimeRemaining(timeRemaining)}',
+                            _getProgressText(gameState),
                             style: TextStyle(
                               fontSize: 9,
                               color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
@@ -191,5 +139,138 @@ class GameRow extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  List<Widget> _buildActionButtons(
+    BuildContext context,
+    GameState gameState,
+    DownloadNotifier downloadNotifier,
+    ExtractionNotifier extractionNotifier,
+  ) {
+    final List<Widget> buttons = [];
+
+    for (final action in gameState.availableActions) {
+      switch (action) {
+        case GameAction.download:
+          buttons.add(
+            Tooltip(
+              message: 'Download',
+              child: IconButton(
+                icon: const Icon(Icons.download, size: 16),
+                onPressed: () => downloadNotifier.startSingleDownload(game),
+                constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
+                padding: EdgeInsets.zero,
+              ),
+            ),
+          );
+          break;
+        case GameAction.pause:
+          buttons.add(
+            Tooltip(
+              message: 'Pause',
+              child: IconButton(
+                icon: const Icon(Icons.pause, size: 16),
+                onPressed: () => downloadNotifier.pauseTask(game.taskId),
+                constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
+                padding: EdgeInsets.zero,
+              ),
+            ),
+          );
+          break;
+        case GameAction.resume:
+          buttons.add(
+            Tooltip(
+              message: 'Resume',
+              child: IconButton(
+                icon: const Icon(Icons.play_arrow, size: 16),
+                onPressed: () => downloadNotifier.resumeTask(game.taskId),
+                constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
+                padding: EdgeInsets.zero,
+              ),
+            ),
+          );
+          break;
+        case GameAction.cancel:
+          buttons.add(
+            Tooltip(
+              message: 'Cancel',
+              child: IconButton(
+                icon: const Icon(Icons.close, size: 16),
+                onPressed: () => downloadNotifier.cancelTask(game.taskId),
+                constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
+                padding: EdgeInsets.zero,
+              ),
+            ),
+          );
+          break;
+        case GameAction.extract:
+          buttons.add(
+            Tooltip(
+              message: 'Extract',
+              child: IconButton(
+                icon: const Icon(Icons.archive, size: 16),
+                onPressed: () => extractionNotifier.extractFile(game.taskId),
+                constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
+                padding: EdgeInsets.zero,
+              ),
+            ),
+          );
+          break;
+        case GameAction.retryDownload:
+          buttons.add(
+            Tooltip(
+              message: 'Retry Download',
+              child: IconButton(
+                icon: const Icon(Icons.refresh, size: 16),
+                onPressed: () => downloadNotifier.startSingleDownload(game),
+                constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
+                padding: EdgeInsets.zero,
+              ),
+            ),
+          );
+          break;
+        case GameAction.retryExtraction:
+          buttons.add(
+            Tooltip(
+              message: 'Retry Extraction',
+              child: IconButton(
+                icon: const Icon(Icons.refresh, size: 16),
+                onPressed: () => extractionNotifier.extractFile(game.taskId),
+                constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
+                padding: EdgeInsets.zero,
+              ),
+            ),
+          );
+          break;
+        case GameAction.none:
+          break;
+      }
+    }
+
+    return buttons;
+  }
+
+  String _getProgressText(GameState gameState) {
+    switch (gameState.status) {
+      case GameStatus.downloading:
+        final speed = formatNetworkSpeed(gameState.networkSpeed);
+        final timeLeft = formatTimeRemaining(gameState.timeRemaining);
+        if (timeLeft.isNotEmpty) {
+          return '$speed - $timeLeft left';
+        }
+        return speed;
+      case GameStatus.extracting:
+        return 'Extracting...';
+      case GameStatus.downloadQueued:
+        return 'Queued for download';
+      case GameStatus.extractionQueued:
+        return 'Queued for extraction';
+      case GameStatus.downloadPaused:
+        return 'Download paused';
+      case GameStatus.processing:
+        return 'Processing...';
+      default:
+        return '';
+    }
   }
 }
