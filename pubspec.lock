@@ -17,6 +17,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "7.4.5"
+  archive:
+    dependency: "direct main"
+    description:
+      name: archive
+      sha256: "2fde1607386ab523f7a36bb3e7edb43bd58e6edaf2ffb29d8a6d578b297fdbbd"
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.0.7"
   args:
     dependency: transitive
     description:
@@ -222,14 +230,6 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
-  flutter_archive:
-    dependency: "direct main"
-    description:
-      name: flutter_archive
-      sha256: "5ca235f304c12bf468979235f400f79846d204169d715939e39197106f5fc970"
-      url: "https://pub.dev"
-    source: hosted
-    version: "6.0.3"
   flutter_lints:
     dependency: "direct dev"
     description:
@@ -523,6 +523,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.5.1"
+  posix:
+    dependency: transitive
+    description:
+      name: posix
+      sha256: "6323a5b0fa688b6a010df4905a56b00181479e6d10534cecfecede2aa55add61"
+      url: "https://pub.dev"
+    source: hosted
+    version: "6.0.3"
   pub_semver:
     dependency: transitive
     description:

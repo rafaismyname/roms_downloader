@@ -1,24 +1,21 @@
 import 'dart:io';
+import 'dart:async';
+import 'dart:isolate';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_archive/flutter_archive.dart';
+import 'package:archive/archive_io.dart';
 import 'package:path/path.dart' as path;
 
 class ExtractionService {
-  bool isCompressedFile(String filePath) {
-    final extension = path.extension(filePath).toLowerCase();
-    return extension == '.zip' || extension == '.rar' || extension == '.7z' || extension == '.gz' || extension == '.tar.gz';
-  }
+  static const _supportedExtensions = {'.zip', '.tar', '.gz', '.tar.gz', '.tgz', '.bz2', '.tar.bz2', '.tbz', '.xz', '.tar.xz', '.txz'};
 
-  bool isSupportedArchive(String filePath) {
-    final extension = path.extension(filePath).toLowerCase();
-    return extension == '.zip';
-  }
+  bool isCompressedFile(String filePath) =>
+      _supportedExtensions.contains(path.extension(filePath).toLowerCase()) || _supportedExtensions.contains(getInputExtension(filePath));
 
-  String getExtractionDirectory(String filePath) {
-    final dir = path.dirname(filePath);
-    final fileName = path.basenameWithoutExtension(filePath);
-    return path.join(dir, fileName);
-  }
+  bool isSupportedArchive(String filePath) => isCompressedFile(filePath);
+
+  String getExtractionDirectory(String filePath) => path.join(path.dirname(filePath), path.basenameWithoutExtension(filePath));
+
+  String getInputExtension(String inputPath) => path.extension(inputPath, 2).toLowerCase();
 
   Future<bool> extractFile({
     required String filePath,
@@ -30,55 +27,64 @@ class ExtractionService {
       return false;
     }
 
-    final file = File(filePath);
-    if (!file.existsSync()) {
+    if (!File(filePath).existsSync()) {
       onError('Archive file does not exist: $filePath');
       return false;
     }
 
     final extractionDir = getExtractionDirectory(filePath);
-    final destinationDir = Directory(extractionDir);
 
     try {
-      if (!destinationDir.existsSync()) {
-        destinationDir.createSync(recursive: true);
-      }
-
-      debugPrint('Extracting $filePath to $extractionDir');
-
-      var lastProgress = 0.0;
-
-      await ZipFile.extractToDirectory(
-        zipFile: file,
-        destinationDir: destinationDir,
-        onExtracting: (zipEntry, progress) {
-          if (progress > lastProgress) {
-            lastProgress = progress;
-            onProgress(progress / 100.0);
-          }
-
-          debugPrint('Extracting: ${zipEntry.name} (${progress.toStringAsFixed(1)}%)');
-          return ZipFileOperation.includeItem;
-        },
-      );
-
-      onProgress(1.0);
-
-      debugPrint('Extraction completed: $filePath');
-      return true;
-    } catch (e) {
-      debugPrint('Extraction failed: $e');
-      onError('Failed to extract archive: $e');
-
-      if (destinationDir.existsSync()) {
-        try {
-          destinationDir.deleteSync(recursive: true);
-        } catch (cleanupError) {
-          debugPrint('Failed to cleanup partial extraction: $cleanupError');
+      final receivePort = ReceivePort();
+      final completer = Completer<bool>();
+      
+      receivePort.listen((message) {
+        if (message['type'] == 'progress') {
+          onProgress(message['value']);
+        } else if (message['type'] == 'error') {
+          onError(message['message']);
+          completer.complete(false);
+          receivePort.close();
+        } else if (message['type'] == 'complete') {
+          onProgress(1.0);
+          completer.complete(true);
+          receivePort.close();
         }
-      }
+      });
 
+      await Isolate.spawn(_extractInIsolate, {
+        'filePath': filePath,
+        'extractionDir': extractionDir,
+        'sendPort': receivePort.sendPort,
+      });
+
+      return await completer.future;
+    } catch (e) {
+      onError('Failed to extract archive: $e');
+      try {
+        final dir = Directory(extractionDir);
+        if (dir.existsSync()) dir.deleteSync(recursive: true);
+      } catch (_) {}
       return false;
+    }
+  }
+
+  static Future<void> _extractInIsolate(Map<String, dynamic> params) async {
+    final sendPort = params['sendPort'] as SendPort;
+    try {
+      sendPort.send({'type': 'progress', 'value': 0.1});
+      
+      var count = 0;
+      await extractFileToDisk(params['filePath'], params['extractionDir'], 
+        callback: (_) {
+          if (++count % 10 == 0) {
+            sendPort.send({'type': 'progress', 'value': 0.1 + (count * 0.01)});
+          }
+        });
+      
+      sendPort.send({'type': 'complete'});
+    } catch (e) {
+      sendPort.send({'type': 'error', 'message': 'Failed to extract: $e'});
     }
   }
 
