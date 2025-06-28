@@ -3,13 +3,40 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:roms_downloader/providers/catalog_provider.dart';
 import 'package:roms_downloader/widgets/game_list/game_row.dart';
 
-class GameList extends ConsumerWidget {
-  const GameList({ super.key });
+class GameList extends ConsumerStatefulWidget {
+  const GameList({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<GameList> createState() => _GameListState();
+}
+
+class _GameListState extends ConsumerState<GameList> {
+  final ScrollController _scrollController = ScrollController();
+  CatalogNotifier? _catalogNotifier;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+      _catalogNotifier ??= ref.read(catalogProvider.notifier);
+      _catalogNotifier?.loadMoreItems();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final catalogState = ref.watch(catalogProvider);
-    final games = catalogState.filteredGames;
+    final games = catalogState.paginatedFilteredGames;
 
     return Column(
       children: [
@@ -81,6 +108,7 @@ class GameList extends ConsumerWidget {
         ),
         Expanded(
           child: ListView.builder(
+            controller: _scrollController,
             itemCount: games.length,
             itemBuilder: (context, index) {
               final game = games[index];
