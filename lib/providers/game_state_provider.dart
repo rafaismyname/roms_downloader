@@ -13,8 +13,8 @@ import 'package:roms_downloader/providers/download_provider.dart';
 import 'package:roms_downloader/providers/extraction_provider.dart';
 import 'package:roms_downloader/services/extraction_service.dart';
 
-final gameStateProvider = Provider.family<GameState, String>((ref, taskId) {
-  return ref.watch(gameStateManagerProvider)[taskId] ?? const GameState();
+final gameStateProvider = Provider.family<GameState, String>((ref, gameId) {
+  return ref.watch(gameStateManagerProvider)[gameId] ?? const GameState();
 });
 
 final gameStateManagerProvider = StateNotifierProvider<GameStateManager, Map<String, GameState>>((ref) {
@@ -281,7 +281,7 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
     bool hasFile = File(expectedPath).existsSync();
 
     if (!hasFile) {
-      hasFile = _findSimilarFile(game, downloadDir) != null;
+      hasFile = _findInLibrary(game, downloadDir) != null;
     }
 
     final hasExtracted = _extractionService.hasExtractedContent(expectedPath);
@@ -290,32 +290,26 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
     return (hasFile: hasFile, hasExtracted: hasExtracted, hasSimilar: hasSimilar);
   }
 
-  String? _findSimilarFile(Game game, String downloadDir) {
+  String? _findInLibrary(Game game, String downloadDir) {
     try {
       final dir = Directory(downloadDir);
       if (!dir.existsSync()) return null;
 
-      final expectedBase = path.basenameWithoutExtension(game.filename);
-      final expectedExt = path.extension(game.filename);
-      final normalizedExpected = _normalize(expectedBase);
+      final filenameBase = path.basenameWithoutExtension(game.filename);
+      final gameTitle = game.title;
 
-      for (final file in dir.listSync().whereType<File>()) {
-        final fileName = path.basename(file.path);
-        if (path.extension(fileName) != expectedExt) continue;
+      for (final entity in dir.listSync()) {
+        final entityName = path.basename(entity.path);
+        final entityBase = path.basenameWithoutExtension(entityName);
 
-        final normalizedActual = _normalize(path.basenameWithoutExtension(fileName));
-        if (normalizedExpected == normalizedActual || normalizedActual.contains(normalizedExpected) || normalizedExpected.contains(normalizedActual)) {
-          return file.path;
+        if (entityBase == filenameBase || entityBase == gameTitle) {
+          return entity.path;
         }
       }
     } catch (e) {
       debugPrint('Error finding similar file: $e');
     }
     return null;
-  }
-
-  String _normalize(String filename) {
-    return filename.toLowerCase().replaceAll(RegExp(r'\s+'), '').replaceAll(RegExp(r'[^\w\d]'), '');
   }
 
   Set<GameAction> _getActions(GameStatus status, Game game) {
@@ -333,7 +327,7 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
 
   bool _canExtract(Game game) {
     final downloadDir = _ref.read(appStateProvider).downloadDir;
-    final filePath = _findSimilarFile(game, downloadDir) ?? path.join(downloadDir, game.filename);
+    final filePath = _findInLibrary(game, downloadDir) ?? path.join(downloadDir, game.filename);
 
     try {
       return _extractionService.isSupportedArchive(filePath);

@@ -22,8 +22,8 @@ class GameRow extends ConsumerWidget {
     final downloadNotifier = ref.read(downloadProvider.notifier);
     final extractionNotifier = ref.read(extractionProvider.notifier);
 
-    final taskId = game.taskId;
-    final gameState = ref.watch(gameStateProvider(taskId));
+    final gameId = game.taskId;
+    final gameState = ref.watch(gameStateProvider(gameId));
 
     return Container(
       padding: EdgeInsets.symmetric(
@@ -48,7 +48,7 @@ class GameRow extends ConsumerWidget {
                 width: 40,
                 child: Checkbox(
                   value: gameState.isSelected,
-                  onChanged: gameState.isInteractable ? (_) => catalogNotifier.toggleGameSelection(taskId) : null,
+                  onChanged: gameState.isInteractable ? (_) => catalogNotifier.toggleGameSelection(gameId) : null,
                 ),
               ),
               Expanded(
