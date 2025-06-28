@@ -2,8 +2,6 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:background_downloader/background_downloader.dart';
-import 'package:roms_downloader/models/app_state_model.dart';
-import 'package:roms_downloader/models/catalog_model.dart';
 import 'package:roms_downloader/models/game_model.dart';
 import 'package:roms_downloader/models/download_model.dart';
 import 'package:roms_downloader/services/download_service.dart';
@@ -38,8 +36,6 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
           _handleProgressUpdate(update);
       }
     });
-
-    _listenToStateChanges();
   }
 
   void _handleStatusUpdate(TaskStatusUpdate update) {
@@ -85,20 +81,6 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     if (state.downloading != hasActiveDownloads) {
       state = state.copyWith(downloading: hasActiveDownloads);
     }
-  }
-
-  void _listenToStateChanges() {
-    _ref.listen<AppState>(appStateProvider, (previous, next) {
-      if (previous == null || previous.downloadDir != next.downloadDir) {
-        debugPrint('Download directory changed to: ${next.downloadDir}');
-      }
-    });
-
-    _ref.listen<CatalogState>(catalogProvider, (previous, next) {
-      if (previous == null || previous.games != next.games) {
-        debugPrint('Catalog changed, ${next.games.length} games loaded');
-      }
-    });
   }
 
   bool isTaskDownloadable(String taskId) {

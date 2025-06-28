@@ -2,8 +2,6 @@ import 'package:background_downloader/background_downloader.dart';
 
 class DownloadService {
   Future<FileDownloader> initialize() async {
-    await FileDownloader().trackTasks();
-
     FileDownloader().configure(
       globalConfig: [
         (Config.holdingQueue, true),
