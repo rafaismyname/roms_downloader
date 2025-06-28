@@ -26,7 +26,7 @@ class ExtractionNotifier extends StateNotifier<ExtractionState> {
     final filePath = path.join(downloadDir, game.filename);
     final file = File(filePath);
 
-    return file.existsSync() && _extractionService.isSupportedArchive(filePath);
+    return file.existsSync() && _extractionService.isCompressedFile(filePath);
   }
 
   void extractFile(String taskId) {

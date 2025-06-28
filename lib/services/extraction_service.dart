@@ -9,20 +9,16 @@ class ExtractionService {
   static const _supportedExtensions = {'.zip', '.tar', '.gz', '.tar.gz', '.tgz', '.bz2', '.tar.bz2', '.tbz', '.xz', '.tar.xz', '.txz'};
 
   bool isCompressedFile(String filePath) =>
-      _supportedExtensions.contains(path.extension(filePath).toLowerCase()) || _supportedExtensions.contains(getInputExtension(filePath));
-
-  bool isSupportedArchive(String filePath) => isCompressedFile(filePath);
+      _supportedExtensions.contains(path.extension(filePath).toLowerCase()) || _supportedExtensions.contains(path.extension(filePath, 2).toLowerCase());
 
   String getExtractionDirectory(String filePath) => path.join(path.dirname(filePath), path.basenameWithoutExtension(filePath));
-
-  String getInputExtension(String inputPath) => path.extension(inputPath, 2).toLowerCase();
 
   Future<void> extractFile({
     required String filePath,
     required Function(double progress) onProgress,
     required Function(String error) onError,
   }) async {
-    if (!isSupportedArchive(filePath)) {
+    if (!isCompressedFile(filePath)) {
       onError('Unsupported archive format: ${path.extension(filePath)}');
       return;
     }
@@ -36,7 +32,7 @@ class ExtractionService {
 
     try {
       final receivePort = ReceivePort();
-      
+
       receivePort.listen((message) {
         if (message['type'] == 'progress') {
           onProgress(message['value']);
@@ -67,14 +63,11 @@ class ExtractionService {
     final sendPort = params['sendPort'] as SendPort;
     try {
       sendPort.send({'type': 'progress', 'value': 0.1});
-
-      var count = 0;
-      await extractFileToDisk(params['filePath'], params['extractionDir'], callback: (_) {
-        if (++count % 10 == 0) {
-          sendPort.send({'type': 'progress', 'value': 0.1 + (count * 0.01)});
-        }
+      var extractedFiles = 0;
+      await extractFileToDisk(params['filePath'], params['extractionDir'], callback: (archiveFile) {
+        final progress = (0.1 + (++extractedFiles / 4) * 0.85).clamp(0.1, 0.95);
+        sendPort.send({'type': 'progress', 'value': progress});
       });
-
       sendPort.send({'type': 'complete'});
     } catch (e) {
       sendPort.send({'type': 'error', 'message': 'Failed to extract: $e'});

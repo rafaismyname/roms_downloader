@@ -322,7 +322,7 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
     final filePath = _findInLibrary(game, downloadDir) ?? path.join(downloadDir, game.filename);
 
     try {
-      return _extractionService.isSupportedArchive(filePath);
+      return _extractionService.isCompressedFile(filePath);
     } catch (_) {
       return false;
     }
