@@ -24,6 +24,10 @@ class GameRow extends ConsumerWidget {
 
     final gameId = game.taskId;
     final gameState = ref.watch(gameStateProvider(gameId));
+    
+    if (gameState.status == GameStatus.loading) {
+      ref.read(gameStateManagerProvider.notifier).resolveFileState(gameId);
+    }
 
     return Container(
       padding: EdgeInsets.symmetric(

@@ -88,18 +88,4 @@ class ExtractionService {
       return false;
     }
   }
-
-  bool hasExtractedContent(String filePath) {
-    final extractionDir = getExtractionDirectory(filePath);
-    final directory = Directory(extractionDir);
-
-    if (!directory.existsSync()) return false;
-
-    try {
-      final contents = directory.listSync();
-      return contents.isNotEmpty;
-    } catch (e) {
-      return false;
-    }
-  }
 }

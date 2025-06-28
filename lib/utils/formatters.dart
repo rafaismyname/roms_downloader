@@ -40,6 +40,8 @@ Color getStatusColor(BuildContext context, GameStatus status) {
   switch (status) {
     case GameStatus.ready:
       return Theme.of(context).colorScheme.onSurfaceVariant;
+    case GameStatus.loading:
+      return Theme.of(context).colorScheme.secondary;
     case GameStatus.downloadQueued:
       return Theme.of(context).colorScheme.tertiary;
     case GameStatus.downloading:

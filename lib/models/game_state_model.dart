@@ -1,5 +1,6 @@
 enum GameStatus {
   ready,
+  loading,
   downloadQueued,
   downloading,
   downloadPaused,
@@ -40,14 +41,14 @@ class GameState {
   final bool extractedContentExists;
 
   const GameState({
-    this.status = GameStatus.ready,
+    this.status = GameStatus.loading,
     this.downloadProgress = 0.0,
     this.extractionProgress = 0.0,
     this.networkSpeed = 0.0,
     this.timeRemaining = Duration.zero,
     this.isSelected = false,
     this.isInteractable = true,
-    this.availableActions = const {GameAction.download},
+    this.availableActions = const {},
     this.showProgressBar = false,
     this.currentProgress = 0.0,
     this.errorMessage,
@@ -99,6 +100,8 @@ class GameState {
     switch (status) {
       case GameStatus.ready:
         return 'Ready';
+      case GameStatus.loading:
+        return 'Loading';
       case GameStatus.downloadQueued:
         return 'Queued';
       case GameStatus.downloading:

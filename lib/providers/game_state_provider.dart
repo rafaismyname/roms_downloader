@@ -12,6 +12,7 @@ import 'package:roms_downloader/providers/catalog_provider.dart';
 import 'package:roms_downloader/providers/download_provider.dart';
 import 'package:roms_downloader/providers/extraction_provider.dart';
 import 'package:roms_downloader/services/extraction_service.dart';
+import 'package:roms_downloader/services/directory_service.dart';
 
 final gameStateProvider = Provider.family<GameState, String>((ref, gameId) {
   return ref.watch(gameStateManagerProvider)[gameId] ?? const GameState();
@@ -44,7 +45,11 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
     final updates = <String, GameState>{};
     for (final game in games) {
       if (!state.containsKey(game.taskId)) {
-        updates[game.taskId] = _createInitialState(game, downloadDir);
+        updates[game.taskId] = GameState(
+          status: GameStatus.loading,
+          isInteractable: false,
+          availableActions: {GameAction.loading},
+        );
       }
     }
 
@@ -53,21 +58,51 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
     }
   }
 
-  GameState _createInitialState(Game game, String downloadDir) {
-    final fileInfo = _getFileInfo(game, downloadDir);
-    final status = fileInfo.hasExtracted
-        ? GameStatus.extracted
-        : fileInfo.hasFile
-            ? GameStatus.downloaded
-            : GameStatus.ready;
+  void resolveFileState(String gameId) {
+    final game = _findGame(gameId);
+    if (game == null) return;
+    
+    final downloadDir = _ref.read(appStateProvider).downloadDir;
+    _resolveFileState(game, downloadDir);
+  }
 
-    return GameState(
-      status: status,
-      fileExists: fileInfo.hasFile,
-      extractedContentExists: fileInfo.hasExtracted,
-      isInteractable: status == GameStatus.ready,
-      availableActions: _getActions(status, game),
-    );
+  void _resolveFileState(Game game, String downloadDir) async {
+    try {
+      final data = (filename: game.filename, downloadDir: downloadDir);
+      final result = await compute(DirectoryService().computeFileCheck, data);
+
+      if (mounted) {
+        final status = result.hasExtracted
+            ? GameStatus.extracted
+            : result.hasFile
+                ? GameStatus.downloaded
+                : GameStatus.ready;
+
+        final updated = state[game.taskId]?.copyWith(
+          status: status,
+          fileExists: result.hasFile,
+          extractedContentExists: result.hasExtracted,
+          isInteractable: status == GameStatus.ready,
+          availableActions: _getActions(status, game),
+        );
+
+        if (updated != null) {
+          state = {...state, game.taskId: updated};
+        }
+      }
+    } catch (_) {
+      if (mounted) {
+        final updated = state[game.taskId]?.copyWith(
+          status: GameStatus.ready,
+          isInteractable: true,
+          availableActions: {GameAction.download},
+        );
+
+        if (updated != null) {
+          state = {...state, game.taskId: updated};
+        }
+      }
+    }
   }
 
   void _updateSelections(Set<String> selected) {
@@ -110,18 +145,14 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
 
     if (completed) {
       final downloadDir = _ref.read(appStateProvider).downloadDir;
-      final fileInfo = _getFileInfo(game, downloadDir);
-      final finalStatus = fileInfo.hasExtracted ? GameStatus.extracted : GameStatus.downloaded;
-
+      _resolveFileState(game, downloadDir);
       return current.copyWith(
-        status: finalStatus,
+        status: GameStatus.loading,
         downloadProgress: 1.0,
         currentProgress: 1.0,
         showProgressBar: false,
         isInteractable: false,
-        fileExists: fileInfo.hasFile,
-        extractedContentExists: fileInfo.hasExtracted,
-        availableActions: _getActions(finalStatus, game),
+        availableActions: {GameAction.loading},
       );
     }
 
@@ -215,26 +246,16 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
     final game = _findGame(taskId);
     if (game != null) {
       final downloadDir = _ref.read(appStateProvider).downloadDir;
-      final fileInfo = _getFileInfo(game, downloadDir);
-
-      return current.copyWith(
-        status: GameStatus.extracted,
-        extractionProgress: 1.0,
-        currentProgress: 1.0,
-        showProgressBar: false,
-        isInteractable: false,
-        extractedContentExists: fileInfo.hasExtracted,
-        availableActions: const {},
-      );
+      _resolveFileState(game, downloadDir);
     }
 
     return current.copyWith(
-      status: GameStatus.extracted,
+      status: GameStatus.loading,
       extractionProgress: 1.0,
       currentProgress: 1.0,
       showProgressBar: false,
       isInteractable: false,
-      availableActions: const {},
+      availableActions: {GameAction.loading},
     );
   }
 
@@ -247,39 +268,19 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
     final updates = <String, GameState>{};
     for (final game in games) {
       final current = state[game.taskId] ?? const GameState();
-      final fileInfo = _getFileInfo(game, downloadDir);
 
-      final status = fileInfo.hasExtracted
-          ? GameStatus.extracted
-          : fileInfo.hasFile
-              ? GameStatus.downloaded
-              : GameStatus.ready;
-
-      final updated = current.copyWith(
-        status: status,
-        fileExists: fileInfo.hasFile,
-        extractedContentExists: fileInfo.hasExtracted,
-        isInteractable: status == GameStatus.ready && !current.isActive,
-        availableActions: _getActions(status, game),
+      updates[game.taskId] = current.copyWith(
+        status: GameStatus.loading,
+        isInteractable: false,
+        availableActions: {GameAction.loading},
       );
 
-      if (updated != current) {
-        updates[game.taskId] = updated;
-      }
+      _resolveFileState(game, downloadDir);
     }
 
     if (updates.isNotEmpty) {
       state = {...state, ...updates};
     }
-  }
-
-  ({bool hasFile, bool hasExtracted}) _getFileInfo(Game game, String downloadDir) {
-    final expectedPath = path.join(downloadDir, game.filename);
-
-    bool hasFile = File(expectedPath).existsSync() || _findInLibrary(game, downloadDir) != null;
-    final hasExtracted = _extractionService.hasExtractedContent(expectedPath);
-
-    return (hasFile: hasFile, hasExtracted: hasExtracted);
   }
 
   String? _findInLibrary(Game game, String downloadDir) {
@@ -317,6 +318,7 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
       GameStatus.processing => {GameAction.loading},
       GameStatus.downloadQueued => {GameAction.loading},
       GameStatus.extractionQueued => {GameAction.loading},
+      GameStatus.loading => {GameAction.loading},
     };
   }
 
