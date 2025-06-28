@@ -26,10 +26,10 @@ I do not own nor recommend those sources. As a matter of fact, the first step in
 - [x] Search title
 - [x] Change download destination folder
 - [x] Independent downloads (start a new download while other is ongoing)
-- [ ] Unzip downloaded files (according to definitions per console (what files should be extracted, formats, etc.))
-- [ ] In-Library detection should be per title, and not per file existence (eg.: ignore extension)
+- [x] Unzip downloaded files
+- [x] In-Library detection improved to detect extracted files and similar-named content
 - [x] Background Downloader
-- [ ] Background Unzip
+- [ ] Background Unzip (with progress tracking)
 - [ ] Select all
 - [ ] Sort list
 - [ ] Filters (like country/language, type, extension, etc.) deprecating the hardcoded list filter

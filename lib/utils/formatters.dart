@@ -1,6 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:roms_downloader/services/game_state_service.dart';
+import 'package:roms_downloader/models/game_state_model.dart';
 
 String formatBytes(int bytes, {int decimals = 1}) {
   if (bytes <= 0) return '0 B';
@@ -36,22 +36,28 @@ String formatTimeRemaining(Duration duration) {
   }
 }
 
-Color getStatusColor(BuildContext context, GameDownloadStatus status) {
+Color getStatusColor(BuildContext context, GameStatus status) {
   switch (status) {
-    case GameDownloadStatus.ready:
+    case GameStatus.ready:
       return Theme.of(context).colorScheme.onSurfaceVariant;
-    case GameDownloadStatus.queued:
+    case GameStatus.downloadQueued:
       return Theme.of(context).colorScheme.tertiary;
-    case GameDownloadStatus.downloading:
+    case GameStatus.downloading:
       return Theme.of(context).colorScheme.primary;
-    case GameDownloadStatus.paused:
+    case GameStatus.downloadPaused:
       return Theme.of(context).colorScheme.secondary;
-    case GameDownloadStatus.completed:
-    case GameDownloadStatus.inLibrary:
+    case GameStatus.downloaded:
       return Theme.of(context).colorScheme.primary;
-    case GameDownloadStatus.error:
+    case GameStatus.extractionQueued:
+      return Theme.of(context).colorScheme.secondary;
+    case GameStatus.extracting:
+      return Theme.of(context).colorScheme.secondary;
+    case GameStatus.extracted:
+      return Theme.of(context).colorScheme.primary;
+    case GameStatus.downloadFailed:
+    case GameStatus.extractionFailed:
       return Theme.of(context).colorScheme.error;
-    default:
-      return Theme.of(context).colorScheme.onSurfaceVariant;
+    case GameStatus.processing:
+      return Theme.of(context).colorScheme.tertiary;
   }
 }

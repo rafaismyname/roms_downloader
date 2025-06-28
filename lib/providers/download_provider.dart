@@ -1,31 +1,12 @@
 import 'dart:async';
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:background_downloader/background_downloader.dart';
-import 'package:path/path.dart' as path;
-import 'package:roms_downloader/models/app_state_model.dart';
-import 'package:roms_downloader/models/catalog_model.dart';
 import 'package:roms_downloader/models/game_model.dart';
 import 'package:roms_downloader/models/download_model.dart';
 import 'package:roms_downloader/services/download_service.dart';
 import 'package:roms_downloader/providers/app_state_provider.dart';
 import 'package:roms_downloader/providers/catalog_provider.dart';
-
-final downloadTaskStatusProvider = Provider.family<TaskStatus?, String>((ref, taskId) {
-  final downloadState = ref.watch(downloadProvider);
-  return downloadState.taskStatus[taskId];
-});
-
-final downloadTaskProgressProvider = Provider.family<TaskProgressUpdate?, String>((ref, taskId) {
-  final downloadState = ref.watch(downloadProvider);
-  return downloadState.taskProgress[taskId];
-});
-
-final downloadTaskCompletionProvider = Provider.family<bool, String>((ref, taskId) {
-  final downloadState = ref.watch(downloadProvider);
-  return downloadState.completedTasks.contains(taskId);
-});
 
 final downloadProvider = StateNotifierProvider<DownloadNotifier, DownloadState>((ref) {
   final catalogNotifier = ref.read(catalogProvider.notifier);
@@ -55,13 +36,6 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
           _handleProgressUpdate(update);
       }
     });
-
-    _listenToStateChanges();
-    final appState = _ref.read(appStateProvider);
-    final catalogState = _ref.read(catalogProvider);
-    if (catalogState.games.isNotEmpty && appState.downloadDir.isNotEmpty) {
-      _checkCompletedFiles(catalogState.games, appState.downloadDir);
-    }
   }
 
   void _handleStatusUpdate(TaskStatusUpdate update) {
@@ -87,8 +61,6 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     final taskProgress = Map<String, TaskProgressUpdate>.from(state.taskProgress);
     final taskStatus = state.taskStatus[update.task.taskId];
 
-    // If task is paused and we receive a progress update with 0 progress,
-    // preserve the last known progress instead of resetting it
     if (taskStatus == TaskStatus.paused || update.progress <= 0.0) {
       final lastProgress = state.taskProgress[update.task.taskId];
       if (lastProgress != null && lastProgress.progress > 0.0) {
@@ -109,40 +81,6 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     if (state.downloading != hasActiveDownloads) {
       state = state.copyWith(downloading: hasActiveDownloads);
     }
-  }
-
-  void _listenToStateChanges() {
-    _ref.listen<AppState>(appStateProvider, (previous, next) {
-      if (previous == null || previous.downloadDir != next.downloadDir) {
-        final catalogState = _ref.read(catalogProvider);
-        if (catalogState.games.isNotEmpty && next.downloadDir.isNotEmpty) {
-          _checkCompletedFiles(catalogState.games, next.downloadDir);
-        }
-      }
-    });
-
-    _ref.listen<CatalogState>(catalogProvider, (previous, next) {
-      if (previous == null || previous.games != next.games) {
-        final appState = _ref.read(appStateProvider);
-        if (next.games.isNotEmpty && appState.downloadDir.isNotEmpty) {
-          _checkCompletedFiles(next.games, appState.downloadDir);
-        }
-      }
-    });
-  }
-
-  // TODO1: Maybe this belongs somewhere else like in Catalog
-  Future<void> _checkCompletedFiles(List<Game> catalog, String downloadDir) async {
-    final completedTasks = <String>{};
-
-    for (final game in catalog) {
-      final filePath = path.join(downloadDir, game.filename);
-      if (File(filePath).existsSync()) {
-        completedTasks.add(game.taskId);
-      }
-    }
-
-    state = state.copyWith(completedTasks: completedTasks);
   }
 
   bool isTaskDownloadable(String taskId) {
