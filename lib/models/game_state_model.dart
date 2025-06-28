@@ -20,6 +20,7 @@ enum GameAction {
   extract,
   retryDownload,
   retryExtraction,
+  loading,
   none,
 }
 

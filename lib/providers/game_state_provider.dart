@@ -197,7 +197,7 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
           currentProgress: task.progress,
           showProgressBar: true,
           isInteractable: false,
-          availableActions: const {},
+          availableActions: {GameAction.loading},
         ),
       ExtractionStatus.completed => _handleExtractionComplete(current, taskId),
       ExtractionStatus.failed => current.copyWith(
@@ -313,7 +313,10 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
       GameStatus.extractionFailed => {GameAction.retryExtraction},
       GameStatus.downloadPaused => {GameAction.resume, GameAction.cancel},
       GameStatus.downloading => {GameAction.pause, GameAction.cancel},
-      _ => const {},
+      GameStatus.extracting => {GameAction.loading},
+      GameStatus.processing => {GameAction.loading},
+      GameStatus.downloadQueued => {GameAction.loading},
+      GameStatus.extractionQueued => {GameAction.loading},
     };
   }
 

@@ -242,6 +242,24 @@ class GameRow extends ConsumerWidget {
             ),
           );
           break;
+        case GameAction.loading:
+          buttons.add(
+            SizedBox(
+              width: 30,
+              height: 30,
+              child: Center(
+                child: SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+              ),
+            ),
+          );
+          break;
         case GameAction.none:
           break;
       }
