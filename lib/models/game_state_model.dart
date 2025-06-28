@@ -34,7 +34,6 @@ class GameState {
   final Set<GameAction> availableActions;
   final bool showProgressBar;
   final double currentProgress;
-  final String operationDescription;
   final String? errorMessage;
   final bool fileExists;
   final bool extractedContentExists;
@@ -51,7 +50,6 @@ class GameState {
     this.availableActions = const {GameAction.download},
     this.showProgressBar = false,
     this.currentProgress = 0.0,
-    this.operationDescription = 'Ready',
     this.errorMessage,
     this.fileExists = false,
     this.extractedContentExists = false,
@@ -69,7 +67,6 @@ class GameState {
     Set<GameAction>? availableActions,
     bool? showProgressBar,
     double? currentProgress,
-    String? operationDescription,
     String? errorMessage,
     bool? fileExists,
     bool? extractedContentExists,
@@ -86,7 +83,6 @@ class GameState {
       availableActions: availableActions ?? this.availableActions,
       showProgressBar: showProgressBar ?? this.showProgressBar,
       currentProgress: currentProgress ?? this.currentProgress,
-      operationDescription: operationDescription ?? this.operationDescription,
       errorMessage: errorMessage ?? this.errorMessage,
       fileExists: fileExists ?? this.fileExists,
       extractedContentExists: extractedContentExists ?? this.extractedContentExists,
