@@ -65,7 +65,6 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
       status: status,
       fileExists: fileInfo.hasFile,
       extractedContentExists: fileInfo.hasExtracted,
-      similarContentExists: fileInfo.hasSimilar,
       isInteractable: status == GameStatus.ready,
       availableActions: _getActions(status, game),
     );
@@ -107,6 +106,8 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
   }
 
   GameState _updateFromDownload(GameState current, TaskStatus? status, TaskProgressUpdate? progress, bool completed, Game game) {
+    if (current.status == GameStatus.extracting) return current;
+
     if (completed) {
       final downloadDir = _ref.read(appStateProvider).downloadDir;
       final fileInfo = _getFileInfo(game, downloadDir);
@@ -120,7 +121,6 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
         isInteractable: false,
         fileExists: fileInfo.hasFile,
         extractedContentExists: fileInfo.hasExtracted,
-        similarContentExists: fileInfo.hasSimilar,
         availableActions: _getActions(finalStatus, game),
       );
     }
@@ -188,7 +188,7 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
   }
 
   GameState _updateFromExtraction(GameState current, ExtractionTaskState? task, String taskId) {
-    if (task == null) return current;
+    if (task == null || current.status == GameStatus.downloading) return current;
 
     return switch (task.status) {
       ExtractionStatus.extracting => current.copyWith(
@@ -224,7 +224,6 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
         showProgressBar: false,
         isInteractable: false,
         extractedContentExists: fileInfo.hasExtracted,
-        similarContentExists: fileInfo.hasSimilar,
         availableActions: const {},
       );
     }
@@ -260,7 +259,6 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
         status: status,
         fileExists: fileInfo.hasFile,
         extractedContentExists: fileInfo.hasExtracted,
-        similarContentExists: fileInfo.hasSimilar,
         isInteractable: status == GameStatus.ready && !current.isActive,
         availableActions: _getActions(status, game),
       );
@@ -275,19 +273,13 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
     }
   }
 
-  ({bool hasFile, bool hasExtracted, bool hasSimilar}) _getFileInfo(Game game, String downloadDir) {
+  ({bool hasFile, bool hasExtracted}) _getFileInfo(Game game, String downloadDir) {
     final expectedPath = path.join(downloadDir, game.filename);
 
-    bool hasFile = File(expectedPath).existsSync();
-
-    if (!hasFile) {
-      hasFile = _findInLibrary(game, downloadDir) != null;
-    }
-
+    bool hasFile = File(expectedPath).existsSync() || _findInLibrary(game, downloadDir) != null;
     final hasExtracted = _extractionService.hasExtractedContent(expectedPath);
-    final hasSimilar = _extractionService.findSimilarContent(expectedPath, downloadDir).isNotEmpty;
 
-    return (hasFile: hasFile, hasExtracted: hasExtracted, hasSimilar: hasSimilar);
+    return (hasFile: hasFile, hasExtracted: hasExtracted);
   }
 
   String? _findInLibrary(Game game, String downloadDir) {
