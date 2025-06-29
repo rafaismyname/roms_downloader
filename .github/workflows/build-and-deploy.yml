@@ -1,0 +1,310 @@
+name: Build and Deploy ROMs Downloader
+
+on:
+  push:
+    branches: [ deploy ]
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: [arm64-v8a, armeabi-v7a, x86_64]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.3'
+          channel: 'stable'
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Build Android APK (${{ matrix.arch }})
+        run: |
+          flutter build apk --release --target-platform android-${{ matrix.arch }} --split-per-abi
+          
+      - name: Build Android App Bundle
+        if: matrix.arch == 'arm64-v8a'  # Only build AAB once
+        run: flutter build appbundle --release
+
+      - name: Upload Android APK (${{ matrix.arch }})
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk-${{ matrix.arch }}
+          path: build/app/outputs/flutter-apk/app-${{ matrix.arch }}-release.apk
+
+      - name: Upload Android App Bundle
+        if: matrix.arch == 'arm64-v8a'
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-aab
+          path: build/app/outputs/bundle/release/app-release.aab
+
+  build-macos:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        arch: [x64, arm64]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.3'
+          channel: 'stable'
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Install CocoaPods
+        run: |
+          cd macos
+          pod install
+
+      - name: Build macOS (${{ matrix.arch }})
+        run: |
+          if [ "${{ matrix.arch }}" == "arm64" ]; then
+            flutter build macos --release --dart-define=FLUTTER_TARGET_PLATFORM=darwin-arm64
+          else
+            flutter build macos --release --dart-define=FLUTTER_TARGET_PLATFORM=darwin-x64
+          fi
+
+      - name: Create macOS DMG (${{ matrix.arch }})
+        run: |
+          # Create a temporary directory for DMG contents
+          mkdir -p dmg_contents
+          cp -R "build/macos/Build/Products/Release/ROMs Downloader.app" dmg_contents/
+          
+          # Create DMG
+          hdiutil create -volname "ROMs Downloader ${{ matrix.arch }}" \
+            -srcfolder dmg_contents \
+            -ov -format UDZO \
+            "ROMs_Downloader_macOS_${{ matrix.arch }}.dmg"
+
+      - name: Upload macOS DMG (${{ matrix.arch }})
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-dmg-${{ matrix.arch }}
+          path: "ROMs_Downloader_macOS_${{ matrix.arch }}.dmg"
+
+  build-linux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: [x64, arm64]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.3'
+          channel: 'stable'
+          architecture: x64
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libstdc++-12-dev
+          
+      - name: Setup cross-compilation for ARM64
+        if: matrix.arch == 'arm64'
+        run: |
+          sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+          
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Enable Linux desktop
+        run: flutter config --enable-linux-desktop
+
+      - name: Build Linux (${{ matrix.arch }})
+        run: |
+          if [ "${{ matrix.arch }}" == "arm64" ]; then
+            # Cross-compile for ARM64
+            export CC=aarch64-linux-gnu-gcc
+            export CXX=aarch64-linux-gnu-g++
+            flutter build linux --release --dart-define=FLUTTER_TARGET_PLATFORM=linux-arm64
+          else
+            flutter build linux --release
+          fi
+
+      - name: Create Linux AppImage (${{ matrix.arch }})
+        run: |
+          # Create AppDir structure
+          mkdir -p AppDir/usr/bin
+          mkdir -p AppDir/usr/lib
+          mkdir -p AppDir/usr/share/applications
+          mkdir -p AppDir/usr/share/icons/hicolor/256x256/apps
+          
+          # Copy the built application
+          cp -r build/linux/*/release/bundle/* AppDir/usr/bin/
+          
+          # Create desktop file
+          cat > AppDir/usr/share/applications/roms-downloader.desktop << EOF
+          [Desktop Entry]
+          Type=Application
+          Name=ROMs Downloader
+          Exec=ROMs\ Downloader
+          Icon=roms-downloader
+          Categories=Utility;
+          EOF
+          
+          # Create AppRun script
+          cat > AppDir/AppRun << 'EOF'
+          #!/bin/bash
+          HERE="$(dirname "$(readlink -f "${0}")")"
+          exec "${HERE}/usr/bin/ROMs Downloader" "$@"
+          EOF
+          chmod +x AppDir/AppRun
+          
+          # Download and use appimagetool
+          wget -O appimagetool "https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage"
+          chmod +x appimagetool
+          ./appimagetool AppDir "ROMs_Downloader_Linux_${{ matrix.arch }}.AppImage"
+
+      - name: Upload Linux AppImage (${{ matrix.arch }})
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-appimage-${{ matrix.arch }}
+          path: "ROMs_Downloader_Linux_${{ matrix.arch }}.AppImage"
+
+  build-windows:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        arch: [x64, arm64]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.3'
+          channel: 'stable'
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Enable Windows desktop
+        run: flutter config --enable-windows-desktop
+
+      - name: Build Windows (${{ matrix.arch }})
+        run: |
+          if ("${{ matrix.arch }}" -eq "arm64") {
+            flutter build windows --release --dart-define=FLUTTER_TARGET_PLATFORM=windows-arm64
+          } else {
+            flutter build windows --release
+          }
+
+      - name: Create Windows installer (${{ matrix.arch }})
+        run: |
+          # Create a simple ZIP package
+          Compress-Archive -Path "build\windows\*\runner\Release\*" -DestinationPath "ROMs_Downloader_Windows_${{ matrix.arch }}.zip"
+
+      - name: Upload Windows package (${{ matrix.arch }})
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-zip-${{ matrix.arch }}
+          path: "ROMs_Downloader_Windows_${{ matrix.arch }}.zip"
+
+  generate-download-links:
+    needs: [build-android, build-macos, build-linux, build-windows]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+
+      - name: Generate download links summary
+        run: |
+          echo "# 🚀 ROMs Downloader - Build Artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Build completed successfully! Download links for all platforms and architectures:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "## 📱 Android" >> $GITHUB_STEP_SUMMARY
+          echo "| Architecture | APK | Size |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------------|-----|------|" >> $GITHUB_STEP_SUMMARY
+          
+          for arch in arm64-v8a armeabi-v7a x86_64; do
+            if [ -f "./artifacts/android-apk-${arch}/app-${arch}-release.apk" ]; then
+              size=$(du -h "./artifacts/android-apk-${arch}/app-${arch}-release.apk" | cut -f1)
+              echo "| ${arch} | [Download APK](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/android-apk-${arch}) | ${size} |" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+          
+          if [ -f "./artifacts/android-aab/app-release.aab" ]; then
+            size=$(du -h "./artifacts/android-aab/app-release.aab" | cut -f1)
+            echo "| App Bundle | [Download AAB](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/android-aab) | ${size} |" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 🖥️ macOS" >> $GITHUB_STEP_SUMMARY
+          echo "| Architecture | DMG | Size |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------------|-----|------|" >> $GITHUB_STEP_SUMMARY
+          
+          for arch in x64 arm64; do
+            if [ -f "./artifacts/macos-dmg-${arch}/ROMs_Downloader_macOS_${arch}.dmg" ]; then
+              size=$(du -h "./artifacts/macos-dmg-${arch}/ROMs_Downloader_macOS_${arch}.dmg" | cut -f1)
+              echo "| ${arch} | [Download DMG](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/macos-dmg-${arch}) | ${size} |" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 🐧 Linux" >> $GITHUB_STEP_SUMMARY
+          echo "| Architecture | AppImage | Size |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------------|----------|------|" >> $GITHUB_STEP_SUMMARY
+          
+          for arch in x64 arm64; do
+            if [ -f "./artifacts/linux-appimage-${arch}/ROMs_Downloader_Linux_${arch}.AppImage" ]; then
+              size=$(du -h "./artifacts/linux-appimage-${arch}/ROMs_Downloader_Linux_${arch}.AppImage" | cut -f1)
+              echo "| ${arch} | [Download AppImage](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/linux-appimage-${arch}) | ${size} |" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 🪟 Windows" >> $GITHUB_STEP_SUMMARY
+          echo "| Architecture | ZIP Package | Size |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------------|-------------|------|" >> $GITHUB_STEP_SUMMARY
+          
+          for arch in x64 arm64; do
+            if [ -f "./artifacts/windows-zip-${arch}/ROMs_Downloader_Windows_${arch}.zip" ]; then
+              size=$(du -h "./artifacts/windows-zip-${arch}/ROMs_Downloader_Windows_${arch}.zip" | cut -f1)
+              echo "| ${arch} | [Download ZIP](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/windows-zip-${arch}) | ${size} |" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "**Build Information:**" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build Date:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "- **Workflow Run:** [#${{ github.run_number }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+
+      - name: List all artifacts with direct links
+        run: |
+          echo "🔗 Direct Download Links:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          find ./artifacts -type f \( -name "*.apk" -o -name "*.aab" -o -name "*.dmg" -o -name "*.AppImage" -o -name "*.zip" \) -exec basename {} \; | sort >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "All artifacts are available in the [Artifacts section](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) of this workflow run." >> $GITHUB_STEP_SUMMARY
