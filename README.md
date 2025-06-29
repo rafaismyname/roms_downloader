@@ -36,13 +36,13 @@ I do not own nor recommend those sources. As a matter of fact, the first step in
 - [ ] Custom settings per console (dest. dir/unzip rules/default filters/etc.)
 - [ ] Ignore (hide) file
 - [ ] Manually mark as in-library
-- [ ] Controller support for improved handheld use
 - [ ] Game metadata fetcher (cover, images, info, etc)
-- [x] Android build setup
-- [x] Mac build setup
-- [ ] Windows build setup
-- [ ] Linux build setup
-- [ ] ~~iOS build setup~~ No iOS support for now, cry about it.
+- [x] Android support
+- [x] Mac support
+- [x] Windows support
+- [ ] Linux support (untested)
+- [ ] Handheld Linux support (untested)
+- [ ] ~~iOS support~~ No iOS support for now, cry about it.
 
 ## Technologies
 

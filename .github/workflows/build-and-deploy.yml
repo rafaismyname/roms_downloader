@@ -2,7 +2,7 @@ name: Build and Deploy ROMs Downloader
 
 on:
   push:
-    branches: [ deploy ]
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
