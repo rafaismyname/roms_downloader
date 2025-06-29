@@ -40,6 +40,10 @@ jobs:
         run: |
           flutter build apk --release --target-platform ${{ matrix.target }} --split-per-abi
           
+      - name: Build Android Universal APK
+        if: matrix.arch == 'arm64-v8a'  # Only build universal APK once
+        run: flutter build apk --release
+          
       - name: Build Android App Bundle
         if: matrix.arch == 'arm64-v8a'  # Only build AAB once
         run: flutter build appbundle --release
@@ -49,6 +53,13 @@ jobs:
         with:
           name: android-apk-${{ matrix.arch }}
           path: build/app/outputs/flutter-apk/app-${{ matrix.arch }}-release.apk
+
+      - name: Upload Android Universal APK
+        if: matrix.arch == 'arm64-v8a'
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk-universal
+          path: build/app/outputs/flutter-apk/app-release.apk
 
       - name: Upload Android App Bundle
         if: matrix.arch == 'arm64-v8a'
@@ -550,6 +561,11 @@ jobs:
               echo "| ${arch} | [Download APK](https://nightly.link/${{ github.repository }}/actions/runs/${{ github.run_id }}/android-apk-${arch}.zip) | ${size} |" >> $GITHUB_STEP_SUMMARY
             fi
           done
+          
+          if [ -f "./artifacts/android-apk-universal/app-release.apk" ]; then
+            size=$(du -h "./artifacts/android-apk-universal/app-release.apk" | cut -f1)
+            echo "| Universal | [Download Universal APK](https://nightly.link/${{ github.repository }}/actions/runs/${{ github.run_id }}/android-apk-universal.zip) | ${size} |" >> $GITHUB_STEP_SUMMARY
+          fi
           
           if [ -f "./artifacts/android-aab/app-release.aab" ]; then
             size=$(du -h "./artifacts/android-aab/app-release.aab" | cut -f1)
