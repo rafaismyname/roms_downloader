@@ -20,6 +20,10 @@ static void my_application_activate(GApplication* application) {
   GtkWindow* window =
       GTK_WINDOW(gtk_application_window_new(GTK_APPLICATION(application)));
 
+  // Check if we're in a handheld environment and adjust window accordingly
+  const char* handheld_mode = g_getenv("FLUTTER_HANDHELD_MODE");
+  gboolean is_handheld = handheld_mode && (g_strcmp0(handheld_mode, "1") == 0 || g_strcmp0(handheld_mode, "true") == 0);
+  
   // Use a header bar when running in GNOME as this is the common style used
   // by applications and is the setup most users will be using (e.g. Ubuntu
   // desktop).
@@ -27,7 +31,8 @@ static void my_application_activate(GApplication* application) {
   // in case the window manager does more exotic layout, e.g. tiling.
   // If running on Wayland assume the header bar will work (may need changing
   // if future cases occur).
-  gboolean use_header_bar = TRUE;
+  // For handheld devices, prefer traditional title bar for better compatibility
+  gboolean use_header_bar = !is_handheld;
 #ifdef GDK_WINDOWING_X11
   GdkScreen* screen = gtk_window_get_screen(window);
   if (GDK_IS_X11_SCREEN(screen)) {
@@ -47,7 +52,15 @@ static void my_application_activate(GApplication* application) {
     gtk_window_set_title(window, "roms_downloader");
   }
 
-  gtk_window_set_default_size(window, 1280, 720);
+  // Adjust window size for handheld devices
+  if (is_handheld) {
+    // For handheld devices, try to maximize or use a more suitable size
+    gtk_window_maximize(window);
+    g_print("Handheld mode detected, maximizing window\n");
+  } else {
+    gtk_window_set_default_size(window, 1280, 720);
+  }
+  
   gtk_widget_show(GTK_WIDGET(window));
 
   g_autoptr(FlDartProject) project = fl_dart_project_new();

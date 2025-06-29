@@ -300,6 +300,11 @@ jobs:
           export CC="${{ matrix.cc }}"
           export CXX="${{ matrix.cxx }}"
           
+          # Add handheld-specific build flags for better compatibility
+          export CFLAGS="-O2 -ffunction-sections -fdata-sections"
+          export CXXFLAGS="-O2 -ffunction-sections -fdata-sections"
+          export LDFLAGS="-Wl,--gc-sections -Wl,--as-needed"
+          
           # Build with handheld optimizations
           if [ "${{ matrix.arch }}" == "arm64" ]; then
             flutter build linux --release --dart-define=FLUTTER_TARGET_PLATFORM=linux-arm64
@@ -316,6 +321,14 @@ jobs:
           cp build/linux/*/release/bundle/roms_downloader handheld_bundle/
           cp -r build/linux/*/release/bundle/data handheld_bundle/
           cp -r build/linux/*/release/bundle/lib handheld_bundle/
+          
+          # Verify the binary architecture
+          echo "Binary information:"
+          file handheld_bundle/roms_downloader
+          
+          # Check dependencies
+          echo "Dependencies:"
+          ldd handheld_bundle/roms_downloader || echo "ldd failed, static binary or missing libs"
           
           # Strip debug symbols to reduce size (only if we have the right tools)
           if [ "${{ matrix.arch }}" == "arm64" ]; then
@@ -349,10 +362,19 @@ jobs:
           # Set up environment
           export XDG_DATA_HOME="${SCRIPT_DIR}/app_data"
           export XDG_CONFIG_HOME="${SCRIPT_DIR}/app_config"
+          export XDG_CACHE_HOME="${SCRIPT_DIR}/app_cache"
           export LD_LIBRARY_PATH="${SCRIPT_DIR}/lib:$LD_LIBRARY_PATH"
           
           # Create necessary directories
-          mkdir -p "${XDG_DATA_HOME}" "${XDG_CONFIG_HOME}"
+          mkdir -p "${XDG_DATA_HOME}" "${XDG_CONFIG_HOME}" "${XDG_CACHE_HOME}"
+          
+          # Debug logging
+          LOG_FILE="${SCRIPT_DIR}/roms_downloader.log"
+          exec 2> >(tee -a "${LOG_FILE}")
+          
+          echo "$(date): Starting ROMs Downloader Handheld Edition" | tee -a "${LOG_FILE}"
+          echo "Script directory: ${SCRIPT_DIR}" | tee -a "${LOG_FILE}"
+          echo "Working directory: $(pwd)" | tee -a "${LOG_FILE}"
           
           # Check if running on a handheld (common indicators)
           HANDHELD_INDICATORS=(
@@ -361,28 +383,61 @@ jobs:
             "/roms"               # RockNIX/JELOS
             "/storage"            # General retro distros
             "/userdata"           # Batocera userdata
+            "/opt/rocknix"        # RockNIX specific
+            "/opt/jelos"          # JELOS specific
           )
           
           IS_HANDHELD=false
+          HANDHELD_TYPE="unknown"
           for indicator in "${HANDHELD_INDICATORS[@]}"; do
             if [ -d "$indicator" ]; then
               IS_HANDHELD=true
+              case "$indicator" in
+                "/storage/.config"|"/storage/roms"|"/storage"|"/userdata")
+                  HANDHELD_TYPE="batocera"
+                  ;;
+                "/opt/rocknix"|"/roms")
+                  HANDHELD_TYPE="rocknix"
+                  ;;
+                "/opt/jelos")
+                  HANDHELD_TYPE="jelos"
+                  ;;
+              esac
+              echo "Detected handheld indicator: $indicator (type: $HANDHELD_TYPE)" | tee -a "${LOG_FILE}"
               break
             fi
           done
           
           # Handheld-specific optimizations
           if [ "$IS_HANDHELD" = true ]; then
-            echo "Detected handheld environment, applying optimizations..."
+            echo "Detected handheld environment ($HANDHELD_TYPE), applying optimizations..." | tee -a "${LOG_FILE}"
+            
+            # Set up display environment
+            if [ -z "$DISPLAY" ]; then
+              export DISPLAY=:0
+              echo "Setting DISPLAY=:0" | tee -a "${LOG_FILE}"
+            fi
+            
+            # Try to detect and set up Wayland if available
+            if [ -n "$WAYLAND_DISPLAY" ]; then
+              echo "Wayland detected: $WAYLAND_DISPLAY" | tee -a "${LOG_FILE}"
+            fi
             
             # Try to set up storage paths for common handheld distros
-            if [ -d "/storage/roms" ]; then
-              export ROMS_DEFAULT_PATH="/storage/roms"
-              echo "Detected Batocera - ROMs path: /storage/roms"
-            elif [ -d "/roms" ]; then
-              export ROMS_DEFAULT_PATH="/roms"
-              echo "Detected RockNIX/JELOS - ROMs path: /roms"
-            fi
+            case "$HANDHELD_TYPE" in
+              "batocera")
+                if [ -d "/storage/roms" ]; then
+                  export ROMS_DEFAULT_PATH="/storage/roms"
+                  echo "Batocera detected - ROMs path: /storage/roms" | tee -a "${LOG_FILE}"
+                fi
+                ;;
+              "rocknix"|"jelos")
+                if [ -d "/roms" ]; then
+                  export ROMS_DEFAULT_PATH="/roms"
+                  echo "RockNIX/JELOS detected - ROMs path: /roms" | tee -a "${LOG_FILE}"
+                fi
+                ;;
+            esac
             
             # Enable handheld-friendly mode
             export FLUTTER_HANDHELD_MODE=1
@@ -391,41 +446,86 @@ jobs:
             export MALLOC_MMAP_THRESHOLD_=131072
             export MALLOC_TRIM_THRESHOLD_=131072
             
-            # Set display if not already set
-            if [ -z "$DISPLAY" ]; then
-              export DISPLAY=:0
-            fi
+            # Set GTK theme for better handheld UI
+            export GTK_THEME=Adwaita:dark
+            export GDK_SCALE=1.0
+            export GDK_DPI_SCALE=1.0
+            
+            # Disable hardware acceleration if causing issues
+            export LIBGL_ALWAYS_SOFTWARE=1
+            
+          else
+            echo "Standard Linux environment detected" | tee -a "${LOG_FILE}"
           fi
+          
+          # Check if binary exists and is executable
+          if [ ! -f "${SCRIPT_DIR}/roms_downloader" ]; then
+            echo "ERROR: roms_downloader binary not found in ${SCRIPT_DIR}" | tee -a "${LOG_FILE}"
+            exit 1
+          fi
+          
+          if [ ! -x "${SCRIPT_DIR}/roms_downloader" ]; then
+            echo "ERROR: roms_downloader binary is not executable" | tee -a "${LOG_FILE}"
+            chmod +x "${SCRIPT_DIR}/roms_downloader" 2>/dev/null || {
+              echo "ERROR: Failed to make roms_downloader executable" | tee -a "${LOG_FILE}"
+              exit 1
+            }
+          fi
+          
+          # Check for required libraries
+          echo "Checking dependencies..." | tee -a "${LOG_FILE}"
+          ldd "${SCRIPT_DIR}/roms_downloader" 2>&1 | tee -a "${LOG_FILE}" | grep "not found" && {
+            echo "WARNING: Missing dependencies detected" | tee -a "${LOG_FILE}"
+          }
           
           # Launch the application
           cd "${SCRIPT_DIR}"
-          echo "Starting ROMs Downloader (Handheld Edition)..."
-          echo "Working directory: ${SCRIPT_DIR}"
-          echo "Data directory: ${XDG_DATA_HOME}"
-          echo "Config directory: ${XDG_CONFIG_HOME}"
+          echo "Starting ROMs Downloader..." | tee -a "${LOG_FILE}"
+          echo "Command: ./roms_downloader $@" | tee -a "${LOG_FILE}"
           
-          exec ./roms_downloader "$@"
+          # Try to launch with timeout to avoid hanging
+          timeout 30s ./roms_downloader "$@" 2>&1 | tee -a "${LOG_FILE}"
+          EXIT_CODE=$?
+          
+          if [ $EXIT_CODE -eq 124 ]; then
+            echo "ERROR: Application timed out during startup" | tee -a "${LOG_FILE}"
+          elif [ $EXIT_CODE -ne 0 ]; then
+            echo "ERROR: Application exited with code $EXIT_CODE" | tee -a "${LOG_FILE}"
+          fi
+          
+          exit $EXIT_CODE
           EOF
           
           chmod +x handheld_bundle/start_roms_downloader.sh
           
-          # Package the handheld bundle
-          tar -czf "ROMs_Downloader_Handheld_Linux_${{ matrix.arch }}.tar.gz" -C handheld_bundle .
+          # Create a direct launcher (simple version without diagnostics)
+          cat > handheld_bundle/run.sh << 'EOF'
+          #!/bin/bash
+          cd "$(dirname "$0")"
+          export LD_LIBRARY_PATH="./lib:$LD_LIBRARY_PATH"
+          exec ./roms_downloader "$@"
+          EOF
+          chmod +x handheld_bundle/run.sh
+          
+          # Package the handheld bundle as ZIP
+          cd handheld_bundle
+          zip -r "../ROMs_Downloader_Handheld_Linux_${{ matrix.arch }}.zip" .
+          cd ..
           
           # Show bundle size
           echo "Handheld bundle size:"
-          du -sh "ROMs_Downloader_Handheld_Linux_${{ matrix.arch }}.tar.gz"
+          du -sh "ROMs_Downloader_Handheld_Linux_${{ matrix.arch }}.zip"
           echo "Contents:"
-          tar -tzf "ROMs_Downloader_Handheld_Linux_${{ matrix.arch }}.tar.gz" | head -20
+          unzip -l "ROMs_Downloader_Handheld_Linux_${{ matrix.arch }}.zip" | head -20
 
       - name: Upload handheld Linux bundle (${{ matrix.arch }})
         uses: actions/upload-artifact@v4
         with:
           name: handheld-linux-${{ matrix.arch }}
-          path: "ROMs_Downloader_Handheld_Linux_${{ matrix.arch }}.tar.gz"
+          path: "ROMs_Downloader_Handheld_Linux_${{ matrix.arch }}.zip"
 
   generate-download-links:
-    needs: [build-android, build-macos, build-linux, build-handheld-linux, build-windows]
+    needs: [build-handheld-linux]
     runs-on: ubuntu-latest
     steps:
       - name: Download all artifacts
@@ -486,8 +586,8 @@ jobs:
             fi
             
             # Check for Handheld package
-            if [ -f "./artifacts/handheld-linux-${arch}/ROMs_Downloader_Handheld_Linux_${arch}.tar.gz" ]; then
-              handheld_size=$(du -h "./artifacts/handheld-linux-${arch}/ROMs_Downloader_Handheld_Linux_${arch}.tar.gz" | cut -f1)
+            if [ -f "./artifacts/handheld-linux-${arch}/ROMs_Downloader_Handheld_Linux_${arch}.zip" ]; then
+              handheld_size=$(du -h "./artifacts/handheld-linux-${arch}/ROMs_Downloader_Handheld_Linux_${arch}.zip" | cut -f1)
               handheld_link="[📱 Handheld Package](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/handheld-linux-${arch})"
               if [ -n "$size_info" ]; then
                 size_info="${size_info}<br/>Handheld: ${handheld_size}"
@@ -501,13 +601,6 @@ jobs:
               echo "| ${arch} | ${appimage_link:-N/A} | ${handheld_link:-N/A} | ${size_info} |" >> $GITHUB_STEP_SUMMARY
             fi
           done
-          
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**📱 Handheld Linux Notes:**" >> $GITHUB_STEP_SUMMARY
-          echo "- Handheld packages are optimized for Batocera, RockNIX, JELOS, Steam Deck, and similar devices" >> $GITHUB_STEP_SUMMARY
-          echo "- Includes auto-detection of handheld environments and ROM paths" >> $GITHUB_STEP_SUMMARY
-          echo "- Static linking reduces dependencies for better compatibility" >> $GITHUB_STEP_SUMMARY
-          echo "- Use the included startup script for optimal experience" >> $GITHUB_STEP_SUMMARY
           
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## 🪟 Windows" >> $GITHUB_STEP_SUMMARY
