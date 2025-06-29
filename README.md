@@ -30,8 +30,6 @@ I do not own nor recommend those sources. As a matter of fact, the first step in
 - [x] In-Library detection improved to detect extracted files and similar-named content
 - [x] Background Downloader
 - [ ] Background Unzip (with progress tracking)
-- [ ] Select all
-- [ ] Sort list
 - [ ] Filters (like country/language, type, extension, etc.) deprecating the hardcoded list filter
 - [ ] Allow custom consoles (via JSON)
 - [ ] Improve file detection system (custom rexeg per console)
