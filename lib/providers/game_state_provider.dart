@@ -23,6 +23,9 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
   final Map<String, bool> _resolving = {};
 
   GameStateManager(this._ref) : super({}) {
+    _ref.listen(appStateProvider, (prev, next) {
+      if (prev?.downloadDir != next.downloadDir) _resetStates();
+    });
     _ref.listen(catalogProvider, (prev, next) {
       if (prev?.games != next.games) _initGames(next.games);
       if (prev?.selectedGames != next.selectedGames) _updateSelections(next.selectedGames);
@@ -35,7 +38,7 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
 
     GameState? updated;
     if (isCompleted) {
-      resolveFileState(gameId);
+      resolveState(gameId);
     } else if (status == TaskStatus.canceled) {
       updated = current.copyWith(
         status: GameStatus.ready,
@@ -100,7 +103,7 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
         availableActions: {GameAction.loading},
       );
     } else if (status == ExtractionStatus.completed) {
-      resolveFileState(gameId);
+      resolveState(gameId);
     } else if (status == ExtractionStatus.failed) {
       updated = current.copyWith(
         status: GameStatus.extractionFailed,
@@ -115,18 +118,7 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
     }
   }
 
-  void _initGames(List<Game> games) {
-    final updates = <String, GameState>{};
-    for (final game in games) {
-      // use taskId as game identifier for now
-      if (!state.containsKey(game.taskId)) {
-        updates[game.taskId] = GameState(game: game);
-      }
-    }
-    if (updates.isNotEmpty) state = {...state, ...updates};
-  }
-
-  void resolveFileState(String gameId) async {
+   void resolveState(String gameId) async {
     if (_resolving[gameId] == true) return;
 
     final gameState = state[gameId];
@@ -178,6 +170,17 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
     }
   }
 
+  void _initGames(List<Game> games) {
+    final updates = <String, GameState>{};
+    for (final game in games) {
+      // use taskId as game identifier for now
+      if (!state.containsKey(game.taskId)) {
+        updates[game.taskId] = GameState(game: game);
+      }
+    }
+    if (updates.isNotEmpty) state = {...state, ...updates};
+  }
+
   void _updateSelections(Set<String> selected) {
     final updates = <String, GameState>{};
     for (final entry in state.entries) {
@@ -196,6 +199,15 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
     }
   }
 
+  void _resetStates() {
+    final updated = <String, GameState>{};
+    for (final entry in state.entries) {
+      final game = entry.value.game;
+      updated[entry.key] = GameState(game: game);
+    }
+    state = updated;
+  }
+  
   Set<GameAction> _getActions(GameStatus status, Game game) => switch (status) {
         GameStatus.ready => {GameAction.download},
         GameStatus.downloaded => _canExtract(game) ? {GameAction.extract} : const {},

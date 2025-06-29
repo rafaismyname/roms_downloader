@@ -27,7 +27,7 @@ class GameRow extends ConsumerWidget {
 
     if (gameState.status == GameStatus.init) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        ref.read(gameStateManagerProvider.notifier).resolveFileState(gameId);
+        ref.read(gameStateManagerProvider.notifier).resolveState(gameId);
       });
     }
 
