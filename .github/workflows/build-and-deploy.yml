@@ -125,7 +125,7 @@ jobs:
       - name: Install Linux dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libstdc++-12-dev
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libstdc++-12-dev fuse
           
       - name: Setup cross-compilation for ARM64
         if: matrix.arch == 'arm64'
@@ -181,7 +181,13 @@ jobs:
           # Download and use appimagetool
           wget -O appimagetool "https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage"
           chmod +x appimagetool
-          ./appimagetool AppDir "ROMs_Downloader_Linux_${{ matrix.arch }}.AppImage"
+          
+          # Try to run appimagetool, if FUSE fails, extract and use the binary directly
+          if ! ./appimagetool AppDir "ROMs_Downloader_Linux_${{ matrix.arch }}.AppImage"; then
+            echo "FUSE not available, extracting appimagetool..."
+            ./appimagetool --appimage-extract
+            ./squashfs-root/AppRun AppDir "ROMs_Downloader_Linux_${{ matrix.arch }}.AppImage"
+          fi
 
       - name: Upload Linux AppImage (${{ matrix.arch }})
         uses: actions/upload-artifact@v4
@@ -220,11 +226,8 @@ jobs:
 
       - name: Create Windows installer (${{ matrix.arch }})
         run: |
-          if ("${{ matrix.arch }}" -eq "arm64") {
-            Compress-Archive -Path "build\windows\arm64\runner\Release" -DestinationPath "ROMs_Downloader_Windows_${{ matrix.arch }}.zip"
-          } else {
-            Compress-Archive -Path "build\windows\x64\runner\Release" -DestinationPath "ROMs_Downloader_Windows_${{ matrix.arch }}.zip"
-          }
+          # Create a simple ZIP package with just the contents
+          Compress-Archive -Path "build\windows\x64\runner\Release\*" -DestinationPath "ROMs_Downloader_Windows_${{ matrix.arch }}.zip"
 
       - name: Upload Windows package (${{ matrix.arch }})
         uses: actions/upload-artifact@v4
