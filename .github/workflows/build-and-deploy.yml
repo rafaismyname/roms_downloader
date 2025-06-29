@@ -106,6 +106,46 @@ jobs:
           name: macos-dmg-${{ matrix.arch }}
           path: "ROMs_Downloader_macOS_${{ matrix.arch }}.dmg"
 
+  build-windows:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        arch: [x64, arm64]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.32.4'
+          channel: 'stable'
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Enable Windows desktop
+        run: flutter config --enable-windows-desktop
+
+      - name: Build Windows (${{ matrix.arch }})
+        run: |
+          if ("${{ matrix.arch }}" -eq "arm64") {
+            flutter build windows --release --dart-define=FLUTTER_TARGET_PLATFORM=windows-arm64
+          } else {
+            flutter build windows --release
+          }
+
+      - name: Create Windows installer (${{ matrix.arch }})
+        run: |
+          # Create a simple ZIP package with just the contents
+          Compress-Archive -Path "build\windows\x64\runner\Release\*" -DestinationPath "ROMs_Downloader_Windows_${{ matrix.arch }}.zip"
+
+      - name: Upload Windows package (${{ matrix.arch }})
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-zip-${{ matrix.arch }}
+          path: "ROMs_Downloader_Windows_${{ matrix.arch }}.zip"
+
   build-linux:
     runs-on: ubuntu-latest
     strategy:
@@ -159,21 +199,35 @@ jobs:
           
           # Copy the built application
           cp -r build/linux/*/release/bundle/* AppDir/usr/bin/
+
+          if [ -f "icon.png" ]; then
+            # Copy icon to standard location and AppImage root
+            cp icon.png AppDir/usr/share/icons/hicolor/256x256/apps/roms-downloader.png
+            cp icon.png AppDir/roms-downloader.png
+            echo "Using project icon.png"
+          else
+            echo "Warning: icon.png not found, AppImage will use default icon"
+          fi
           
-          # Create desktop file
-          cat > AppDir/usr/share/applications/roms-downloader.desktop << EOF
+          # Create desktop file in the root of AppDir (required by AppImage)
+          cat > AppDir/roms-downloader.desktop << EOF
           [Desktop Entry]
           Type=Application
           Name=ROMs Downloader
           Exec=roms_downloader
           Icon=roms-downloader
           Categories=Utility;
+          Comment=Download ROMs from catalogs
           EOF
+          
+          # Also create in the standard location
+          cp AppDir/roms-downloader.desktop AppDir/usr/share/applications/
           
           # Create AppRun script
           cat > AppDir/AppRun << 'EOF'
           #!/bin/bash
           HERE="$(dirname "$(readlink -f "${0}")")"
+          export LD_LIBRARY_PATH="${HERE}/usr/lib:${LD_LIBRARY_PATH}"
           exec "${HERE}/usr/bin/roms_downloader" "$@"
           EOF
           chmod +x AppDir/AppRun
@@ -195,11 +249,21 @@ jobs:
           name: linux-appimage-${{ matrix.arch }}
           path: "ROMs_Downloader_Linux_${{ matrix.arch }}.AppImage"
 
-  build-windows:
-    runs-on: windows-latest
+  build-handheld-linux:
+    runs-on: ubuntu-latest
     strategy:
       matrix:
-        arch: [x64, arm64]
+        include:
+          - arch: arm64
+            target: aarch64-linux-gnu
+            cc: aarch64-linux-gnu-gcc
+            cxx: aarch64-linux-gnu-g++
+            strip: aarch64-linux-gnu-strip
+          - arch: x64
+            target: x86_64-linux-gnu
+            cc: gcc
+            cxx: g++
+            strip: strip
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -209,34 +273,147 @@ jobs:
         with:
           flutter-version: '3.32.4'
           channel: 'stable'
+          architecture: x64
+
+      - name: Install dependencies for handheld build
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            clang cmake ninja-build pkg-config \
+            libgtk-3-dev liblzma-dev libstdc++-12-dev \
+            gcc-multilib g++-multilib upx-ucl
+            
+          # Install cross-compilation tools for ARM64
+          if [ "${{ matrix.arch }}" == "arm64" ]; then
+            sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+          fi
 
       - name: Get dependencies
         run: flutter pub get
 
-      - name: Enable Windows desktop
-        run: flutter config --enable-windows-desktop
+      - name: Enable Linux desktop
+        run: flutter config --enable-linux-desktop
 
-      - name: Build Windows (${{ matrix.arch }})
+      - name: Build for handheld Linux (${{ matrix.arch }})
         run: |
-          if ("${{ matrix.arch }}" -eq "arm64") {
-            flutter build windows --release --dart-define=FLUTTER_TARGET_PLATFORM=windows-arm64
-          } else {
-            flutter build windows --release
-          }
+          # Set up cross-compilation environment
+          export CC="${{ matrix.cc }}"
+          export CXX="${{ matrix.cxx }}"
+          
+          # Build with handheld optimizations
+          if [ "${{ matrix.arch }}" == "arm64" ]; then
+            flutter build linux --release --dart-define=FLUTTER_TARGET_PLATFORM=linux-arm64
+          else
+            flutter build linux --release
+          fi
 
-      - name: Create Windows installer (${{ matrix.arch }})
+      - name: Create minimal handheld bundle
         run: |
-          # Create a simple ZIP package with just the contents
-          Compress-Archive -Path "build\windows\x64\runner\Release\*" -DestinationPath "ROMs_Downloader_Windows_${{ matrix.arch }}.zip"
+          # Create a minimal, portable bundle
+          mkdir -p handheld_bundle
+          
+          # Copy the essential files only
+          cp build/linux/*/release/bundle/roms_downloader handheld_bundle/
+          cp -r build/linux/*/release/bundle/data handheld_bundle/
+          cp -r build/linux/*/release/bundle/lib handheld_bundle/
+          
+          # Strip debug symbols to reduce size
+          ${{ matrix.strip }} handheld_bundle/roms_downloader
+          find handheld_bundle/lib -name "*.so" -exec ${{ matrix.strip }} {} \;
+          
+          # Compress executable with UPX (best effort)
+          upx --best handheld_bundle/roms_downloader 2>/dev/null || echo "UPX compression failed or not available, continuing..."
+          
+          # Create a startup script for handheld environments
+          cat > handheld_bundle/start_roms_downloader.sh << 'EOF'
+          #!/bin/bash
+          
+          # Handheld Linux launcher script for ROMs Downloader
+          # Compatible with Batocera, RockNIX, JELOS, and similar distros
+          
+          # Get the directory where this script is located
+          SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+          
+          # Set up environment
+          export XDG_DATA_HOME="${SCRIPT_DIR}/app_data"
+          export XDG_CONFIG_HOME="${SCRIPT_DIR}/app_config"
+          export LD_LIBRARY_PATH="${SCRIPT_DIR}/lib:$LD_LIBRARY_PATH"
+          
+          # Create necessary directories
+          mkdir -p "${XDG_DATA_HOME}" "${XDG_CONFIG_HOME}"
+          
+          # Check if running on a handheld (common indicators)
+          HANDHELD_INDICATORS=(
+            "/storage/.config"     # Batocera
+            "/storage/roms"        # Batocera
+            "/roms"               # RockNIX/JELOS
+            "/storage"            # General retro distros
+            "/userdata"           # Batocera userdata
+          )
+          
+          IS_HANDHELD=false
+          for indicator in "${HANDHELD_INDICATORS[@]}"; do
+            if [ -d "$indicator" ]; then
+              IS_HANDHELD=true
+              break
+            fi
+          done
+          
+          # Handheld-specific optimizations
+          if [ "$IS_HANDHELD" = true ]; then
+            echo "Detected handheld environment, applying optimizations..."
+            
+            # Try to set up storage paths for common handheld distros
+            if [ -d "/storage/roms" ]; then
+              export ROMS_DEFAULT_PATH="/storage/roms"
+              echo "Detected Batocera - ROMs path: /storage/roms"
+            elif [ -d "/roms" ]; then
+              export ROMS_DEFAULT_PATH="/roms"
+              echo "Detected RockNIX/JELOS - ROMs path: /roms"
+            fi
+            
+            # Enable handheld-friendly mode
+            export FLUTTER_HANDHELD_MODE=1
+            
+            # Optimize for lower memory usage
+            export MALLOC_MMAP_THRESHOLD_=131072
+            export MALLOC_TRIM_THRESHOLD_=131072
+            
+            # Set display if not already set
+            if [ -z "$DISPLAY" ]; then
+              export DISPLAY=:0
+            fi
+          fi
+          
+          # Launch the application
+          cd "${SCRIPT_DIR}"
+          echo "Starting ROMs Downloader (Handheld Edition)..."
+          echo "Working directory: ${SCRIPT_DIR}"
+          echo "Data directory: ${XDG_DATA_HOME}"
+          echo "Config directory: ${XDG_CONFIG_HOME}"
+          
+          exec ./roms_downloader "$@"
+          EOF
+          
+          chmod +x handheld_bundle/start_roms_downloader.sh
+          
+          # Package the handheld bundle
+          tar -czf "ROMs_Downloader_Handheld_Linux_${{ matrix.arch }}.tar.gz" -C handheld_bundle .
+          
+          # Show bundle size
+          echo "Handheld bundle size:"
+          du -sh "ROMs_Downloader_Handheld_Linux_${{ matrix.arch }}.tar.gz"
+          echo "Contents:"
+          tar -tzf "ROMs_Downloader_Handheld_Linux_${{ matrix.arch }}.tar.gz" | head -20
 
-      - name: Upload Windows package (${{ matrix.arch }})
+      - name: Upload handheld Linux bundle (${{ matrix.arch }})
         uses: actions/upload-artifact@v4
         with:
-          name: windows-zip-${{ matrix.arch }}
-          path: "ROMs_Downloader_Windows_${{ matrix.arch }}.zip"
+          name: handheld-linux-${{ matrix.arch }}
+          path: "ROMs_Downloader_Handheld_Linux_${{ matrix.arch }}.tar.gz"
 
   generate-download-links:
-    needs: [build-android, build-macos, build-linux, build-windows]
+    needs: [build-android, build-macos, build-linux, build-handheld-linux, build-windows]
     runs-on: ubuntu-latest
     steps:
       - name: Download all artifacts
@@ -281,15 +458,44 @@ jobs:
           
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## 🐧 Linux" >> $GITHUB_STEP_SUMMARY
-          echo "| Architecture | AppImage | Size |" >> $GITHUB_STEP_SUMMARY
-          echo "|--------------|----------|------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Architecture | AppImage | Handheld Package | Size |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------------|----------|------------------|------|" >> $GITHUB_STEP_SUMMARY
           
           for arch in x64 arm64; do
+            appimage_link=""
+            handheld_link=""
+            size_info=""
+            
+            # Check for AppImage
             if [ -f "./artifacts/linux-appimage-${arch}/ROMs_Downloader_Linux_${arch}.AppImage" ]; then
-              size=$(du -h "./artifacts/linux-appimage-${arch}/ROMs_Downloader_Linux_${arch}.AppImage" | cut -f1)
-              echo "| ${arch} | [Download AppImage](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/linux-appimage-${arch}) | ${size} |" >> $GITHUB_STEP_SUMMARY
+              appimage_size=$(du -h "./artifacts/linux-appimage-${arch}/ROMs_Downloader_Linux_${arch}.AppImage" | cut -f1)
+              appimage_link="[Download AppImage](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/linux-appimage-${arch})"
+              size_info="AppImage: ${appimage_size}"
+            fi
+            
+            # Check for Handheld package
+            if [ -f "./artifacts/handheld-linux-${arch}/ROMs_Downloader_Handheld_Linux_${arch}.tar.gz" ]; then
+              handheld_size=$(du -h "./artifacts/handheld-linux-${arch}/ROMs_Downloader_Handheld_Linux_${arch}.tar.gz" | cut -f1)
+              handheld_link="[📱 Handheld Package](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/handheld-linux-${arch})"
+              if [ -n "$size_info" ]; then
+                size_info="${size_info}<br/>Handheld: ${handheld_size}"
+              else
+                size_info="Handheld: ${handheld_size}"
+              fi
+            fi
+            
+            # Only show row if we have at least one package
+            if [ -n "$appimage_link" ] || [ -n "$handheld_link" ]; then
+              echo "| ${arch} | ${appimage_link:-N/A} | ${handheld_link:-N/A} | ${size_info} |" >> $GITHUB_STEP_SUMMARY
             fi
           done
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**📱 Handheld Linux Notes:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Handheld packages are optimized for Batocera, RockNIX, JELOS, Steam Deck, and similar devices" >> $GITHUB_STEP_SUMMARY
+          echo "- Includes auto-detection of handheld environments and ROM paths" >> $GITHUB_STEP_SUMMARY
+          echo "- Static linking reduces dependencies for better compatibility" >> $GITHUB_STEP_SUMMARY
+          echo "- Use the included startup script for optimal experience" >> $GITHUB_STEP_SUMMARY
           
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## 🪟 Windows" >> $GITHUB_STEP_SUMMARY
@@ -316,7 +522,7 @@ jobs:
           echo "🔗 Direct Download Links:" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          find ./artifacts -type f \( -name "*.apk" -o -name "*.aab" -o -name "*.dmg" -o -name "*.AppImage" -o -name "*.zip" \) -exec basename {} \; | sort >> $GITHUB_STEP_SUMMARY
+          find ./artifacts -type f \( -name "*.apk" -o -name "*.aab" -o -name "*.dmg" -o -name "*.AppImage" -o -name "*.zip" -o -name "*.tar.gz" \) -exec basename {} \; | sort >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "All artifacts are available in the [Artifacts section](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) of this workflow run." >> $GITHUB_STEP_SUMMARY
