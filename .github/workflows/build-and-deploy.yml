@@ -525,7 +525,7 @@ jobs:
           path: "ROMs_Downloader_Handheld_Linux_${{ matrix.arch }}.zip"
 
   generate-download-links:
-    needs: [build-handheld-linux]
+    needs: [build-android, build-macos, build-linux, build-handheld-linux, build-windows]
     runs-on: ubuntu-latest
     steps:
       - name: Download all artifacts
@@ -547,13 +547,13 @@ jobs:
           for arch in arm64-v8a armeabi-v7a x86_64; do
             if [ -f "./artifacts/android-apk-${arch}/app-${arch}-release.apk" ]; then
               size=$(du -h "./artifacts/android-apk-${arch}/app-${arch}-release.apk" | cut -f1)
-              echo "| ${arch} | [Download APK](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/android-apk-${arch}) | ${size} |" >> $GITHUB_STEP_SUMMARY
+              echo "| ${arch} | [Download APK](https://nightly.link/${{ github.repository }}/actions/runs/${{ github.run_id }}/android-apk-${arch}.zip) | ${size} |" >> $GITHUB_STEP_SUMMARY
             fi
           done
           
           if [ -f "./artifacts/android-aab/app-release.aab" ]; then
             size=$(du -h "./artifacts/android-aab/app-release.aab" | cut -f1)
-            echo "| App Bundle | [Download AAB](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/android-aab) | ${size} |" >> $GITHUB_STEP_SUMMARY
+            echo "| App Bundle | [Download AAB](https://nightly.link/${{ github.repository }}/actions/runs/${{ github.run_id }}/android-aab.zip) | ${size} |" >> $GITHUB_STEP_SUMMARY
           fi
           
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -564,7 +564,7 @@ jobs:
           for arch in x64 arm64; do
             if [ -f "./artifacts/macos-dmg-${arch}/ROMs_Downloader_macOS_${arch}.dmg" ]; then
               size=$(du -h "./artifacts/macos-dmg-${arch}/ROMs_Downloader_macOS_${arch}.dmg" | cut -f1)
-              echo "| ${arch} | [Download DMG](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/macos-dmg-${arch}) | ${size} |" >> $GITHUB_STEP_SUMMARY
+              echo "| ${arch} | [Download DMG](https://nightly.link/${{ github.repository }}/actions/runs/${{ github.run_id }}/macos-dmg-${arch}.zip) | ${size} |" >> $GITHUB_STEP_SUMMARY
             fi
           done
           
@@ -581,14 +581,14 @@ jobs:
             # Check for AppImage
             if [ -f "./artifacts/linux-appimage-${arch}/ROMs_Downloader_Linux_${arch}.AppImage" ]; then
               appimage_size=$(du -h "./artifacts/linux-appimage-${arch}/ROMs_Downloader_Linux_${arch}.AppImage" | cut -f1)
-              appimage_link="[Download AppImage](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/linux-appimage-${arch})"
+              appimage_link="[Download AppImage](https://nightly.link/${{ github.repository }}/actions/runs/${{ github.run_id }}/linux-appimage-${arch}.zip)"
               size_info="AppImage: ${appimage_size}"
             fi
             
             # Check for Handheld package
             if [ -f "./artifacts/handheld-linux-${arch}/ROMs_Downloader_Handheld_Linux_${arch}.zip" ]; then
               handheld_size=$(du -h "./artifacts/handheld-linux-${arch}/ROMs_Downloader_Handheld_Linux_${arch}.zip" | cut -f1)
-              handheld_link="[📱 Handheld Package](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/handheld-linux-${arch})"
+              handheld_link="[📱 Handheld Package](https://nightly.link/${{ github.repository }}/actions/runs/${{ github.run_id }}/handheld-linux-${arch}.zip)"
               if [ -n "$size_info" ]; then
                 size_info="${size_info}<br/>Handheld: ${handheld_size}"
               else
@@ -610,7 +610,7 @@ jobs:
           for arch in x64 arm64; do
             if [ -f "./artifacts/windows-zip-${arch}/ROMs_Downloader_Windows_${arch}.zip" ]; then
               size=$(du -h "./artifacts/windows-zip-${arch}/ROMs_Downloader_Windows_${arch}.zip" | cut -f1)
-              echo "| ${arch} | [Download ZIP](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/windows-zip-${arch}) | ${size} |" >> $GITHUB_STEP_SUMMARY
+              echo "| ${arch} | [Download ZIP](https://nightly.link/${{ github.repository }}/actions/runs/${{ github.run_id }}/windows-zip-${arch}.zip) | ${size} |" >> $GITHUB_STEP_SUMMARY
             fi
           done
           
