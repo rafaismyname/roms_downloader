@@ -2,8 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as path;
 import 'package:roms_downloader/models/extraction_model.dart';
-import 'package:roms_downloader/providers/app_state_provider.dart';
 import 'package:roms_downloader/providers/game_state_provider.dart';
+import 'package:roms_downloader/providers/settings_provider.dart';
 import 'package:roms_downloader/services/extraction_service.dart';
 
 final extractionProvider = StateNotifierProvider<ExtractionNotifier, ExtractionState>((ref) {
@@ -26,7 +26,8 @@ class ExtractionNotifier extends StateNotifier<ExtractionState> {
     }
 
     final game = gameState.game;
-    final downloadDir = _ref.read(appStateProvider).downloadDir;
+    final settingsNotifier = _ref.read(settingsProvider.notifier);
+    final downloadDir = settingsNotifier.getDownloadDir(game.consoleId);
     final filePath = path.join(downloadDir, game.filename);
 
     final tasks = Map<String, ExtractionTaskState>.from(state.tasks);
@@ -113,7 +114,8 @@ class ExtractionNotifier extends StateNotifier<ExtractionState> {
     if (gameState == null) return;
 
     final game = gameState.game;
-    final downloadDir = _ref.read(appStateProvider).downloadDir;
+    final settingsNotifier = _ref.read(settingsProvider.notifier);
+    final downloadDir = settingsNotifier.getDownloadDir(game.consoleId);
     final filePath = path.join(downloadDir, game.filename);
 
     if (await _extractionService.deleteOriginalFile(filePath)) {

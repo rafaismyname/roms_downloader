@@ -5,8 +5,9 @@ import 'package:path/path.dart' as path;
 import 'package:roms_downloader/models/game_model.dart';
 import 'package:roms_downloader/models/game_state_model.dart';
 import 'package:roms_downloader/models/extraction_model.dart';
-import 'package:roms_downloader/providers/app_state_provider.dart';
+import 'package:roms_downloader/models/settings_model.dart';
 import 'package:roms_downloader/providers/catalog_provider.dart';
+import 'package:roms_downloader/providers/settings_provider.dart';
 import 'package:roms_downloader/services/extraction_service.dart';
 import 'package:roms_downloader/services/directory_service.dart';
 
@@ -23,8 +24,8 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
   final Map<String, bool> _resolving = {};
 
   GameStateManager(this._ref) : super({}) {
-    _ref.listen(appStateProvider, (prev, next) {
-      if (prev?.downloadDir != next.downloadDir) _resetStates();
+    _ref.listen(settingWatcherProvider(AppSettings.downloadDir), (prev, next) {
+      if (prev != next) _resetStates();
     });
     _ref.listen(catalogProvider, (prev, next) {
       if (prev?.games != next.games) _initGames(next.games);
@@ -122,10 +123,13 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
     if (_resolving[gameId] == true) return;
 
     final gameState = state[gameId];
-    final downloadDir = _ref.read(appStateProvider).downloadDir;
-    if (gameState == null || downloadDir.isEmpty) return;
+    if (gameState == null) return;
 
     final game = gameState.game;
+    final settingsNotifier = _ref.read(settingsProvider.notifier);
+    final downloadDir = settingsNotifier.getDownloadDir(game.consoleId);
+    if (downloadDir.isEmpty) return;
+
     _resolving[gameId] = true;
     _updateState(
         gameId,
@@ -173,7 +177,7 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
   void _initGames(List<Game> games) {
     final updates = <String, GameState>{};
     for (final game in games) {
-      // use taskId as game identifier for now
+      // TODO1: use taskId as game identifier for now but we must implement a gameId
       if (!state.containsKey(game.taskId)) {
         updates[game.taskId] = GameState(game: game);
       }
@@ -221,7 +225,8 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
 
   bool _canExtract(Game game) {
     try {
-      final downloadDir = _ref.read(appStateProvider).downloadDir;
+      final settingsNotifier = _ref.read(settingsProvider.notifier);
+      final downloadDir = settingsNotifier.getDownloadDir(game.consoleId);
       final filePath = path.join(downloadDir, game.filename);
       return ExtractionService().isCompressedFile(filePath);
     } catch (_) {
