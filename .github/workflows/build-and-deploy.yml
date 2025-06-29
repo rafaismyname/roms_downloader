@@ -10,7 +10,13 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        arch: [arm64-v8a, armeabi-v7a, x86_64]
+        include:
+          - arch: arm64-v8a
+            target: android-arm64
+          - arch: armeabi-v7a
+            target: android-arm
+          - arch: x86_64
+            target: android-x64
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -32,7 +38,7 @@ jobs:
 
       - name: Build Android APK (${{ matrix.arch }})
         run: |
-          flutter build apk --release --target-platform android-${{ matrix.arch }} --split-per-abi
+          flutter build apk --release --target-platform ${{ matrix.target }} --split-per-abi
           
       - name: Build Android App Bundle
         if: matrix.arch == 'arm64-v8a'  # Only build AAB once
@@ -159,7 +165,7 @@ jobs:
           [Desktop Entry]
           Type=Application
           Name=ROMs Downloader
-          Exec=ROMs\ Downloader
+          Exec=roms_downloader
           Icon=roms-downloader
           Categories=Utility;
           EOF
@@ -168,7 +174,7 @@ jobs:
           cat > AppDir/AppRun << 'EOF'
           #!/bin/bash
           HERE="$(dirname "$(readlink -f "${0}")")"
-          exec "${HERE}/usr/bin/ROMs Downloader" "$@"
+          exec "${HERE}/usr/bin/roms_downloader" "$@"
           EOF
           chmod +x AppDir/AppRun
           
@@ -214,8 +220,11 @@ jobs:
 
       - name: Create Windows installer (${{ matrix.arch }})
         run: |
-          # Create a simple ZIP package
-          Compress-Archive -Path "build\windows\*\runner\Release\*" -DestinationPath "ROMs_Downloader_Windows_${{ matrix.arch }}.zip"
+          if ("${{ matrix.arch }}" -eq "arm64") {
+            Compress-Archive -Path "build\windows\arm64\runner\Release" -DestinationPath "ROMs_Downloader_Windows_${{ matrix.arch }}.zip"
+          } else {
+            Compress-Archive -Path "build\windows\x64\runner\Release" -DestinationPath "ROMs_Downloader_Windows_${{ matrix.arch }}.zip"
+          }
 
       - name: Upload Windows package (${{ matrix.arch }})
         uses: actions/upload-artifact@v4
