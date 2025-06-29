@@ -1,3 +1,5 @@
+import 'package:roms_downloader/models/game_model.dart';
+
 enum GameStatus {
   init,
   loading,
@@ -28,6 +30,7 @@ enum GameAction {
 }
 
 class GameState {
+  final Game game;
   final GameStatus status;
   final double downloadProgress;
   final double extractionProgress;
@@ -43,6 +46,7 @@ class GameState {
   final bool extractedContentExists;
 
   const GameState({
+    required this.game,
     this.status = GameStatus.init,
     this.downloadProgress = 0.0,
     this.extractionProgress = 0.0,
@@ -74,6 +78,7 @@ class GameState {
     bool? extractedContentExists,
   }) {
     return GameState(
+      game: game,
       status: status ?? this.status,
       downloadProgress: downloadProgress ?? this.downloadProgress,
       extractionProgress: extractionProgress ?? this.extractionProgress,

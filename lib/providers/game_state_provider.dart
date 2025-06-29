@@ -10,8 +10,8 @@ import 'package:roms_downloader/providers/catalog_provider.dart';
 import 'package:roms_downloader/services/extraction_service.dart';
 import 'package:roms_downloader/services/directory_service.dart';
 
-final gameStateProvider = Provider.family<GameState, String>((ref, gameId) {
-  return ref.watch(gameStateManagerProvider)[gameId] ?? const GameState();
+final gameStateProvider = Provider.family<GameState, Game>((ref, game) {
+  return ref.watch(gameStateManagerProvider)[game.taskId] ?? GameState(game: game);
 });
 
 final gameStateManagerProvider = StateNotifierProvider<GameStateManager, Map<String, GameState>>((ref) {
@@ -120,7 +120,7 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
     for (final game in games) {
       // use taskId as game identifier for now
       if (!state.containsKey(game.taskId)) {
-        updates[game.taskId] = const GameState();
+        updates[game.taskId] = GameState(game: game);
       }
     }
     if (updates.isNotEmpty) state = {...state, ...updates};
@@ -129,10 +129,11 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
   void resolveFileState(String gameId) async {
     if (_resolving[gameId] == true) return;
 
-    final game = _findGame(gameId);
+    final gameState = state[gameId];
     final downloadDir = _ref.read(appStateProvider).downloadDir;
-    if (game == null || downloadDir.isEmpty) return;
+    if (gameState == null || downloadDir.isEmpty) return;
 
+    final game = gameState.game;
     _resolving[gameId] = true;
     _updateState(
         gameId,
@@ -213,14 +214,6 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
       return ExtractionService().isCompressedFile(filePath);
     } catch (_) {
       return false;
-    }
-  }
-
-  Game? _findGame(String gameId) {
-    try {
-      return _ref.read(catalogProvider).games.firstWhere((g) => g.taskId == gameId);
-    } catch (_) {
-      return null;
     }
   }
 }

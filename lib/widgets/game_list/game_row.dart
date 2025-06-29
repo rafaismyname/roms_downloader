@@ -23,7 +23,7 @@ class GameRow extends ConsumerWidget {
     final extractionNotifier = ref.read(extractionProvider.notifier);
 
     final gameId = game.taskId;
-    final gameState = ref.watch(gameStateProvider(gameId));
+    final gameState = ref.watch(gameStateProvider(game));
 
     if (gameState.status == GameStatus.init) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
