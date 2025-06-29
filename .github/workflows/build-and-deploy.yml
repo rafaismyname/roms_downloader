@@ -317,9 +317,21 @@ jobs:
           cp -r build/linux/*/release/bundle/data handheld_bundle/
           cp -r build/linux/*/release/bundle/lib handheld_bundle/
           
-          # Strip debug symbols to reduce size
-          ${{ matrix.strip }} handheld_bundle/roms_downloader
-          find handheld_bundle/lib -name "*.so" -exec ${{ matrix.strip }} {} \;
+          # Strip debug symbols to reduce size (only if we have the right tools)
+          if [ "${{ matrix.arch }}" == "arm64" ]; then
+            # For ARM64, check if we actually built an ARM64 binary
+            if file handheld_bundle/roms_downloader | grep -q "aarch64"; then
+              ${{ matrix.strip }} handheld_bundle/roms_downloader
+              find handheld_bundle/lib -name "*.so" -exec file {} \; | grep "aarch64" | cut -d: -f1 | xargs -r ${{ matrix.strip }}
+            else
+              echo "Warning: Expected ARM64 binary but got different architecture, skipping strip"
+              file handheld_bundle/roms_downloader
+            fi
+          else
+            # For x64, use regular strip
+            ${{ matrix.strip }} handheld_bundle/roms_downloader
+            find handheld_bundle/lib -name "*.so" -exec ${{ matrix.strip }} {} \;
+          fi
           
           # Compress executable with UPX (best effort)
           upx --best handheld_bundle/roms_downloader 2>/dev/null || echo "UPX compression failed or not available, continuing..."
