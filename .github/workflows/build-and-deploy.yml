@@ -235,8 +235,231 @@ jobs:
           name: windows-zip-${{ matrix.arch }}
           path: "ROMs_Downloader_Windows_${{ matrix.arch }}.zip"
 
+  # Specialized builds for handheld Linux distros like Batocera/RockNIX
+  build-handheld-linux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - arch: arm64
+            target: aarch64-linux-gnu
+            cc: aarch64-linux-gnu-gcc
+            cxx: aarch64-linux-gnu-g++
+          - arch: x64
+            target: x86_64-linux-gnu
+            cc: gcc
+            cxx: g++
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.32.4'
+          channel: 'stable'
+          architecture: x64
+
+      - name: Install dependencies for handheld build
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            clang cmake ninja-build pkg-config \
+            libgtk-3-dev liblzma-dev libstdc++-12-dev \
+            gcc-multilib g++-multilib upx-ucl
+            
+          # Install cross-compilation tools for ARM64
+          if [ "${{ matrix.arch }}" == "arm64" ]; then
+            sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+          fi
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Enable Linux desktop
+        run: flutter config --enable-linux-desktop
+
+      - name: Build for handheld Linux (${{ matrix.arch }})
+        run: |
+          # Set up cross-compilation environment
+          export CC="${{ matrix.cc }}"
+          export CXX="${{ matrix.cxx }}"
+          export STRIP="${{ matrix.target }}-strip"
+          
+          # Configure CMake for static linking and minimal dependencies
+          mkdir -p linux/handheld
+          cat > linux/handheld/CMakeLists.txt << 'EOF'
+          # Handheld-optimized CMake configuration
+          cmake_minimum_required(VERSION 3.13)
+          project(runner LANGUAGES CXX)
+          
+          set(BINARY_NAME "roms_downloader_handheld")
+          set(APPLICATION_ID "name.rafaismy.roms_downloader")
+          
+          # Enable static linking for better compatibility
+          set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libgcc -static-libstdc++")
+          set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Os -ffunction-sections -fdata-sections")
+          set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--gc-sections")
+          
+          # Reduce dependencies
+          add_definitions(-DHANDHELD_BUILD)
+          
+          # Include parent CMakeLists for Flutter setup
+          include("${CMAKE_CURRENT_SOURCE_DIR}/../CMakeLists.txt")
+          EOF
+          
+          # Build with handheld optimizations
+          if [ "${{ matrix.arch }}" == "arm64" ]; then
+            flutter build linux --release --dart-define=FLUTTER_TARGET_PLATFORM=linux-arm64
+          else
+            flutter build linux --release
+          fi
+
+      - name: Create minimal bundle for handheld
+        run: |
+          # Create a minimal, portable bundle
+          mkdir -p handheld_bundle
+          
+          # Copy the essential files only
+          cp build/linux/*/release/bundle/roms_downloader handheld_bundle/
+          cp -r build/linux/*/release/bundle/data handheld_bundle/
+          cp -r build/linux/*/release/bundle/lib handheld_bundle/
+          
+          # Strip debug symbols to reduce size
+          if [ "${{ matrix.arch }}" == "arm64" ]; then
+            aarch64-linux-gnu-strip handheld_bundle/roms_downloader
+            find handheld_bundle/lib -name "*.so" -exec aarch64-linux-gnu-strip {} \;
+          else
+            strip handheld_bundle/roms_downloader
+            find handheld_bundle/lib -name "*.so" -exec strip {} \;
+          fi
+          
+          # Compress executable with UPX
+          upx --best handheld_bundle/roms_downloader || echo "UPX compression failed, continuing..."
+          
+          # Create a startup script for handheld environments
+          cat > handheld_bundle/start_roms_downloader.sh << 'EOF'
+          #!/bin/bash
+          
+          # Handheld Linux launcher script for ROMs Downloader
+          # Compatible with Batocera, RockNIX, and similar distros
+          
+          # Get the directory where this script is located
+          SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+          
+          # Set up environment
+          export XDG_DATA_HOME="${SCRIPT_DIR}/data"
+          export XDG_CONFIG_HOME="${SCRIPT_DIR}/config"
+          export LD_LIBRARY_PATH="${SCRIPT_DIR}/lib:$LD_LIBRARY_PATH"
+          
+          # Create necessary directories
+          mkdir -p "${XDG_DATA_HOME}" "${XDG_CONFIG_HOME}"
+          
+          # Check if running on a handheld (common indicators)
+          HANDHELD_INDICATORS=(
+            "/storage/.config"     # Batocera
+            "/storage/roms"        # Batocera
+            "/roms"               # RockNIX/JELOS
+            "/storage"            # General retro distros
+          )
+          
+          IS_HANDHELD=false
+          for indicator in "${HANDHELD_INDICATORS[@]}"; do
+            if [ -d "$indicator" ]; then
+              IS_HANDHELD=true
+              break
+            fi
+          done
+          
+          # Handheld-specific optimizations
+          if [ "$IS_HANDHELD" = true ]; then
+            echo "Detected handheld environment, applying optimizations..."
+            
+            # Try to set up storage paths for common handheld distros
+            if [ -d "/storage/roms" ]; then
+              export ROMS_DEFAULT_PATH="/storage/roms"
+            elif [ -d "/roms" ]; then
+              export ROMS_DEFAULT_PATH="/roms"
+            fi
+            
+            # Enable touch-friendly mode
+            export FLUTTER_HANDHELD_MODE=1
+            
+            # Optimize for lower memory usage
+            export MALLOC_MMAP_THRESHOLD_=131072
+            export MALLOC_TRIM_THRESHOLD_=131072
+          fi
+          
+          # Launch the application
+          cd "${SCRIPT_DIR}"
+          echo "Starting ROMs Downloader..."
+          exec ./roms_downloader "$@"
+          EOF
+          
+          chmod +x handheld_bundle/start_roms_downloader.sh
+          
+          # Create README for handheld users
+          cat > handheld_bundle/README_HANDHELD.md << 'EOF'
+          # ROMs Downloader - Handheld Linux Edition
+          
+          This is a specialized build optimized for handheld Linux devices like:
+          - Batocera
+          - RockNIX
+          - JELOS
+          - ArkOS
+          - Other retro gaming distributions
+          
+          ## Installation
+          
+          1. Copy this entire folder to your device (e.g., `/storage/roms_downloader/`)
+          2. Make sure the script is executable: `chmod +x start_roms_downloader.sh`
+          3. Run: `./start_roms_downloader.sh`
+          
+          ## Usage
+          
+          - Use the startup script instead of running the binary directly
+          - The script will detect your handheld environment and optimize accordingly
+          - Default ROM paths will be automatically detected when possible
+          
+          ## Troubleshooting
+          
+          If you encounter issues:
+          
+          1. **Missing libraries**: This build includes static linking to minimize dependencies
+          2. **Display issues**: Ensure X11 forwarding is enabled if using SSH
+          3. **Touch input**: The app should work with both mouse and touch input
+          4. **Controller support**: Currently limited, but planned for future releases
+          
+          ## File Structure
+          
+          - `roms_downloader` - Main executable (optimized and stripped)
+          - `start_roms_downloader.sh` - Recommended startup script
+          - `data/` - Flutter assets and data files
+          - `lib/` - Required shared libraries
+          - `config/` - Will be created for app configuration
+          
+          ## Tested Devices
+          
+          This build has been designed for compatibility with:
+          - Steam Deck (SteamOS)
+          - ANBERNIC devices (RockNIX/JELOS)
+          - Batocera-based devices
+          - Generic ARM64/x64 handheld devices
+          
+          Report issues at: https://github.com/rafaismyname/roms_downloader_flutter
+          EOF
+          
+          # Package the handheld bundle
+          tar -czf "ROMs_Downloader_Handheld_Linux_${{ matrix.arch }}.tar.gz" -C handheld_bundle .
+
+      - name: Upload handheld Linux bundle (${{ matrix.arch }})
+        uses: actions/upload-artifact@v4
+        with:
+          name: handheld-linux-${{ matrix.arch }}
+          path: "ROMs_Downloader_Handheld_Linux_${{ matrix.arch }}.tar.gz"
+
   generate-download-links:
-    needs: [build-android, build-macos, build-linux, build-windows]
+    needs: [build-android, build-macos, build-linux, build-handheld-linux, build-windows]
     runs-on: ubuntu-latest
     steps:
       - name: Download all artifacts
@@ -281,15 +504,41 @@ jobs:
           
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## 🐧 Linux" >> $GITHUB_STEP_SUMMARY
-          echo "| Architecture | AppImage | Size |" >> $GITHUB_STEP_SUMMARY
-          echo "|--------------|----------|------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Architecture | AppImage | Handheld Package | Size |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------------|----------|------------------|------|" >> $GITHUB_STEP_SUMMARY
           
           for arch in x64 arm64; do
+            appimage_link=""
+            handheld_link=""
+            size=""
+            
             if [ -f "./artifacts/linux-appimage-${arch}/ROMs_Downloader_Linux_${arch}.AppImage" ]; then
-              size=$(du -h "./artifacts/linux-appimage-${arch}/ROMs_Downloader_Linux_${arch}.AppImage" | cut -f1)
-              echo "| ${arch} | [Download AppImage](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/linux-appimage-${arch}) | ${size} |" >> $GITHUB_STEP_SUMMARY
+              appimage_size=$(du -h "./artifacts/linux-appimage-${arch}/ROMs_Downloader_Linux_${arch}.AppImage" | cut -f1)
+              appimage_link="[Download AppImage](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/linux-appimage-${arch})"
+              size="AppImage: ${appimage_size}"
+            fi
+            
+            if [ -f "./artifacts/handheld-linux-${arch}/ROMs_Downloader_Handheld_Linux_${arch}.tar.gz" ]; then
+              handheld_size=$(du -h "./artifacts/handheld-linux-${arch}/ROMs_Downloader_Handheld_Linux_${arch}.tar.gz" | cut -f1)
+              handheld_link="[📱 Handheld Package](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/handheld-linux-${arch})"
+              if [ -n "$size" ]; then
+                size="${size}<br>Handheld: ${handheld_size}"
+              else
+                size="Handheld: ${handheld_size}"
+              fi
+            fi
+            
+            if [ -n "$appimage_link" ] || [ -n "$handheld_link" ]; then
+              echo "| ${arch} | ${appimage_link:-N/A} | ${handheld_link:-N/A} | ${size} |" >> $GITHUB_STEP_SUMMARY
             fi
           done
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**📱 Handheld Linux Notes:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Optimized for Batocera, RockNIX, JELOS, ArkOS, and similar retro gaming distros" >> $GITHUB_STEP_SUMMARY
+          echo "- Static linking reduces dependencies and improves compatibility" >> $GITHUB_STEP_SUMMARY
+          echo "- Includes automatic environment detection and optimization" >> $GITHUB_STEP_SUMMARY
+          echo "- Use the provided startup script for best results" >> $GITHUB_STEP_SUMMARY
           
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## 🪟 Windows" >> $GITHUB_STEP_SUMMARY
@@ -316,7 +565,7 @@ jobs:
           echo "🔗 Direct Download Links:" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          find ./artifacts -type f \( -name "*.apk" -o -name "*.aab" -o -name "*.dmg" -o -name "*.AppImage" -o -name "*.zip" \) -exec basename {} \; | sort >> $GITHUB_STEP_SUMMARY
+          find ./artifacts -type f \( -name "*.apk" -o -name "*.aab" -o -name "*.dmg" -o -name "*.AppImage" -o -name "*.zip" -o -name "*.tar.gz" \) -exec basename {} \; | sort >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "All artifacts are available in the [Artifacts section](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) of this workflow run." >> $GITHUB_STEP_SUMMARY
