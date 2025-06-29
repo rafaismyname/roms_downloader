@@ -1,6 +1,6 @@
 import 'package:roms_downloader/models/game_model.dart';
 
-const int kDefaultCatalogDisplaySize = 10;
+const int kDefaultCatalogDisplaySize = 20;
 
 class CatalogState {
   final List<Game> games;
@@ -14,7 +14,7 @@ class CatalogState {
     this.filterText = '',
     this.loading = false,
     this.selectedGames = const {},
-    this.displayedCount = 10,
+    this.displayedCount = 20,
   });
 
   CatalogState copyWith({
