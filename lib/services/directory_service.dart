@@ -4,6 +4,10 @@ import 'package:path_provider/path_provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:path/path.dart' as path;
+
+typedef FileCheckData = ({String filename, String downloadDir});
+typedef FileCheckResult = ({bool hasFile, bool hasExtracted});
 
 class DirectoryService {
   Future<String> getDownloadDir() async {
@@ -62,5 +66,42 @@ class DirectoryService {
       debugPrint('Error selecting directory: $e');
       return null;
     }
+  }
+
+  Future<FileCheckResult> computeFileCheck(FileCheckData data) async {
+    final expectedPath = path.join(data.downloadDir, data.filename);
+
+    bool hasFile = File(expectedPath).existsSync();
+    bool hasExtracted = false;
+
+    if (!hasFile) {
+      try {
+        final dir = Directory(data.downloadDir);
+        if (dir.existsSync()) {
+          final filenameBase = path.basenameWithoutExtension(data.filename);
+          for (final entity in dir.listSync()) {
+            final entityBase = path.basenameWithoutExtension(path.basename(entity.path));
+            if (entityBase == filenameBase) {
+              hasFile = true;
+              break;
+            }
+          }
+        }
+      } catch (_) {}
+    }
+
+    if (hasFile) {
+      final extractionDir = path.join(path.dirname(expectedPath), path.basenameWithoutExtension(expectedPath));
+      final directory = Directory(extractionDir);
+
+      if (directory.existsSync()) {
+        try {
+          final contents = directory.listSync();
+          hasExtracted = contents.isNotEmpty;
+        } catch (_) {}
+      }
+    }
+
+    return (hasFile: hasFile, hasExtracted: hasExtracted);
   }
 }

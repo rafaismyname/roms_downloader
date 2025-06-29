@@ -1,48 +1,33 @@
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as path;
 import 'package:roms_downloader/models/extraction_model.dart';
-import 'package:roms_downloader/models/game_model.dart';
 import 'package:roms_downloader/providers/app_state_provider.dart';
-import 'package:roms_downloader/providers/catalog_provider.dart';
+import 'package:roms_downloader/providers/game_state_provider.dart';
 import 'package:roms_downloader/services/extraction_service.dart';
 
 final extractionProvider = StateNotifierProvider<ExtractionNotifier, ExtractionState>((ref) {
-  return ExtractionNotifier(ref);
+  final gameStateManager = ref.read(gameStateManagerProvider.notifier);
+  return ExtractionNotifier(ref, gameStateManager);
 });
 
 class ExtractionNotifier extends StateNotifier<ExtractionState> {
   final Ref _ref;
   final ExtractionService _extractionService = ExtractionService();
+  final GameStateManager gameStateManager;
 
-  ExtractionNotifier(this._ref) : super(const ExtractionState());
-
-  bool _canExtract(String taskId) {
-    final game = _findGameByTaskId(taskId);
-    if (game == null) return false;
-
-    final downloadDir = _ref.read(appStateProvider).downloadDir;
-    final filePath = path.join(downloadDir, game.filename);
-    final file = File(filePath);
-
-    return file.existsSync() && _extractionService.isCompressedFile(filePath);
-  }
+  ExtractionNotifier(this._ref, this.gameStateManager) : super(const ExtractionState());
 
   void extractFile(String taskId) {
-    final game = _findGameByTaskId(taskId);
-    if (game == null) {
-      debugPrint('Game not found for taskId: $taskId');
+    final gameState = gameStateManager.state[taskId];
+    if (gameState == null) {
+      debugPrint('Game state not found for taskId: $taskId');
       return;
     }
 
+    final game = gameState.game;
     final downloadDir = _ref.read(appStateProvider).downloadDir;
     final filePath = path.join(downloadDir, game.filename);
-
-    if (!_canExtract(taskId)) {
-      debugPrint('Cannot extract file: $filePath');
-      return;
-    }
 
     final tasks = Map<String, ExtractionTaskState>.from(state.tasks);
     tasks[taskId] = ExtractionTaskState(
@@ -55,6 +40,8 @@ class ExtractionNotifier extends StateNotifier<ExtractionState> {
       tasks: tasks,
       isExtracting: _hasActiveExtractions(tasks),
     );
+
+    gameStateManager.updateExtractionState(taskId, ExtractionStatus.extracting, 0.0);
 
     debugPrint('Starting extraction for: $filePath');
 
@@ -90,6 +77,8 @@ class ExtractionNotifier extends StateNotifier<ExtractionState> {
       state = state.copyWith(tasks: tasks);
     }
 
+    gameStateManager.updateExtractionState(taskId, ExtractionStatus.extracting, progress);
+
     if (progress >= 1.0) {
       _updateCompleted(taskId);
     }
@@ -109,6 +98,9 @@ class ExtractionNotifier extends StateNotifier<ExtractionState> {
         isExtracting: _hasActiveExtractions(tasks),
       );
     }
+
+    gameStateManager.updateExtractionState(taskId, ExtractionStatus.completed, 1.0);
+
     try {
       _deleteOriginalFile(taskId);
     } catch (e) {
@@ -117,9 +109,10 @@ class ExtractionNotifier extends StateNotifier<ExtractionState> {
   }
 
   Future<void> _deleteOriginalFile(String taskId) async {
-    final game = _findGameByTaskId(taskId);
-    if (game == null) return;
+    final gameState = gameStateManager.state[taskId];
+    if (gameState == null) return;
 
+    final game = gameState.game;
     final downloadDir = _ref.read(appStateProvider).downloadDir;
     final filePath = path.join(downloadDir, game.filename);
 
@@ -143,18 +136,11 @@ class ExtractionNotifier extends StateNotifier<ExtractionState> {
         isExtracting: _hasActiveExtractions(tasks),
       );
     }
+
+    gameStateManager.updateExtractionState(taskId, ExtractionStatus.failed, 0.0);
   }
 
   bool _hasActiveExtractions(Map<String, ExtractionTaskState> tasks) {
     return tasks.values.any((task) => task.status == ExtractionStatus.extracting);
-  }
-
-  Game? _findGameByTaskId(String taskId) {
-    final catalogState = _ref.read(catalogProvider);
-    try {
-      return catalogState.games.firstWhere((game) => game.taskId == taskId);
-    } catch (e) {
-      return null;
-    }
   }
 }

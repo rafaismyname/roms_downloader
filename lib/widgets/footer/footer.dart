@@ -17,7 +17,7 @@ class Footer extends ConsumerWidget {
     final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
 
     // Get all active games from the unified state system
-    final activeGames = catalogState.games.map((game) => gameStateManager[game.taskId] ?? const GameState()).where((gameState) => gameState.isActive).toList();
+    final activeGames = catalogState.games.map((game) => gameStateManager[game.taskId]).whereType<GameState>().where((gameState) => gameState.isActive).toList();
 
     final downloadingGames = activeGames.where((state) => state.status == GameStatus.downloading || state.status == GameStatus.downloadQueued).length;
 

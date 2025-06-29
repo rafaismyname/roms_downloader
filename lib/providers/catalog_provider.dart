@@ -34,6 +34,7 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
       state = state.copyWith(
         games: games,
         loading: false,
+        displayedCount: kDefaultCatalogDisplaySize,
       );
     } catch (e) {
       debugPrint('Error loading catalog: $e');
@@ -45,7 +46,12 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
   }
 
   void updateFilterText(String filter) {
-    state = state.copyWith(filterText: filter);
+    state = state.copyWith(filterText: filter, displayedCount: kDefaultCatalogDisplaySize);
+  }
+
+  void loadMoreItems() {
+    if (!state.hasMoreItems) return;
+    state = state.copyWith(displayedCount: state.displayedCount + kDefaultCatalogDisplaySize);
   }
 
   void toggleGameSelection(String gameId) {
@@ -70,14 +76,5 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
     final selectedGames = Set<String>.from(state.selectedGames);
     selectedGames.remove(gameId);
     state = state.copyWith(selectedGames: selectedGames);
-  }
-
-  void clearSelection() {
-    state = state.copyWith(selectedGames: {});
-  }
-
-  void selectAll() {
-    final allGameIds = state.filteredGames.map((game) => game.taskId).toSet();
-    state = state.copyWith(selectedGames: allGameIds);
   }
 }

@@ -7,10 +7,12 @@ import 'package:roms_downloader/models/download_model.dart';
 import 'package:roms_downloader/services/download_service.dart';
 import 'package:roms_downloader/providers/app_state_provider.dart';
 import 'package:roms_downloader/providers/catalog_provider.dart';
+import 'package:roms_downloader/providers/game_state_provider.dart';
 
 final downloadProvider = StateNotifierProvider<DownloadNotifier, DownloadState>((ref) {
   final catalogNotifier = ref.read(catalogProvider.notifier);
-  return DownloadNotifier(ref, catalogNotifier);
+  final gameStateManager = ref.read(gameStateManagerProvider.notifier);
+  return DownloadNotifier(ref, catalogNotifier, gameStateManager);
 });
 
 class DownloadNotifier extends StateNotifier<DownloadState> {
@@ -20,8 +22,9 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
 
   final DownloadService downloadService = DownloadService();
   final CatalogNotifier catalogNotifier;
+  final GameStateManager gameStateManager;
 
-  DownloadNotifier(this._ref, this.catalogNotifier) : super(const DownloadState()) {
+  DownloadNotifier(this._ref, this.catalogNotifier, this.gameStateManager) : super(const DownloadState()) {
     _initialize();
   }
 
@@ -54,6 +57,13 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       completedTasks: completedTasks,
     );
 
+    gameStateManager.updateDownloadState(
+      update.task.taskId,
+      update.status,
+      state.taskProgress[update.task.taskId],
+      update.status == TaskStatus.complete,
+    );
+
     _updateDownloadingState();
   }
 
@@ -72,6 +82,13 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
 
     state = state.copyWith(
       taskProgress: taskProgress,
+    );
+
+    gameStateManager.updateDownloadState(
+      update.task.taskId,
+      taskStatus,
+      update,
+      false,
     );
   }
 
@@ -183,6 +200,13 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     state = state.copyWith(
       taskStatus: taskStatus,
       taskProgress: taskProgress,
+    );
+
+    gameStateManager.updateDownloadState(
+      taskId,
+      TaskStatus.canceled,
+      null,
+      false,
     );
   }
 

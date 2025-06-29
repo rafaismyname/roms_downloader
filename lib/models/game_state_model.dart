@@ -1,4 +1,8 @@
+import 'package:roms_downloader/models/game_model.dart';
+
 enum GameStatus {
+  init,
+  loading,
   ready,
   downloadQueued,
   downloading,
@@ -10,6 +14,7 @@ enum GameStatus {
   downloadFailed,
   extractionFailed,
   processing,
+  error,
 }
 
 enum GameAction {
@@ -20,10 +25,12 @@ enum GameAction {
   extract,
   retryDownload,
   retryExtraction,
+  loading,
   none,
 }
 
 class GameState {
+  final Game game;
   final GameStatus status;
   final double downloadProgress;
   final double extractionProgress;
@@ -39,14 +46,15 @@ class GameState {
   final bool extractedContentExists;
 
   const GameState({
-    this.status = GameStatus.ready,
+    required this.game,
+    this.status = GameStatus.init,
     this.downloadProgress = 0.0,
     this.extractionProgress = 0.0,
     this.networkSpeed = 0.0,
     this.timeRemaining = Duration.zero,
     this.isSelected = false,
     this.isInteractable = true,
-    this.availableActions = const {GameAction.download},
+    this.availableActions = const {GameAction.loading},
     this.showProgressBar = false,
     this.currentProgress = 0.0,
     this.errorMessage,
@@ -70,6 +78,7 @@ class GameState {
     bool? extractedContentExists,
   }) {
     return GameState(
+      game: game,
       status: status ?? this.status,
       downloadProgress: downloadProgress ?? this.downloadProgress,
       extractionProgress: extractionProgress ?? this.extractionProgress,
@@ -86,16 +95,11 @@ class GameState {
     );
   }
 
-  GameAction get primaryAction {
-    if (availableActions.contains(GameAction.download)) return GameAction.download;
-    if (availableActions.contains(GameAction.extract)) return GameAction.extract;
-    if (availableActions.contains(GameAction.retryDownload)) return GameAction.retryDownload;
-    if (availableActions.contains(GameAction.retryExtraction)) return GameAction.retryExtraction;
-    return GameAction.none;
-  }
-
   String get statusText {
     switch (status) {
+      case GameStatus.init:
+      case GameStatus.loading:
+        return 'Loading';
       case GameStatus.ready:
         return 'Ready';
       case GameStatus.downloadQueued:
@@ -118,6 +122,8 @@ class GameState {
         return 'Extraction Failed';
       case GameStatus.processing:
         return 'Processing';
+      case GameStatus.error:
+        return 'Error';
     }
   }
 

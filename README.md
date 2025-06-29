@@ -39,6 +39,7 @@ I do not own nor recommend those sources. As a matter of fact, the first step in
 - [ ] Ignore (hide) file
 - [ ] Manually mark as in-library
 - [ ] Controller support for improved handheld use
+- [ ] Game metadata fetcher (cover, images, info, etc)
 - [x] Android build setup
 - [x] Mac build setup
 - [ ] Windows build setup

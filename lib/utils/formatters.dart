@@ -38,10 +38,13 @@ String formatTimeRemaining(Duration duration) {
 
 Color getStatusColor(BuildContext context, GameStatus status) {
   switch (status) {
+    case GameStatus.init:
+    case GameStatus.loading:
+      return Theme.of(context).colorScheme.secondary;
     case GameStatus.ready:
       return Theme.of(context).colorScheme.onSurfaceVariant;
     case GameStatus.downloadQueued:
-      return Theme.of(context).colorScheme.tertiary;
+      return Theme.of(context).colorScheme.secondary;
     case GameStatus.downloading:
       return Theme.of(context).colorScheme.primary;
     case GameStatus.downloadPaused:
@@ -56,8 +59,9 @@ Color getStatusColor(BuildContext context, GameStatus status) {
       return Theme.of(context).colorScheme.primary;
     case GameStatus.downloadFailed:
     case GameStatus.extractionFailed:
+    case GameStatus.error:
       return Theme.of(context).colorScheme.error;
     case GameStatus.processing:
-      return Theme.of(context).colorScheme.tertiary;
+      return Theme.of(context).colorScheme.secondary;
   }
 }
