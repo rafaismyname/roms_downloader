@@ -18,10 +18,7 @@ class ConsoleDropdown extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 32,
-      padding: EdgeInsets.symmetric(
-        horizontal: 8,
-      ),
+      padding: EdgeInsets.symmetric(horizontal: 8),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(4),
@@ -35,7 +32,6 @@ class ConsoleDropdown extends StatelessWidget {
           isExpanded: true,
           value: selectedConsole?.id,
           style: TextStyle(
-            fontSize: 12,
             color: Theme.of(context).colorScheme.onSurface,
           ),
           onChanged: isInteractive

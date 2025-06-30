@@ -19,39 +19,46 @@ class PermissionService {
 
     final requiredPermissions = [
       Permission.notification,
-      Permission.storage,
       Permission.manageExternalStorage,
     ];
 
-    final permanentlyDeniedPermissions = <Permission>[];
-    bool allGranted = true;
+    try {
+      final permanentlyDeniedPermissions = <Permission>[];
+      bool allGranted = true;
 
-    for (final permission in requiredPermissions) {
-      final status = await permission.status;
-      if (!status.isGranted) {
-        allGranted = false;
-        final result = await permission.request();
-        if (!result.isGranted && result.isPermanentlyDenied) {
-          permanentlyDeniedPermissions.add(permission);
+      for (final permission in requiredPermissions) {
+        final status = await permission.status;
+        debugPrint('Permission $permission status: $status');
+        if (!status.isGranted) {
+          allGranted = false;
+          debugPrint('Requesting permission: $permission');
+          final result = await permission.request();
+          debugPrint('Permission $permission result: $result');
+          if (!result.isGranted && result.isPermanentlyDenied) {
+            permanentlyDeniedPermissions.add(permission);
+          }
         }
       }
-    }
 
-    if (permanentlyDeniedPermissions.isNotEmpty) {
-      final canAskAgain = await _canAskForPermissions();
-      if (canAskAgain) {
-        final shouldOpenSettings = await _showPermissionSettingsDialog(permanentlyDeniedPermissions);
-        if (shouldOpenSettings) {
-          await openAppSettings();
+      if (permanentlyDeniedPermissions.isNotEmpty) {
+        final canAskAgain = await _canAskForAppSettings();
+        if (canAskAgain) {
+          final shouldOpenSettings = await _showPermissionSettingsDialog(permanentlyDeniedPermissions);
+          if (shouldOpenSettings) {
+            await openAppSettings();
+          }
+          await _saveLastPermissionRequest();
         }
-        await _saveLastPermissionRequest();
       }
-    }
 
-    return allGranted;
+      return allGranted;
+    } catch (e) {
+      debugPrint('Error requesting permissions: $e');
+      return false;
+    }
   }
 
-  Future<bool> _canAskForPermissions() async {
+  Future<bool> _canAskForAppSettings() async {
     final prefs = await SharedPreferences.getInstance();
     final lastRequest = prefs.getInt(_lastPermissionRequestKey);
 

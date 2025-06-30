@@ -33,74 +33,82 @@ class Controls extends ConsumerWidget {
     final extractionState = ref.watch(extractionProvider);
     final settingsNotifier = ref.read(settingsProvider.notifier);
 
+    final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final isShort = isLandscape && screenHeight < 600;
+
     final isInteractive = !appState.loading && !downloadState.downloading && !extractionState.isExtracting;
     final canDownload = !appState.loading && downloadNotifier.hasDownloadableSelectedGames();
 
     return Container(
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              Expanded(
-                flex: 9,
-                child: ConsoleDropdown(
-                  consoles: consoles,
-                  selectedConsole: selectedConsole,
-                  isInteractive: isInteractive,
-                  onConsoleSelect: onConsoleSelect,
+          SizedBox(
+            height: isShort ? 30 : 36,
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 9,
+                  child: ConsoleDropdown(
+                    consoles: consoles,
+                    selectedConsole: selectedConsole,
+                    isInteractive: isInteractive,
+                    onConsoleSelect: onConsoleSelect,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                flex: 1,
-                child: IconButton(
-                  icon: const Icon(Icons.settings),
-                  onPressed: isInteractive
-                      ? () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => SettingsScreen(
-                                initialConsoleId: selectedConsole?.id,
+                const SizedBox(width: 8),
+                Expanded(
+                  flex: 1,
+                  child: IconButton(
+                    icon: const Icon(Icons.settings),
+                    onPressed: isInteractive
+                        ? () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => SettingsScreen(
+                                  initialConsoleId: selectedConsole?.id,
+                                ),
                               ),
-                            ),
-                          );
-                        }
-                      : null,
-                  tooltip: 'Console Settings',
+                            );
+                          }
+                        : null,
+                    tooltip: 'Console Settings',
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                flex: 9,
-                child: SearchField(
-                  initialText: catalogState.filterText,
-                  isEnabled: isInteractive,
-                  isCompact: true,
-                  onChanged: (text) => catalogNotifier.updateFilterText(text),
+          SizedBox(
+            height: isShort ? 28 : 32,
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 9,
+                  child: SearchField(
+                    initialText: catalogState.filterText,
+                    isEnabled: isInteractive,
+                    onChanged: (text) => catalogNotifier.updateFilterText(text),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                flex: 1,
-                child: DownloadButton(
-                  isEnabled: canDownload,
-                  isDownloading: downloadState.downloading,
-                  isLoading: appState.loading,
-                  isCompact: true,
-                  onPressed: () async {
-                    final downloadDir = settingsNotifier.getDownloadDir(selectedConsole?.id);
-                    await downloadNotifier.startSelectedDownloads(downloadDir, selectedConsole?.id);
-                  },
+                const SizedBox(width: 8),
+                Expanded(
+                  flex: 1,
+                  child: DownloadButton(
+                    isEnabled: canDownload,
+                    isDownloading: downloadState.downloading,
+                    isLoading: appState.loading,
+                    onPressed: () async {
+                      final downloadDir = settingsNotifier.getDownloadDir(selectedConsole?.id);
+                      await downloadNotifier.startSelectedDownloads(downloadDir, selectedConsole?.id);
+                    },
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),

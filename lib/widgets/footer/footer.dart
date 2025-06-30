@@ -54,7 +54,6 @@ class Footer extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (showProgressBar) ...[
-            // When expanded (with progress bar), show download dir at top right
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -73,11 +72,14 @@ class Footer extends ConsumerWidget {
                     ),
                   ),
                 ),
-                Text(
-                  truncatedDonwloadDir,
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                Flexible(
+                  child: Text(
+                    truncatedDonwloadDir,
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
@@ -113,7 +115,6 @@ class Footer extends ConsumerWidget {
               ],
             ),
           ] else ...[
-            // When minimized (no progress bar), show download dir on the right
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -126,11 +127,14 @@ class Footer extends ConsumerWidget {
                     ),
                   ),
                 ),
-                Text(
-                  truncatedDonwloadDir,
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                Flexible(
+                  child: Text(
+                    truncatedDonwloadDir,
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],

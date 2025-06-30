@@ -42,14 +42,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       appBar: AppBar(
         title: Text(
           'Settings',
-          style: TextStyle(fontSize: 20),
+          style: TextStyle(fontSize: 16),
         ),
         centerTitle: false,
         elevation: 0,
-        toolbarHeight: 50,
+        scrolledUnderElevation: 0,
+        toolbarHeight: 40,
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -71,7 +72,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 });
               },
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
             Expanded(
               child: SettingsContent(
                 selectedConsole: showGeneral ? null : selectedConsole,

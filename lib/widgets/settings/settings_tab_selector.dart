@@ -56,7 +56,7 @@ class SettingsTabSelector extends StatelessWidget {
               ],
             ),
             if (!showGeneral) ...[
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
               ConsoleDropdown(
                 selectedConsole: selectedConsole,
                 consoles: consoles,

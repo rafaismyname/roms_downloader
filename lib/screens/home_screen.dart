@@ -18,12 +18,13 @@ class HomeScreen extends ConsumerWidget {
         title: Text(
           'ROMs Downloader',
           style: TextStyle(
-            fontSize: 20,
+            fontSize: 16,
           ),
         ),
         centerTitle: false,
         elevation: 0,
-        toolbarHeight: 50,
+        scrolledUnderElevation: 0,
+        toolbarHeight: 40,
       ),
       body: SafeArea(
         child: Column(

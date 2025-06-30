@@ -10,10 +10,18 @@ import 'package:roms_downloader/providers/game_state_provider.dart';
 
 class GameRow extends ConsumerWidget {
   final Game game;
+  final bool isNarrow;
+  final double sizeColumnWidth;
+  final double statusColumnWidth;
+  final double actionsColumnWidth;
 
   const GameRow({
     super.key,
     required this.game,
+    this.isNarrow = false,
+    this.sizeColumnWidth = 100,
+    this.statusColumnWidth = 100,
+    this.actionsColumnWidth = 100,
   });
 
   @override
@@ -32,10 +40,7 @@ class GameRow extends ConsumerWidget {
     }
 
     return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 6,
-      ),
+      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: gameState.isSelected ? Theme.of(context).colorScheme.primaryContainer.withAlpha(50) : null,
         border: Border(
@@ -51,37 +56,51 @@ class GameRow extends ConsumerWidget {
           Row(
             children: [
               SizedBox(
-                width: 40,
+                width: 30,
                 child: Checkbox(
                   value: gameState.isSelected,
                   onChanged: gameState.isInteractable ? (_) => catalogNotifier.toggleGameSelection(gameId) : null,
                 ),
               ),
               Expanded(
-                child: Text(
-                  game.title,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: gameState.status == GameStatus.extracted ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface,
-                    fontWeight: gameState.status == GameStatus.extracted ? FontWeight.bold : FontWeight.normal,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      game.title,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: gameState.status == GameStatus.extracted ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface,
+                        fontWeight: gameState.status == GameStatus.extracted ? FontWeight.bold : FontWeight.normal,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (isNarrow)
+                      Text(
+                        formatBytes(game.size),
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                  ],
                 ),
               ),
-              SizedBox(
-                width: 100,
-                child: Text(
-                  formatBytes(game.size),
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+              if (!isNarrow)
+                SizedBox(
+                  width: sizeColumnWidth,
+                  child: Text(
+                    formatBytes(game.size),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                  textAlign: TextAlign.center,
                 ),
-              ),
               SizedBox(
-                width: 100,
+                width: statusColumnWidth,
                 child: Text(
                   gameState.statusText,
                   style: TextStyle(
@@ -93,9 +112,9 @@ class GameRow extends ConsumerWidget {
                 ),
               ),
               SizedBox(
-                width: 100,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                width: actionsColumnWidth,
+                child: Wrap(
+                  alignment: WrapAlignment.spaceEvenly,
                   children: _buildActionButtons(context, gameState, downloadNotifier, extractionNotifier),
                 ),
               ),
@@ -155,6 +174,9 @@ class GameRow extends ConsumerWidget {
   ) {
     final List<Widget> buttons = [];
 
+    final buttonSize = isNarrow ? 20.0 : 24.0;
+    final buttonConstraints = BoxConstraints(minWidth: isNarrow ? 24 : 30, minHeight: isNarrow ? 24 : 30);
+
     for (final action in gameState.availableActions) {
       switch (action) {
         case GameAction.download:
@@ -162,9 +184,9 @@ class GameRow extends ConsumerWidget {
             Tooltip(
               message: 'Download',
               child: IconButton(
-                icon: const Icon(Icons.download, size: 16),
+                icon: Icon(Icons.download, size: buttonSize),
                 onPressed: () => downloadNotifier.startSingleDownload(game),
-                constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
+                constraints: buttonConstraints,
                 padding: EdgeInsets.zero,
               ),
             ),
@@ -175,9 +197,9 @@ class GameRow extends ConsumerWidget {
             Tooltip(
               message: 'Pause',
               child: IconButton(
-                icon: const Icon(Icons.pause, size: 16),
+                icon: Icon(Icons.pause, size: buttonSize),
                 onPressed: () => downloadNotifier.pauseTask(game.taskId),
-                constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
+                constraints: buttonConstraints,
                 padding: EdgeInsets.zero,
               ),
             ),
@@ -188,9 +210,9 @@ class GameRow extends ConsumerWidget {
             Tooltip(
               message: 'Resume',
               child: IconButton(
-                icon: const Icon(Icons.play_arrow, size: 16),
+                icon: Icon(Icons.play_arrow, size: buttonSize),
                 onPressed: () => downloadNotifier.resumeTask(game.taskId),
-                constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
+                constraints: buttonConstraints,
                 padding: EdgeInsets.zero,
               ),
             ),
@@ -201,9 +223,9 @@ class GameRow extends ConsumerWidget {
             Tooltip(
               message: 'Cancel',
               child: IconButton(
-                icon: const Icon(Icons.close, size: 16),
+                icon: Icon(Icons.close, size: buttonSize),
                 onPressed: () => downloadNotifier.cancelTask(game.taskId),
-                constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
+                constraints: buttonConstraints,
                 padding: EdgeInsets.zero,
               ),
             ),
@@ -214,9 +236,9 @@ class GameRow extends ConsumerWidget {
             Tooltip(
               message: 'Extract',
               child: IconButton(
-                icon: const Icon(Icons.archive, size: 16),
+                icon: Icon(Icons.archive, size: buttonSize),
                 onPressed: () => extractionNotifier.extractFile(game.taskId),
-                constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
+                constraints: buttonConstraints,
                 padding: EdgeInsets.zero,
               ),
             ),
@@ -227,9 +249,9 @@ class GameRow extends ConsumerWidget {
             Tooltip(
               message: 'Retry Download',
               child: IconButton(
-                icon: const Icon(Icons.refresh, size: 16),
+                icon: Icon(Icons.refresh, size: buttonSize),
                 onPressed: () => downloadNotifier.startSingleDownload(game),
-                constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
+                constraints: buttonConstraints,
                 padding: EdgeInsets.zero,
               ),
             ),
@@ -240,9 +262,9 @@ class GameRow extends ConsumerWidget {
             Tooltip(
               message: 'Retry Extraction',
               child: IconButton(
-                icon: const Icon(Icons.refresh, size: 16),
+                icon: Icon(Icons.refresh, size: buttonSize),
                 onPressed: () => extractionNotifier.extractFile(game.taskId),
-                constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
+                constraints: buttonConstraints,
                 padding: EdgeInsets.zero,
               ),
             ),
@@ -251,12 +273,12 @@ class GameRow extends ConsumerWidget {
         case GameAction.loading:
           buttons.add(
             SizedBox(
-              width: 30,
-              height: 30,
+              width: buttonConstraints.minWidth,
+              height: buttonConstraints.minHeight,
               child: Center(
                 child: SizedBox(
-                  width: 16,
-                  height: 16,
+                  width: buttonSize,
+                  height: buttonSize,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
                     color: Theme.of(context).colorScheme.primary,
