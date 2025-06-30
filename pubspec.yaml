@@ -1,28 +1,29 @@
 name: roms_downloader
-description: A Flutter application for browsing and downloading ROMs for multiple consoles
-version: 1.0.0+1
+description: ROMs Downloader
+version: 1.0.5
 
 environment:
+  flutter: ">=3.32.5"
   sdk: ">=3.0.0 <4.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
-  cupertino_icons: ^1.0.6
-  path_provider: ^2.1.1
+  cupertino_icons: ^1.0.8
+  path_provider: ^2.1.5
   file_picker: ^10.2.0
   background_downloader: ^9.2.2
-  flutter_riverpod: ^2.4.0
-  json_annotation: ^4.8.1
-  path: ^1.8.3
-  shared_preferences: ^2.2.1
+  flutter_riverpod: ^2.6.1
+  json_annotation: ^4.9.0
+  path: ^1.9.1
+  shared_preferences: ^2.5.3
   permission_handler: ^12.0.0+1
   archive: ^4.0.7
 
 dev_dependencies:
   flutter_lints: ^6.0.0
-  build_runner: ^2.4.6
-  json_serializable: ^6.7.1
+  build_runner: ^2.5.4
+  json_serializable: ^6.9.5
 
 flutter:
   uses-material-design: true

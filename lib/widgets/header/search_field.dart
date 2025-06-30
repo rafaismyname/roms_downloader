@@ -4,14 +4,12 @@ import 'dart:async';
 class SearchField extends StatefulWidget {
   final String initialText;
   final bool isEnabled;
-  final bool isCompact;
   final Function(String) onChanged;
 
   const SearchField({
     super.key,
     required this.initialText,
     required this.isEnabled,
-    required this.isCompact,
     required this.onChanged,
   });
 
@@ -53,34 +51,33 @@ class _SearchFieldState extends State<SearchField> {
 
   @override
   Widget build(BuildContext context) {
-    final borderRadius = BorderRadius.circular(widget.isCompact ? 4 : 8);
+    final borderRadius = BorderRadius.circular(4);
 
     return SizedBox(
-      height: widget.isCompact ? 32 : null,
       child: TextField(
         controller: _controller,
         decoration: InputDecoration(
           hintText: 'Search...',
-          hintStyle: TextStyle(fontSize: widget.isCompact ? 12 : 14),
-          prefixIcon: Icon(Icons.search, size: widget.isCompact ? 16 : 24),
+          hintStyle: TextStyle(fontSize: 14),
+          prefixIcon: Icon(Icons.search),
           border: OutlineInputBorder(
             borderRadius: borderRadius,
             borderSide: BorderSide(
               color: Colors.grey.shade300,
-              width: widget.isCompact ? 0.5 : 1,
+              width: 0.5,
             ),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: borderRadius,
             borderSide: BorderSide(
               color: Colors.grey.shade300,
-              width: widget.isCompact ? 0.5 : 1,
+              width: 0.5,
             ),
           ),
-          contentPadding: widget.isCompact ? const EdgeInsets.symmetric(vertical: 0, horizontal: 8) : const EdgeInsets.symmetric(vertical: 12),
-          isDense: widget.isCompact,
+          contentPadding: const EdgeInsets.symmetric(vertical: 2, horizontal: 8),
+          isDense: true,
         ),
-        style: TextStyle(fontSize: widget.isCompact ? 12 : 14),
+        style: TextStyle(fontSize: 14),
         enabled: widget.isEnabled,
         onChanged: _onSearchChanged,
       ),
