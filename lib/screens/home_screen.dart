@@ -12,19 +12,19 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final appState = ref.watch(appStateProvider);
     final appStateNotifier = ref.read(appStateProvider.notifier);
-    final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
 
     return Scaffold(
       appBar: AppBar(
         title: Text(
           'ROMs Downloader',
           style: TextStyle(
-            fontSize: isLandscape ? 15 : 20,
+            fontSize: 16,
           ),
         ),
-        centerTitle: true,
+        centerTitle: false,
         elevation: 0,
-        toolbarHeight: isLandscape ? 30 : kToolbarHeight,
+        scrolledUnderElevation: 0,
+        toolbarHeight: 40,
       ),
       body: SafeArea(
         child: Column(
@@ -32,9 +32,7 @@ class HomeScreen extends ConsumerWidget {
             Controls(
               consoles: appState.consoles,
               selectedConsole: appState.selectedConsole,
-              downloadDir: appState.downloadDir,
               onConsoleSelect: appStateNotifier.selectConsole,
-              onDirectoryChange: appStateNotifier.handleDirectoryChange,
             ),
             Expanded(
               child: appState.loading

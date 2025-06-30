@@ -5,9 +5,9 @@ import 'package:background_downloader/background_downloader.dart';
 import 'package:roms_downloader/models/game_model.dart';
 import 'package:roms_downloader/models/download_model.dart';
 import 'package:roms_downloader/services/download_service.dart';
-import 'package:roms_downloader/providers/app_state_provider.dart';
 import 'package:roms_downloader/providers/catalog_provider.dart';
 import 'package:roms_downloader/providers/game_state_provider.dart';
+import 'package:roms_downloader/providers/settings_provider.dart';
 
 final downloadProvider = StateNotifierProvider<DownloadNotifier, DownloadState>((ref) {
   final catalogNotifier = ref.read(catalogProvider.notifier);
@@ -161,8 +161,9 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
   }
 
   Future<void> startSingleDownload(Game game) async {
-    final appState = _ref.read(appStateProvider);
-    await startDownloads([game], appState.downloadDir, game.consoleId);
+    final settingsNotifier = _ref.read(settingsProvider.notifier);
+    final downloadDir = settingsNotifier.getDownloadDir(game.consoleId);
+    await startDownloads([game], downloadDir, game.consoleId);
     catalogNotifier.deselectGame(game.taskId);
   }
 

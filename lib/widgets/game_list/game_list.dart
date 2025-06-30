@@ -38,10 +38,18 @@ class _GameListState extends ConsumerState<GameList> {
     final catalogState = ref.watch(catalogProvider);
     final games = catalogState.paginatedFilteredGames;
 
+    final isPortrait = MediaQuery.of(context).orientation == Orientation.portrait;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isNarrow = isPortrait || screenWidth < 600;
+
+    final sizeColumnWidth = isNarrow ? 60.0 : 100.0;
+    final statusColumnWidth = isNarrow ? 80.0 : 100.0;
+    final actionsColumnWidth = isNarrow ? 100.0 : 100.0;
+
     return Column(
       children: [
         Container(
-          padding: EdgeInsets.symmetric(
+          padding: const EdgeInsets.symmetric(
             horizontal: 16,
             vertical: 6,
           ),
@@ -67,20 +75,21 @@ class _GameListState extends ConsumerState<GameList> {
                   ),
                 ),
               ),
-              SizedBox(
-                width: 100,
-                child: Text(
-                  'Size',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    fontSize: 12,
+              if (!isNarrow)
+                SizedBox(
+                  width: sizeColumnWidth,
+                  child: Text(
+                    'Size',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      fontSize: 12,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                  textAlign: TextAlign.center,
                 ),
-              ),
               SizedBox(
-                width: 100,
+                width: statusColumnWidth,
                 child: Text(
                   'Status',
                   style: TextStyle(
@@ -92,7 +101,7 @@ class _GameListState extends ConsumerState<GameList> {
                 ),
               ),
               SizedBox(
-                width: 100,
+                width: actionsColumnWidth,
                 child: Text(
                   'Actions',
                   style: TextStyle(
@@ -112,7 +121,13 @@ class _GameListState extends ConsumerState<GameList> {
             itemCount: games.length,
             itemBuilder: (context, index) {
               final game = games[index];
-              return GameRow(game: game);
+              return GameRow(
+                game: game,
+                isNarrow: isNarrow,
+                sizeColumnWidth: sizeColumnWidth,
+                statusColumnWidth: statusColumnWidth,
+                actionsColumnWidth: actionsColumnWidth,
+              );
             },
           ),
         ),

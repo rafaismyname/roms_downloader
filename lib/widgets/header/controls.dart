@@ -5,25 +5,22 @@ import 'package:roms_downloader/providers/app_state_provider.dart';
 import 'package:roms_downloader/providers/download_provider.dart';
 import 'package:roms_downloader/providers/catalog_provider.dart';
 import 'package:roms_downloader/providers/extraction_provider.dart';
+import 'package:roms_downloader/providers/settings_provider.dart';
+import 'package:roms_downloader/screens/settings_screen.dart';
 import 'package:roms_downloader/widgets/header/console_dropdown.dart';
 import 'package:roms_downloader/widgets/header/download_button.dart';
-import 'package:roms_downloader/widgets/header/download_directory.dart';
 import 'package:roms_downloader/widgets/header/search_field.dart';
 
 class Controls extends ConsumerWidget {
   final List<Console> consoles;
   final Console? selectedConsole;
-  final String downloadDir;
   final Function(Console) onConsoleSelect;
-  final VoidCallback onDirectoryChange;
 
   const Controls({
     super.key,
     required this.consoles,
     required this.selectedConsole,
-    required this.downloadDir,
     required this.onConsoleSelect,
-    required this.onDirectoryChange,
   });
 
   @override
@@ -34,87 +31,87 @@ class Controls extends ConsumerWidget {
     final catalogState = ref.watch(catalogProvider);
     final catalogNotifier = ref.read(catalogProvider.notifier);
     final extractionState = ref.watch(extractionProvider);
+    final settingsNotifier = ref.read(settingsProvider.notifier);
+
+    final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final isShort = isLandscape && screenHeight < 600;
 
     final isInteractive = !appState.loading && !downloadState.downloading && !extractionState.isExtracting;
     final canDownload = !appState.loading && downloadNotifier.hasDownloadableSelectedGames();
 
     return Container(
-        padding: EdgeInsets.all(8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildResponsiveRow(
-              context,
-              widgets: [
-                ConsoleDropdown(
-                  consoles: consoles,
-                  selectedConsole: selectedConsole,
-                  isInteractive: isInteractive,
-                  isCompact: true,
-                  onConsoleSelect: onConsoleSelect,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            height: isShort ? 30 : 36,
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 9,
+                  child: ConsoleDropdown(
+                    consoles: consoles,
+                    selectedConsole: selectedConsole,
+                    isInteractive: isInteractive,
+                    onConsoleSelect: onConsoleSelect,
+                  ),
                 ),
-                SearchField(
-                  initialText: catalogState.filterText,
-                  isEnabled: isInteractive,
-                  isCompact: true,
-                  onChanged: (text) => catalogNotifier.updateFilterText(text),
-                ),
-                DownloadDirectory(
-                  downloadDir: downloadDir,
-                  isInteractive: isInteractive,
-                  onDirectoryChange: onDirectoryChange,
-                  displayMode: DirectoryDisplayMode.compact,
-                ),
-                DownloadButton(
-                  isEnabled: canDownload,
-                  isDownloading: downloadState.downloading,
-                  isLoading: appState.loading,
-                  isCompact: true,
-                  onPressed: () => downloadNotifier.startSelectedDownloads(downloadDir, selectedConsole?.id),
+                const SizedBox(width: 8),
+                Expanded(
+                  flex: 1,
+                  child: IconButton(
+                    icon: const Icon(Icons.settings),
+                    onPressed: isInteractive
+                        ? () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => SettingsScreen(
+                                  initialConsoleId: selectedConsole?.id,
+                                ),
+                              ),
+                            );
+                          }
+                        : null,
+                    tooltip: 'Console Settings',
+                  ),
                 ),
               ],
-              flexValues: [4, 3, 3, 1],
-              spacing: 8,
             ),
-          ],
-        ));
-  }
-
-  Widget _buildResponsiveRow(
-    BuildContext context, {
-    required List<Widget> widgets,
-    List<int>? flexValues,
-    double spacing = 8,
-    double breakpoint = 600,
-  }) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isWideScreen = constraints.maxWidth > breakpoint;
-
-        if (isWideScreen) {
-          final List<Widget> rowChildren = [];
-          for (int i = 0; i < widgets.length; i++) {
-            if (i > 0) {
-              rowChildren.add(SizedBox(width: spacing));
-            }
-            final flex = flexValues != null && i < flexValues.length ? flexValues[i] : 1;
-            rowChildren.add(Expanded(flex: flex, child: widgets[i]));
-          }
-          return Row(children: rowChildren);
-        } else {
-          final List<Widget> columnChildren = [];
-          for (int i = 0; i < widgets.length; i++) {
-            if (i > 0) {
-              columnChildren.add(const SizedBox(height: 8));
-            }
-            columnChildren.add(widgets[i]);
-          }
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: columnChildren,
-          );
-        }
-      },
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: isShort ? 28 : 32,
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 9,
+                  child: SearchField(
+                    initialText: catalogState.filterText,
+                    isEnabled: isInteractive,
+                    onChanged: (text) => catalogNotifier.updateFilterText(text),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  flex: 1,
+                  child: DownloadButton(
+                    isEnabled: canDownload,
+                    isDownloading: downloadState.downloading,
+                    isLoading: appState.loading,
+                    onPressed: () async {
+                      final downloadDir = settingsNotifier.getDownloadDir(selectedConsole?.id);
+                      await downloadNotifier.startSelectedDownloads(downloadDir, selectedConsole?.id);
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
