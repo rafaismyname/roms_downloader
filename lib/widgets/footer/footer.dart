@@ -4,6 +4,7 @@ import 'package:roms_downloader/models/game_state_model.dart';
 import 'package:roms_downloader/providers/app_state_provider.dart';
 import 'package:roms_downloader/providers/catalog_provider.dart';
 import 'package:roms_downloader/providers/game_state_provider.dart';
+import 'package:roms_downloader/providers/settings_provider.dart';
 import 'package:roms_downloader/utils/formatters.dart';
 
 class Footer extends ConsumerWidget {
@@ -14,10 +15,11 @@ class Footer extends ConsumerWidget {
     final appState = ref.watch(appStateProvider);
     final catalogState = ref.watch(catalogProvider);
     final gameStateManager = ref.watch(gameStateManagerProvider);
-    final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
+    final settingsNotifier = ref.read(settingsProvider.notifier);
 
     // Get all active games from the unified state system
-    final activeGames = catalogState.games.map((game) => gameStateManager[game.taskId]).whereType<GameState>().where((gameState) => gameState.isActive).toList();
+    final activeGames =
+        catalogState.games.map((game) => gameStateManager[game.taskId]).whereType<GameState>().where((gameState) => gameState.isActive).toList();
 
     final downloadingGames = activeGames.where((state) => state.status == GameStatus.downloading || state.status == GameStatus.downloadQueued).length;
 
@@ -28,9 +30,14 @@ class Footer extends ConsumerWidget {
     final overallTimeRemaining = _calculateOverallTimeRemaining(activeGames);
     final showProgressBar = activeGames.isNotEmpty;
 
+    final selectedConsole = appState.selectedConsole;
+    final downloadDir = settingsNotifier.getDownloadDir(selectedConsole?.id);
+    final shouldTruncate = downloadDir.length > 100;
+    final truncatedDonwloadDir = shouldTruncate ? '${downloadDir.substring(0, 50)}...${downloadDir.substring(downloadDir.length - 50)}' : downloadDir;
+
     return Container(
       padding: EdgeInsets.symmetric(
-        vertical: isLandscape ? 6 : 8,
+        vertical: 6,
         horizontal: 16,
       ),
       decoration: BoxDecoration(
@@ -38,7 +45,7 @@ class Footer extends ConsumerWidget {
         border: Border(
           top: BorderSide(
             color: Theme.of(context).dividerColor,
-            width: isLandscape ? 0.5 : 1.0,
+            width: 0.5,
           ),
         ),
       ),
@@ -46,46 +53,84 @@ class Footer extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            appState.loading
-                ? "Loading catalog..."
-                : downloadingGames > 0
-                    ? "Downloading $downloadingGames games"
-                    : extractingGames > 0
-                        ? "Extracting $extractingGames games"
-                        : "${catalogState.filteredGames.length} games available",
-            style: TextStyle(
-              fontSize: isLandscape ? 12 : 14,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
           if (showProgressBar) ...[
-            SizedBox(height: isLandscape ? 6 : 8),
+            // When expanded (with progress bar), show download dir at top right
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    appState.loading
+                        ? "Loading catalog..."
+                        : downloadingGames > 0
+                            ? "Downloading $downloadingGames games"
+                            : extractingGames > 0
+                                ? "Extracting $extractingGames games"
+                                : "${catalogState.filteredGames.length} games available",
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+                Text(
+                  truncatedDonwloadDir,
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 6),
             ClipRRect(
               borderRadius: BorderRadius.circular(4),
               child: LinearProgressIndicator(
                 value: overallProgress,
                 backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                 color: Theme.of(context).colorScheme.primary,
-                minHeight: isLandscape ? 20 : 24,
+                minHeight: 20,
               ),
             ),
-            SizedBox(height: isLandscape ? 2 : 4),
+            SizedBox(height: 2),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
                   '${(overallProgress * 100).toStringAsFixed(1)}% • ${formatNetworkSpeed(overallNetworkSpeed)}',
                   style: TextStyle(
-                    fontSize: isLandscape ? 10 : 12,
+                    fontSize: 10,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
                 Text(
                   'Time Remaining: ${overallTimeRemaining > Duration.zero ? formatTimeRemaining(overallTimeRemaining) : 'N/A'}',
                   style: TextStyle(
-                    fontSize: isLandscape ? 10 : 12,
+                    fontSize: 10,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ] else ...[
+            // When minimized (no progress bar), show download dir on the right
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    appState.loading ? "Loading catalog..." : "${catalogState.filteredGames.length} games available",
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+                Text(
+                  truncatedDonwloadDir,
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
                   ),
                 ),
               ],
