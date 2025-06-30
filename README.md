@@ -33,7 +33,7 @@ I do not own nor recommend those sources. As a matter of fact, the first step in
 - [ ] Filters (like country/language, type, extension, etc.) deprecating the hardcoded list filter
 - [ ] Allow custom consoles (via JSON)
 - [ ] Improve file detection system (custom rexeg per console)
-- [ ] Custom settings per console (dest. dir/unzip rules/default filters/etc.)
+- [x] Custom settings per console (dest. dir/unzip rules/default filters/etc.)
 - [ ] Ignore (hide) file
 - [ ] Manually mark as in-library
 - [ ] Game metadata fetcher (cover, images, info, etc)

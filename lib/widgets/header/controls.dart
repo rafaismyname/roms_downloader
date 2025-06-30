@@ -49,7 +49,6 @@ class Controls extends ConsumerWidget {
                   consoles: consoles,
                   selectedConsole: selectedConsole,
                   isInteractive: isInteractive,
-                  isCompact: true,
                   onConsoleSelect: onConsoleSelect,
                 ),
               ),

@@ -45,7 +45,7 @@ class BaseSettings {
 
   BaseSettings copyWith({String? downloadDir}) {
     return BaseSettings(
-      downloadDir: downloadDir ?? this.downloadDir,
+      downloadDir: downloadDir == '' ? null : downloadDir ?? this.downloadDir,
     );
   }
 

@@ -5,7 +5,6 @@ class ConsoleDropdown extends StatelessWidget {
   final List<Console> consoles;
   final Console? selectedConsole;
   final bool isInteractive;
-  final bool isCompact;
   final Function(Console) onConsoleSelect;
 
   const ConsoleDropdown({
@@ -13,25 +12,22 @@ class ConsoleDropdown extends StatelessWidget {
     required this.consoles,
     required this.selectedConsole,
     required this.isInteractive,
-    required this.isCompact,
     required this.onConsoleSelect,
   });
 
   @override
   Widget build(BuildContext context) {
-    final borderRadius = BorderRadius.circular(isCompact ? 4 : 8);
-
     return Container(
-      height: isCompact ? 32 : null,
+      height: 32,
       padding: EdgeInsets.symmetric(
-        horizontal: isCompact ? 8 : 12,
+        horizontal: 8,
       ),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        borderRadius: borderRadius,
+        borderRadius: BorderRadius.circular(4),
         border: Border.all(
           color: Theme.of(context).dividerColor,
-          width: isCompact ? 0.5 : 1,
+          width: 0.5,
         ),
       ),
       child: DropdownButtonHideUnderline(
@@ -39,7 +35,7 @@ class ConsoleDropdown extends StatelessWidget {
           isExpanded: true,
           value: selectedConsole?.id,
           style: TextStyle(
-            fontSize: isCompact ? 12 : 14,
+            fontSize: 12,
             color: Theme.of(context).colorScheme.onSurface,
           ),
           onChanged: isInteractive
