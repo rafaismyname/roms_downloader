@@ -8,19 +8,23 @@ class PermissionService {
   static const String _lastPermissionRequestKey = 'last_permission_request';
   static const int _permissionCooldownDays = 7;
 
-  static final Map<Permission, String> _permissionDescriptions = {
+  static final Map<Permission, String> permissionDescriptions = {
     Permission.notification: 'Notifications',
-    Permission.storage: 'Storage access',
-    Permission.manageExternalStorage: 'External storage management',
+    Permission.manageExternalStorage: 'Storage management',
   };
+
+  static final Map<Permission, String> permissionRationales = {
+    Permission.notification: 'Used for foreground tasks',
+    Permission.manageExternalStorage: 'Used to download and manage ROMs',
+  };
+
+  static final List<Permission> requiredPermissions = [
+    Permission.notification,
+    Permission.manageExternalStorage,
+  ];
 
   Future<bool> ensurePermissions() async {
     if (!Platform.isAndroid) return true;
-
-    final requiredPermissions = [
-      Permission.notification,
-      Permission.manageExternalStorage,
-    ];
 
     try {
       final permanentlyDeniedPermissions = <Permission>[];
@@ -80,7 +84,7 @@ class PermissionService {
     final context = navigatorKey.currentContext;
     if (context == null) return false;
 
-    final missingNames = missingPermissions.map((p) => _permissionDescriptions[p] ?? p.toString()).toList();
+    final missingNames = missingPermissions.map((p) => permissionDescriptions[p] ?? p.toString()).toList();
 
     return await showDialog<bool>(
           context: context,
