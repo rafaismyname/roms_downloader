@@ -13,6 +13,11 @@ class PermissionService {
     Permission.manageExternalStorage: 'Storage management',
   };
 
+  static final Map<Permission, String> permissionRationales = {
+    Permission.notification: 'Used for foreground tasks',
+    Permission.manageExternalStorage: 'Used to download and manage ROMs',
+  };
+
   static final List<Permission> requiredPermissions = [
     Permission.notification,
     Permission.manageExternalStorage,

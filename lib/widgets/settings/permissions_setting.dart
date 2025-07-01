@@ -24,12 +24,12 @@ class _PermissionsSettingState extends State<PermissionsSetting> {
     if (!Platform.isAndroid) return;
 
     setState(() => _loading = true);
-    
+
     final statuses = <Permission, PermissionStatus>{};
     for (final permission in PermissionService.requiredPermissions) {
       statuses[permission] = await permission.status;
     }
-    
+
     setState(() {
       _permissionStatuses = statuses;
       _loading = false;
@@ -38,9 +38,9 @@ class _PermissionsSettingState extends State<PermissionsSetting> {
 
   Future<void> _requestPermission(Permission permission) async {
     setState(() => _loading = true);
-    
+
     final status = await permission.request();
-    
+
     setState(() {
       _permissionStatuses[permission] = status;
       _loading = false;
@@ -55,7 +55,7 @@ class _PermissionsSettingState extends State<PermissionsSetting> {
 
   Future<void> _showSettingsDialog(Permission permission) async {
     final description = PermissionService.permissionDescriptions[permission] ?? permission.toString();
-    
+
     final shouldOpen = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -82,28 +82,37 @@ class _PermissionsSettingState extends State<PermissionsSetting> {
 
   Widget _buildPermissionTile(Permission permission, PermissionStatus status) {
     final description = PermissionService.permissionDescriptions[permission] ?? permission.toString();
+    final rationale = PermissionService.permissionRationales[permission];
     final isGranted = status.isGranted;
     final isPermanentlyDenied = status.isPermanentlyDenied;
 
     return ListTile(
       leading: Icon(
         isGranted ? Icons.check_circle : Icons.error,
-        color: isGranted ? Colors.green : Colors.red,
+        color: isGranted ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.error,
       ),
       title: Text(description),
-      subtitle: Text(
-        isGranted ? 'Granted' : isPermanentlyDenied ? 'Denied - Open settings' : 'Not granted',
-        style: TextStyle(
-          color: isGranted ? Colors.green : Colors.red,
-          fontSize: 12,
-        ),
-      ),
+      subtitle: rationale != null
+          ? Text(
+              rationale,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            )
+          : null,
       trailing: !isGranted
           ? FilledButton.tonal(
               onPressed: _loading ? null : () => _requestPermission(permission),
               child: Text(isPermanentlyDenied ? 'Settings' : 'Request'),
             )
-          : null,
+          : Text(
+              'Granted',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.primary,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
     );
   }
 

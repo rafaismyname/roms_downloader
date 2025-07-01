@@ -34,6 +34,7 @@ I do not own nor recommend those sources. As a matter of fact, the first step in
 - [ ] Allow custom consoles (via JSON)
 - [ ] Improve file detection system (custom rexeg per console)
 - [x] Custom settings per console (dest. dir/unzip rules/default filters/etc.)
+- [x] Permissions control
 - [ ] Ignore (hide) file
 - [ ] Manually mark as in-library
 - [ ] Game metadata fetcher (cover, images, info, etc)
