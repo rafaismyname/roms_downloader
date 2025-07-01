@@ -1,10 +1,12 @@
+import 'dart:io';
+import 'package:path/path.dart' as path;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path/path.dart' as path;
 import 'package:roms_downloader/models/extraction_model.dart';
 import 'package:roms_downloader/providers/game_state_provider.dart';
 import 'package:roms_downloader/providers/settings_provider.dart';
-import 'package:roms_downloader/services/extraction_service.dart';
+import 'package:roms_downloader/services/directory_service.dart';
+import 'package:roms_downloader/tasks/extraction_task.dart';
 
 final extractionProvider = StateNotifierProvider<ExtractionNotifier, ExtractionState>((ref) {
   final gameStateManager = ref.read(gameStateManagerProvider.notifier);
@@ -13,7 +15,6 @@ final extractionProvider = StateNotifierProvider<ExtractionNotifier, ExtractionS
 
 class ExtractionNotifier extends StateNotifier<ExtractionState> {
   final Ref _ref;
-  final ExtractionService _extractionService = ExtractionService();
   final GameStateManager gameStateManager;
 
   ExtractionNotifier(this._ref, this.gameStateManager) : super(const ExtractionState());
@@ -29,6 +30,7 @@ class ExtractionNotifier extends StateNotifier<ExtractionState> {
     final settingsNotifier = _ref.read(settingsProvider.notifier);
     final downloadDir = settingsNotifier.getDownloadDir(game.consoleId);
     final filePath = path.join(downloadDir, game.filename);
+    final extractionDir = path.join(path.dirname(filePath), path.basenameWithoutExtension(filePath));
 
     final tasks = Map<String, ExtractionTaskState>.from(state.tasks);
     tasks[taskId] = ExtractionTaskState(
@@ -47,18 +49,17 @@ class ExtractionNotifier extends StateNotifier<ExtractionState> {
     debugPrint('Starting extraction for: $filePath');
 
     try {
-      _extractionService.extractFile(
+      ExtractionTask.startExtraction(
+        taskId: taskId,
         filePath: filePath,
-        onProgress: (progress) {
-          _updateProgress(taskId, progress);
-        },
-        onError: (error) {
-          _updateError(taskId, error);
-        },
+        extractionDir: extractionDir,
+        onProgress: (progress) => _updateProgress(taskId, progress),
+        onError: (error, extractionDir) => _updateError(taskId, error, extractionDir),
+        onComplete: (_) => _updateCompleted(taskId),
       );
     } catch (e) {
       debugPrint('Extraction error: $e');
-      _updateError(taskId, e.toString());
+      _updateError(taskId, e.toString(), extractionDir);
     }
   }
 
@@ -118,14 +119,14 @@ class ExtractionNotifier extends StateNotifier<ExtractionState> {
     final downloadDir = settingsNotifier.getDownloadDir(game.consoleId);
     final filePath = path.join(downloadDir, game.filename);
 
-    if (await _extractionService.deleteOriginalFile(filePath)) {
+    if (await DirectoryService.deleteFile(filePath)) {
       debugPrint('Deleted original file: $filePath');
     } else {
       debugPrint('Failed to delete original file: $filePath');
     }
   }
 
-  void _updateError(String taskId, String error) {
+  void _updateError(String taskId, String error, String extractionDir) {
     final tasks = Map<String, ExtractionTaskState>.from(state.tasks);
     final currentTask = tasks[taskId];
     if (currentTask != null) {
@@ -138,6 +139,11 @@ class ExtractionNotifier extends StateNotifier<ExtractionState> {
         isExtracting: _hasActiveExtractions(tasks),
       );
     }
+
+    try {
+      final dir = Directory(extractionDir);
+      if (dir.existsSync()) dir.deleteSync(recursive: true);
+    } catch (_) {}
 
     gameStateManager.updateExtractionState(taskId, ExtractionStatus.failed, 0.0);
   }

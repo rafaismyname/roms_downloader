@@ -11,16 +11,22 @@ class PermissionService {
   static final Map<Permission, String> permissionDescriptions = {
     Permission.notification: 'Notifications',
     Permission.manageExternalStorage: 'Storage management',
+    Permission.ignoreBatteryOptimizations: 'Ignore battery optimizations',
+    Permission.scheduleExactAlarm: 'Exact alarms',
   };
 
   static final Map<Permission, String> permissionRationales = {
     Permission.notification: 'Used for foreground tasks',
     Permission.manageExternalStorage: 'Used to download and manage ROMs',
+    Permission.ignoreBatteryOptimizations: 'Used to ensure tasks are not interrupted',
+    Permission.scheduleExactAlarm: 'Used to schedule tasks at specific times',
   };
 
   static final List<Permission> requiredPermissions = [
     Permission.notification,
     Permission.manageExternalStorage,
+    Permission.ignoreBatteryOptimizations,
+    Permission.scheduleExactAlarm,
   ];
 
   Future<bool> ensurePermissions() async {
