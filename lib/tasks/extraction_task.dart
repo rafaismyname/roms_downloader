@@ -10,9 +10,9 @@ class ExtractionTask {
   static const String errorDataType = 'extraction_error';
   static const String completionDataType = 'extraction_completed';
   static final Set<String> _activeTasks = {};
-  static final Map<String, Function(double progress)> _onProgressCallbacks = {};
-  static final Map<String, Function(String error, String extractionDir)> _onErrorCallbacks = {};
-  static final Map<String, Function(String extractionDir)> _onCompleteCallbacks = {};
+  static final Map<String, Function(String taskId, double progress)> _onProgressCallbacks = {};
+  static final Map<String, Function(String taskId, String error, String extractionDir)> _onErrorCallbacks = {};
+  static final Map<String, Function(String taskId, String extractionDir)> _onCompleteCallbacks = {};
 
   static Future<void> initialize() async {
     if (!Platform.isAndroid) return;
@@ -38,6 +38,16 @@ class ExtractionTask {
     _onProgressCallbacks.remove(taskId);
     _onErrorCallbacks.remove(taskId);
     _onCompleteCallbacks.remove(taskId);
+    _stopServiceIfAllDone();
+  }
+
+  static void _stopServiceIfAllDone() {
+    if (_activeTasks.isEmpty) {
+      FlutterForegroundTask.stopService();
+      debugPrint('Foreground service stopped');
+    } else {
+      debugPrint('Cannot stop service, active tasks: ${_activeTasks.length}');
+    }
   }
 
   static void _onReceiveTaskData(Object data) {
@@ -50,17 +60,17 @@ class ExtractionTask {
       switch (type) {
         case ExtractionTask.progressDataType:
           final progress = data['value'] as double?;
-          if (progress != null) _onProgressCallbacks[taskId]?.call(progress);
+          if (progress != null) _onProgressCallbacks[taskId]?.call(taskId, progress);
           break;
         case ExtractionTask.errorDataType:
           final error = data['message'] as String?;
           if (error != null) {
-            _onErrorCallbacks[taskId]?.call(error, extractionDir);
+            _onErrorCallbacks[taskId]?.call(taskId, error, extractionDir);
             _cleanup(taskId);
           }
           break;
         case ExtractionTask.completionDataType:
-          _onCompleteCallbacks[taskId]?.call(extractionDir);
+          _onCompleteCallbacks[taskId]?.call(taskId, extractionDir);
           _cleanup(taskId);
           break;
       }
@@ -71,12 +81,13 @@ class ExtractionTask {
     required String taskId,
     required String filePath,
     required String extractionDir,
-    required Function(double progress) onProgress,
-    required Function(String extractionDir) onComplete,
-    required Function(String error, String extractionDir) onError,
+    required Function(String taskId, double progress) onProgress,
+    required Function(String taskId, String extractionDir) onComplete,
+    required Function(String taskId, String error, String extractionDir) onError,
   }) async {
     if (!Platform.isAndroid) {
       extractInIsolate(
+        taskId,
         filePath,
         extractionDir,
         onProgress: onProgress,
@@ -110,27 +121,29 @@ class ExtractionTask {
   }
 
   static Future<void> extractInIsolate(
+    String taskId,
     String filePath,
     String extractionDir, {
-    required Function(double progress) onProgress,
-    required Function(String extractionDir) onComplete,
-    required Function(String error, String extractionDir) onError,
+    required Function(String taskId, double progress) onProgress,
+    required Function(String taskId, String extractionDir) onComplete,
+    required Function(String taskId, String error, String extractionDir) onError,
   }) async {
     final receivePort = ReceivePort();
 
     receivePort.listen((message) {
       if (message['type'] == 'progress') {
-        onProgress(message['value']);
+        onProgress(taskId, message['value']);
       } else if (message['type'] == 'error') {
-        onError(message['message'], extractionDir);
+        onError(taskId, message['message'], extractionDir);
         receivePort.close();
       } else if (message['type'] == 'complete') {
-        onComplete(extractionDir);
+        onComplete(taskId, extractionDir);
         receivePort.close();
       }
     });
 
     await Isolate.spawn(_extractInIsolate, {
+      'taskId': taskId,
       'filePath': filePath,
       'extractionDir': extractionDir,
       'sendPort': receivePort.sendPort,
@@ -161,9 +174,7 @@ void extractionTaskCallback() {
 class ExtractionTaskHandler extends TaskHandler {
   @override
   Future<void> onStart(DateTime timestamp, TaskStarter starter) async {
-    await FlutterForegroundTask.updateService(
-      notificationText: 'Ready to extract...',
-    );
+    await FlutterForegroundTask.updateService(notificationText: 'Ready to extract...');
   }
 
   @override
@@ -178,64 +189,54 @@ class ExtractionTaskHandler extends TaskHandler {
       final taskId = data['taskId'] as String;
       final filePath = data['filePath'] as String;
       final extractionDir = data['extractionDir'] as String;
-      _performExtraction(taskId, filePath, extractionDir);
-    }
-  }
-
-  Future<void> _performExtraction(String taskId, String filePath, String extractionDir) async {
-    try {
-      final fileName = path.basename(filePath);
-
-      await FlutterForegroundTask.updateService(
-        notificationText: 'Starting extraction of $fileName...',
-      );
-
+      FlutterForegroundTask.updateService(notificationText: 'Starting extraction of $taskId...');
       FlutterForegroundTask.sendDataToMain({
         'type': ExtractionTask.progressDataType,
         'taskId': taskId,
         'value': 0.1,
       });
+      try {
+        ExtractionTask.extractInIsolate(
+          taskId,
+          filePath,
+          extractionDir,
+          onProgress: (taskId, progress) {
+            FlutterForegroundTask.updateService(
+              notificationText: 'Extracting $taskId... ${(progress * 100).toInt()}%',
+            );
 
-      var extractedFiles = 0;
-
-      await extractFileToDisk(filePath, extractionDir, callback: (archiveFile) {
-        final progress = (0.1 + (++extractedFiles / 4) * 0.85).clamp(0.1, 0.95);
-
-        FlutterForegroundTask.updateService(
-          notificationText: 'Extracting $fileName... ${(progress * 100).toInt()}%',
+            FlutterForegroundTask.sendDataToMain({
+              'type': ExtractionTask.progressDataType,
+              'taskId': taskId,
+              'value': progress,
+            });
+          },
+          onComplete: (taskId, extractionDir) {
+            FlutterForegroundTask.sendDataToMain({
+              'type': ExtractionTask.completionDataType,
+              'taskId': taskId,
+              'extractionDir': extractionDir,
+            });
+          },
+          onError: (taskId, error, extractionDir) {
+            FlutterForegroundTask.sendDataToMain({
+              'type': ExtractionTask.errorDataType,
+              'taskId': taskId,
+              'extractionDir': extractionDir,
+              'message': error,
+            });
+            FlutterForegroundTask.updateService(notificationText: 'Extraction failed: $error');
+          },
         );
-
+      } catch (e) {
         FlutterForegroundTask.sendDataToMain({
-          'type': ExtractionTask.progressDataType,
+          'type': ExtractionTask.errorDataType,
           'taskId': taskId,
-          'value': progress,
+          'extractionDir': extractionDir,
+          'message': 'Failed to extract: $e',
         });
-      });
-
-      await FlutterForegroundTask.updateService(
-        notificationText: 'Extraction completed',
-      );
-
-      FlutterForegroundTask.sendDataToMain({
-        'type': ExtractionTask.completionDataType,
-        'extractionDir': extractionDir,
-        'taskId': taskId,
-      });
-
-      await FlutterForegroundTask.stopService();
-    } catch (e) {
-      FlutterForegroundTask.sendDataToMain({
-        'type': ExtractionTask.errorDataType,
-        'taskId': taskId,
-        'extractionDir': extractionDir,
-        'message': 'Failed to extract: $e',
-      });
-
-      await FlutterForegroundTask.updateService(
-        notificationText: 'Extraction failed',
-      );
-
-      await FlutterForegroundTask.stopService();
+        FlutterForegroundTask.updateService(notificationText: 'Extraction failed');
+      }
     }
   }
 }

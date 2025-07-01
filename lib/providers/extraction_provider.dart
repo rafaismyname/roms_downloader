@@ -53,9 +53,9 @@ class ExtractionNotifier extends StateNotifier<ExtractionState> {
         taskId: taskId,
         filePath: filePath,
         extractionDir: extractionDir,
-        onProgress: (progress) => _updateProgress(taskId, progress),
-        onError: (error, extractionDir) => _updateError(taskId, error, extractionDir),
-        onComplete: (_) => _updateCompleted(taskId),
+        onProgress: _updateProgress,
+        onError: _updateError,
+        onComplete: _updateCompleted,
       );
     } catch (e) {
       debugPrint('Extraction error: $e');
@@ -80,13 +80,9 @@ class ExtractionNotifier extends StateNotifier<ExtractionState> {
     }
 
     gameStateManager.updateExtractionState(taskId, ExtractionStatus.extracting, progress);
-
-    if (progress >= 1.0) {
-      _updateCompleted(taskId);
-    }
   }
 
-  void _updateCompleted(String taskId) {
+  void _updateCompleted(String taskId, String extractionDir) {
     debugPrint('Marking task $taskId as completed');
     final tasks = Map<String, ExtractionTaskState>.from(state.tasks);
     final currentTask = tasks[taskId];
