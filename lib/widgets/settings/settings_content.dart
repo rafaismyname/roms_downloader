@@ -19,12 +19,12 @@ class SettingsContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: SingleChildScrollView(
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -50,12 +50,12 @@ class SettingsContent extends StatelessWidget {
               ),
             ),
           ),
-        ),
-        if (selectedConsole == null) ...[
-          const SizedBox(height: 8),
-          const PermissionsSetting(),
+          if (selectedConsole == null) ...[
+            const SizedBox(height: 8),
+            const PermissionsSetting(),
+          ],
         ],
-      ],
+      ),
     );
   }
 }
