@@ -41,6 +41,10 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- This meta-data is used to specify the notification icon for the ForegroundService -->
+        <meta-data
+            android:name="ic_notification"
+            android:resource="@drawable/ic_notification" />
     </application>
     <queries>
         <intent>

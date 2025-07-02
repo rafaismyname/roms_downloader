@@ -3,7 +3,8 @@ import 'dart:isolate';
 import 'package:flutter/material.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:path/path.dart' as path;
-import 'package:archive/archive_io.dart';
+import 'package:archive/archive_io.dart' as virtual_archive;
+import 'package:flutter_archive/flutter_archive.dart';
 
 class ExtractionTask {
   static const String progressDataType = 'extraction_progress';
@@ -85,8 +86,10 @@ class ExtractionTask {
     required Function(String taskId, String extractionDir) onComplete,
     required Function(String taskId, String error, String extractionDir) onError,
   }) async {
+    // Foreground service is only supported on Android, so we use an isolate for extraction on other platforms.
+    // Also Android is the only platform that supports native unzip, the other platforms must use virtual
     if (!Platform.isAndroid) {
-      extractInIsolate(
+      return extractInIsolate(
         taskId,
         filePath,
         extractionDir,
@@ -94,7 +97,6 @@ class ExtractionTask {
         onComplete: onComplete,
         onError: onError,
       );
-      return;
     }
 
     _activeTasks.add(taskId);
@@ -107,6 +109,7 @@ class ExtractionTask {
       serviceId: _activeTasks.length,
       notificationTitle: 'Extracting Archive',
       notificationText: 'Extracting $fileName...',
+      notificationIcon: const NotificationIcon(metaDataName: 'ic_notification'),
       callback: extractionTaskCallback,
     );
 
@@ -155,12 +158,13 @@ class ExtractionTask {
     try {
       sendPort.send({'type': 'progress', 'value': 0.1});
       var extractedFiles = 0;
-      await extractFileToDisk(params['filePath'], params['extractionDir'], callback: (archiveFile) {
+      await virtual_archive.extractFileToDisk(params['filePath'], params['extractionDir'], callback: (archiveFile) {
         final progress = (0.1 + (++extractedFiles / 4) * 0.85).clamp(0.1, 0.95);
         sendPort.send({'type': 'progress', 'value': progress});
       });
       sendPort.send({'type': 'complete'});
     } catch (e) {
+      debugPrint('Extraction error: $e');
       sendPort.send({'type': 'error', 'message': 'Failed to extract: $e'});
     }
   }
@@ -196,39 +200,26 @@ class ExtractionTaskHandler extends TaskHandler {
         'value': 0.1,
       });
       try {
-        ExtractionTask.extractInIsolate(
-          taskId,
-          filePath,
-          extractionDir,
-          onProgress: (taskId, progress) {
-            FlutterForegroundTask.updateService(
-              notificationText: 'Extracting $taskId... ${(progress * 100).toInt()}%',
-            );
-
+        ZipFile.extractToDirectory(
+          zipFile: File(filePath),
+          destinationDir: Directory(extractionDir),
+          onExtracting: (zipEntry, progress) {
             FlutterForegroundTask.sendDataToMain({
               'type': ExtractionTask.progressDataType,
               'taskId': taskId,
-              'value': progress,
+              'value': progress / 100.0,
             });
-          },
-          onComplete: (taskId, extractionDir) {
-            FlutterForegroundTask.sendDataToMain({
-              'type': ExtractionTask.completionDataType,
-              'taskId': taskId,
-              'extractionDir': extractionDir,
-            });
-          },
-          onError: (taskId, error, extractionDir) {
-            FlutterForegroundTask.sendDataToMain({
-              'type': ExtractionTask.errorDataType,
-              'taskId': taskId,
-              'extractionDir': extractionDir,
-              'message': error,
-            });
-            FlutterForegroundTask.updateService(notificationText: 'Extraction failed: $error');
-          },
-        );
+            return ZipFileOperation.includeItem;
+          }
+        ).then((_) {
+          FlutterForegroundTask.sendDataToMain({
+            'type': ExtractionTask.completionDataType,
+            'taskId': taskId,
+            'extractionDir': extractionDir,
+          });
+        });
       } catch (e) {
+        debugPrint('Extraction error: $e');
         FlutterForegroundTask.sendDataToMain({
           'type': ExtractionTask.errorDataType,
           'taskId': taskId,
