@@ -203,14 +203,7 @@ class ExtractionTaskHandler extends TaskHandler {
         ZipFile.extractToDirectory(
           zipFile: File(filePath),
           destinationDir: Directory(extractionDir),
-          onExtracting: (zipEntry, progress) {
-            FlutterForegroundTask.sendDataToMain({
-              'type': ExtractionTask.progressDataType,
-              'taskId': taskId,
-              'value': progress / 100.0,
-            });
-            return ZipFileOperation.includeItem;
-          }
+          onExtracting: (zipEntry, progress) => ZipFileOperation.includeItem,
         ).then((_) {
           FlutterForegroundTask.sendDataToMain({
             'type': ExtractionTask.completionDataType,
