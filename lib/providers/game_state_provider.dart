@@ -8,7 +8,6 @@ import 'package:roms_downloader/models/extraction_model.dart';
 import 'package:roms_downloader/models/settings_model.dart';
 import 'package:roms_downloader/providers/catalog_provider.dart';
 import 'package:roms_downloader/providers/settings_provider.dart';
-import 'package:roms_downloader/services/extraction_service.dart';
 import 'package:roms_downloader/services/directory_service.dart';
 
 final gameStateProvider = Provider.family<GameState, Game>((ref, game) {
@@ -228,7 +227,7 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
       final settingsNotifier = _ref.read(settingsProvider.notifier);
       final downloadDir = settingsNotifier.getDownloadDir(game.consoleId);
       final filePath = path.join(downloadDir, game.filename);
-      return ExtractionService().isCompressedFile(filePath);
+      return DirectoryService.isCompressedFile(filePath);
     } catch (_) {
       return false;
     }

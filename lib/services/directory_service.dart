@@ -104,4 +104,25 @@ class DirectoryService {
 
     return (hasFile: hasFile, hasExtracted: hasExtracted);
   }
+
+  static Future<bool> deleteFile(String filePath) async {
+    try {
+      final file = File(filePath);
+      if (file.existsSync()) {
+        await file.delete();
+        debugPrint('Deleted file: $filePath');
+        return true;
+      }
+      return false;
+    } catch (e) {
+      debugPrint('Failed to delete file: $e');
+      return false;
+    }
+  }
+
+  static bool isCompressedFile(String filePath)  {
+    const extensions = {'.zip', '.tar', '.gz', '.tar.gz', '.tgz', '.bz2', '.tar.bz2', '.tbz', '.xz', '.tar.xz', '.txz'};
+    return extensions.contains(path.extension(filePath).toLowerCase()) || extensions.contains(path.extension(filePath, 2).toLowerCase());
+  }
+
 }
