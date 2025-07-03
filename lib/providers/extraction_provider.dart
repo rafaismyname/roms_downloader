@@ -32,6 +32,11 @@ class ExtractionNotifier extends StateNotifier<ExtractionState> {
     final filePath = path.join(downloadDir, game.filename);
     final extractionDir = path.join(path.dirname(filePath), path.basenameWithoutExtension(filePath));
 
+    if (!DirectoryService.isCompressedFile(filePath)) {
+      debugPrint('File is not compressed: $filePath');
+      return;
+    }
+
     final tasks = Map<String, ExtractionTaskState>.from(state.tasks);
     tasks[taskId] = ExtractionTaskState(
       taskId: taskId,

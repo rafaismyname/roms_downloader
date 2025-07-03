@@ -8,6 +8,7 @@ import 'package:roms_downloader/services/download_service.dart';
 import 'package:roms_downloader/providers/catalog_provider.dart';
 import 'package:roms_downloader/providers/game_state_provider.dart';
 import 'package:roms_downloader/providers/settings_provider.dart';
+import 'package:roms_downloader/providers/extraction_provider.dart';
 
 final downloadProvider = StateNotifierProvider<DownloadNotifier, DownloadState>((ref) {
   final catalogNotifier = ref.read(catalogProvider.notifier);
@@ -50,6 +51,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       completedTasks.add(update.task.taskId);
       catalogNotifier.deselectGame(update.task.taskId);
       debugPrint('Download completed for ${update.task.taskId}');
+      _triggerAutoExtraction(update.task.taskId);
     }
 
     state = state.copyWith(
@@ -98,6 +100,21 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     if (state.downloading != hasActiveDownloads) {
       state = state.copyWith(downloading: hasActiveDownloads);
     }
+  }
+
+  void _triggerAutoExtraction(String taskId) {
+    final gameState = gameStateManager.state[taskId];
+    if (gameState == null) return;
+
+    final game = gameState.game;
+    final settingsNotifier = _ref.read(settingsProvider.notifier);
+    
+    final autoExtract = settingsNotifier.getAutoExtract(game.consoleId);
+    if (!autoExtract) return;
+
+    debugPrint('Auto-extracting for task: $taskId');
+    final extractionNotifier = _ref.read(extractionProvider.notifier);
+    extractionNotifier.extractFile(taskId);
   }
 
   bool isTaskDownloadable(String taskId) {

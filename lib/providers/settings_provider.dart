@@ -86,6 +86,10 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
     return getSetting(AppSettings.downloadDir, consoleId) ?? '';
   }
 
+  bool getAutoExtract(String? consoleId) {
+    return getSetting(AppSettings.autoExtract, consoleId) ?? true;
+  }
+
   Future<String?> selectDownloadDirectory() async {
     return await _settingsService.selectDownloadDirectory();
   }
