@@ -69,38 +69,18 @@ class DirectoryService {
   }
 
   Future<FileCheckResult> computeFileCheck(FileCheckData data) async {
-    final expectedPath = path.join(data.downloadDir, data.filename);
+    final expectedPath = path.join(data.downloadDir, data.filename.trim());
 
+    // Simple check: does the file exist at the expected path?
     bool hasFile = File(expectedPath).existsSync();
-    bool hasExtracted = false;
 
-    if (!hasFile) {
-      try {
-        final dir = Directory(data.downloadDir);
-        if (dir.existsSync()) {
-          final filenameBase = path.basenameWithoutExtension(data.filename);
-          for (final entity in dir.listSync()) {
-            final entityBase = path.basenameWithoutExtension(path.basename(entity.path));
-            if (entityBase == filenameBase) {
-              hasFile = true;
-              break;
-            }
-          }
-        }
-      } catch (_) {}
-    }
+    // Simple check: does a folder with the same name (without extension) exist?
+    final filenameWithoutExt = path.basenameWithoutExtension(data.filename.trim());
+    final extractionDir = path.join(data.downloadDir, filenameWithoutExt);
+    final directory = Directory(extractionDir);
+    bool hasExtracted = directory.existsSync();
 
-    if (hasFile) {
-      final extractionDir = path.join(path.dirname(expectedPath), path.basenameWithoutExtension(expectedPath));
-      final directory = Directory(extractionDir);
-
-      if (directory.existsSync()) {
-        try {
-          final contents = directory.listSync();
-          hasExtracted = contents.isNotEmpty;
-        } catch (_) {}
-      }
-    }
+    // TODO1: implement more complex checks like normalized title matching
 
     return (hasFile: hasFile, hasExtracted: hasExtracted);
   }
@@ -120,9 +100,11 @@ class DirectoryService {
     }
   }
 
-  static bool isCompressedFile(String filePath)  {
-    const extensions = {'.zip', '.tar', '.gz', '.tar.gz', '.tgz', '.bz2', '.tar.bz2', '.tbz', '.xz', '.tar.xz', '.txz'};
+  static bool isCompressedFile(String filePath) {
+    Set<String> extensions = {'.zip'};
+    if (!Platform.isAndroid) {
+      extensions.addAll({'.tar', '.gz', '.tar.gz', '.tgz', '.bz2', '.tar.bz2', '.tbz', '.xz', '.tar.xz', '.txz'});
+    }
     return extensions.contains(path.extension(filePath).toLowerCase()) || extensions.contains(path.extension(filePath, 2).toLowerCase());
   }
-
 }
