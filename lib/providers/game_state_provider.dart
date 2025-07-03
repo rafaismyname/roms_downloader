@@ -98,7 +98,7 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
         status: GameStatus.extracting,
         extractionProgress: progress,
         currentProgress: progress,
-        showProgressBar: true,
+        showProgressBar: false,
         isInteractable: false,
         availableActions: {GameAction.loading},
       );

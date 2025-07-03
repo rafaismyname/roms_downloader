@@ -1,8 +1,10 @@
 class AppSettings {
   static const String downloadDir = 'downloadDir';
+  static const String autoExtract = 'autoExtract';
 
   static const Map<String, Type> settingsSchema = {
     downloadDir: String,
+    autoExtract: bool,
   };
 
   final Map<String, BaseSettings> consoleSettings;
@@ -40,18 +42,21 @@ class AppSettings {
 
 class BaseSettings {
   final String? downloadDir;
+  final bool? autoExtract;
 
-  const BaseSettings({this.downloadDir});
+  const BaseSettings({this.downloadDir, this.autoExtract});
 
-  BaseSettings copyWith({String? downloadDir}) {
+  BaseSettings copyWith({String? downloadDir, bool? autoExtract}) {
     return BaseSettings(
       downloadDir: downloadDir == '' ? null : downloadDir ?? this.downloadDir,
+      autoExtract: autoExtract ?? this.autoExtract ?? true,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       AppSettings.downloadDir: downloadDir,
+      AppSettings.autoExtract: autoExtract,
     };
   }
 
@@ -59,6 +64,8 @@ class BaseSettings {
     switch (key) {
       case AppSettings.downloadDir:
         return downloadDir as T?;
+      case AppSettings.autoExtract:
+        return autoExtract as T?;
       default:
         throw ArgumentError('Unknown setting key: $key');
     }
@@ -68,6 +75,8 @@ class BaseSettings {
     switch (key) {
       case AppSettings.downloadDir:
         return copyWith(downloadDir: value as String?);
+      case AppSettings.autoExtract:
+        return copyWith(autoExtract: value as bool?);
       default:
         throw ArgumentError('Unknown setting key: $key');
     }
@@ -76,6 +85,7 @@ class BaseSettings {
   factory BaseSettings.fromJson(Map<String, dynamic> json) {
     return BaseSettings(
       downloadDir: json[AppSettings.downloadDir] as String?,
+      autoExtract: json[AppSettings.autoExtract] as bool?,
     );
   }
 }

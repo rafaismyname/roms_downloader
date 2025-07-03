@@ -23,7 +23,7 @@ class PermissionService {
     Permission.manageExternalStorage,
   ];
 
-  Future<bool> ensurePermissions() async {
+  static Future<bool> ensurePermissions() async {
     if (!Platform.isAndroid) return true;
 
     try {
@@ -62,7 +62,7 @@ class PermissionService {
     }
   }
 
-  Future<bool> _canAskForAppSettings() async {
+  static Future<bool> _canAskForAppSettings() async {
     final prefs = await SharedPreferences.getInstance();
     final lastRequest = prefs.getInt(_lastPermissionRequestKey);
 
@@ -75,12 +75,12 @@ class PermissionService {
     return daysSinceLastRequest >= _permissionCooldownDays;
   }
 
-  Future<void> _saveLastPermissionRequest() async {
+  static Future<void> _saveLastPermissionRequest() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_lastPermissionRequestKey, DateTime.now().millisecondsSinceEpoch);
   }
 
-  Future<bool> _showPermissionSettingsDialog(List<Permission> missingPermissions) async {
+  static Future<bool> _showPermissionSettingsDialog(List<Permission> missingPermissions) async {
     final context = navigatorKey.currentContext;
     if (context == null) return false;
 

@@ -3,6 +3,7 @@ import 'package:roms_downloader/models/console_model.dart';
 import 'package:roms_downloader/models/settings_model.dart';
 import 'package:roms_downloader/providers/settings_provider.dart';
 import 'package:roms_downloader/widgets/settings/directory_setting.dart';
+import 'package:roms_downloader/widgets/settings/boolean_setting.dart';
 import 'package:roms_downloader/widgets/settings/permissions_setting.dart';
 
 class SettingsContent extends StatelessWidget {
@@ -43,6 +44,16 @@ class SettingsContent extends StatelessWidget {
                     settingKey: AppSettings.downloadDir,
                     title: 'Download Directory',
                     icon: Icons.folder_open,
+                    console: selectedConsole,
+                    settingsNotifier: settingsNotifier,
+                  ),
+                  const SizedBox(height: 8),
+                  BooleanSetting(
+                    settingKey: AppSettings.autoExtract,
+                    defaultValue: true,
+                    title: 'Auto Extract After Download',
+                    subtitle: 'Automatically extract archive files after download completes',
+                    icon: Icons.archive,
                     console: selectedConsole,
                     settingsNotifier: settingsNotifier,
                   ),

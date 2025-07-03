@@ -23,7 +23,10 @@ class SettingsService {
 
     final defaultDownloadDir = await _directoryService.getDownloadDir();
     return AppSettings(
-      generalSettings: BaseSettings(downloadDir: defaultDownloadDir),
+      generalSettings: BaseSettings(
+        downloadDir: defaultDownloadDir, 
+        autoExtract: true
+      ),
     );
   }
 

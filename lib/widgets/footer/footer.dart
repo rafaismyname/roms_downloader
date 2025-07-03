@@ -28,7 +28,7 @@ class Footer extends ConsumerWidget {
     final overallProgress = _calculateOverallProgress(activeGames);
     final overallNetworkSpeed = _calculateOverallNetworkSpeed(activeGames);
     final overallTimeRemaining = _calculateOverallTimeRemaining(activeGames);
-    final showProgressBar = activeGames.isNotEmpty;
+    final showProgressBar = activeGames.firstOrNull?.showProgressBar ?? false;
 
     final selectedConsole = appState.selectedConsole;
     final downloadDir = settingsNotifier.getDownloadDir(selectedConsole?.id);
@@ -59,13 +59,7 @@ class Footer extends ConsumerWidget {
               children: [
                 Expanded(
                   child: Text(
-                    appState.loading
-                        ? "Loading catalog..."
-                        : downloadingGames > 0
-                            ? "Downloading $downloadingGames games"
-                            : extractingGames > 0
-                                ? "Extracting $extractingGames games"
-                                : "${catalogState.filteredGames.length} games available",
+                    _buildStatusText(appState.loading, downloadingGames, extractingGames, catalogState.filteredGames.length),
                     style: TextStyle(
                       fontSize: 12,
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -120,7 +114,9 @@ class Footer extends ConsumerWidget {
               children: [
                 Expanded(
                   child: Text(
-                    appState.loading ? "Loading catalog..." : "${catalogState.filteredGames.length} games available",
+                    appState.loading
+                        ? "Loading catalog..."
+                        : _buildStatusText(appState.loading, downloadingGames, extractingGames, catalogState.filteredGames.length),
                     style: TextStyle(
                       fontSize: 12,
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -172,5 +168,15 @@ class Footer extends ConsumerWidget {
     final totalSeconds = timeRemainingValues.map((d) => d.inSeconds).reduce((a, b) => a + b);
 
     return Duration(seconds: (totalSeconds / timeRemainingValues.length).round());
+  }
+
+  String _buildStatusText(bool loading, int downloading, int extracting, int totalGames) {
+    if (loading) return "Loading catalog...";
+
+    final statuses = <String>[];
+    if (downloading > 0) statuses.add("Downloading $downloading ${downloading == 1 ? 'game' : 'games'}");
+    if (extracting > 0) statuses.add("Extracting $extracting ${extracting == 1 ? 'game' : 'games'}");
+
+    return statuses.isNotEmpty ? statuses.join(" • ") : "$totalGames games available";
   }
 }
