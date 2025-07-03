@@ -94,7 +94,7 @@ class DirectoryService {
             if (entity is File) {
               final entityBase = path.basenameWithoutExtension(path.basename(entity.path));
               if (entityBase.trim() == filenameBase.trim()) {
-                hasFile = true;
+                hasExtracted = true;
                 break;
               }
             }
