@@ -193,7 +193,7 @@ class ExtractionTaskHandler extends TaskHandler {
       final taskId = data['taskId'] as String;
       final filePath = data['filePath'] as String;
       final extractionDir = data['extractionDir'] as String;
-      FlutterForegroundTask.updateService(notificationText: 'Starting extraction of $taskId...');
+      FlutterForegroundTask.updateService(notificationText: 'Extracting $taskId...');
       FlutterForegroundTask.sendDataToMain({
         'type': ExtractionTask.progressDataType,
         'taskId': taskId,
@@ -205,6 +205,7 @@ class ExtractionTaskHandler extends TaskHandler {
           destinationDir: Directory(extractionDir),
           onExtracting: (zipEntry, progress) => ZipFileOperation.includeItem,
         ).then((_) {
+          FlutterForegroundTask.updateService(notificationText: 'Extraction completed for $taskId');
           FlutterForegroundTask.sendDataToMain({
             'type': ExtractionTask.completionDataType,
             'taskId': taskId,
