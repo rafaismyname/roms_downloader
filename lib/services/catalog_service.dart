@@ -64,11 +64,10 @@ class CatalogService {
   }
 
   List<Game> _parseHtml(String html, Console console) {
-    // TODO1: Implement named groups for better extensibility (:href, :title, :size)
-    // TODO2: Implement console-specific regex using named groups
+    // TODO1: Implement console-specific regex using named groups (href, title, text, size)
     // Format: <tr><td class="link"><a href="URL" title="TITLE">TEXT</a></td><td class="size">SIZE</td>...
     final regExp = RegExp(
-      r'<tr><td class="link"><a href="([^"]+)" title="([^"]+)">([^<]+)</a></td><td class="size">([^<]+)</td><td class="date">[^<]*</td></tr>',
+      r'<tr><td class="link"><a href="(?<href>[^"]+)" title="(?<title>[^"]+)">(?<text>[^<]+)</a></td><td class="size">(?<size>[^<]+)</td><td class="date">[^<]*</td></tr>',
       multiLine: true,
     );
 
@@ -76,9 +75,9 @@ class CatalogService {
     final games = <Game>[];
 
     for (final match in matches) {
-      final href = match.group(1)!;
-      final title = match.group(2)!;
-      final sizeStr = match.group(4)!;
+      final href = match.namedGroup('href')!;
+      final title = match.namedGroup('title') ?? match.namedGroup('text')!;
+      final sizeStr = match.namedGroup('size')!;
 
       if (!_shouldAcceptGame(title, console)) {
         continue;
