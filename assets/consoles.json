@@ -1,7 +1,8 @@
 {
   "ps1": {
     "name": "PlayStation 1",
-    "url": "https://myrient.erista.me/files/Redump/Sony%20-%20PlayStation/"
+    "url": "https://myrient.erista.me/files/Redump/Sony%20-%20PlayStation/",
+    "regex": "<tr><td class=\"link\"><a href=\"(?<href>[^\"]+)\" title=\"(?<title>[^\"]+)\">(?<text>[^<]+)</a></td><td class=\"size\">(?<size>[^<]+)</td><td class=\"date\">[^<]*</td></tr>"
   },
   "ps2": {
     "name": "PlayStation 2",

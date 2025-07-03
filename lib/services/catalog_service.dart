@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:path/path.dart' as path;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
@@ -16,8 +17,8 @@ class CatalogService {
 
     String jsonStr = '';
     try {
-      final documentsDir = await getDownloadsDirectory();
-      final consolesFile = File('$documentsDir/$consolesFilePath');
+      final supportDir = await getApplicationSupportDirectory();
+      final consolesFile = File(path.join(supportDir.path, 'config', consolesFilePath));
       if (await consolesFile.exists()) {
         jsonStr = await consolesFile.readAsString();
       } else {
@@ -30,8 +31,8 @@ class CatalogService {
 
     final Map<String, dynamic> jsonList = jsonDecode(jsonStr);
     Map<String, Console> consoles = jsonList.map((key, value) {
-      final consoleData = Map<String, dynamic>.from(value);
-      return MapEntry(key, Console(id: key, name: consoleData['name'], url: consoleData['url']));
+      final consoleData = {'id': key, ...Map<String, dynamic>.from(value)};
+      return MapEntry(key, Console.fromJson(consoleData));
     });
 
     if (consoles.isNotEmpty) {
@@ -96,12 +97,7 @@ class CatalogService {
   }
 
   List<Game> _parseHtml(String html, Console console) {
-    // TODO1: Implement console-specific regex using named groups (href, title, text, size)
-    // Format: <tr><td class="link"><a href="URL" title="TITLE">TEXT</a></td><td class="size">SIZE</td>...
-    final regExp = RegExp(
-      r'<tr><td class="link"><a href="(?<href>[^"]+)" title="(?<title>[^"]+)">(?<text>[^<]+)</a></td><td class="size">(?<size>[^<]+)</td><td class="date">[^<]*</td></tr>',
-      multiLine: true,
-    );
+    final regExp = RegExp(console.regex ?? console.defaultRegex, multiLine: true);
 
     final matches = regExp.allMatches(html);
     final games = <Game>[];
