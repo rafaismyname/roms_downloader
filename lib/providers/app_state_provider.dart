@@ -28,7 +28,7 @@ class AppStateNotifier extends StateNotifier<AppState> {
 
     state = state.copyWith(
       consoles: consoles,
-      selectedConsole: consoles.isNotEmpty ? consoles.first : null,
+      selectedConsole: consoles.isNotEmpty ? consoles.values.first : null,
     );
 
     _listenToLoadingNotifications();

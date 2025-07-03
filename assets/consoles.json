@@ -1,0 +1,82 @@
+{
+  "ps1": {
+    "name": "PlayStation 1",
+    "url": "https://myrient.erista.me/files/Redump/Sony%20-%20PlayStation/"
+  },
+  "ps2": {
+    "name": "PlayStation 2",
+    "url": "https://myrient.erista.me/files/Redump/Sony%20-%20PlayStation%202/"
+  },
+  "ps3": {
+    "name": "PlayStation 3",
+    "url": "https://myrient.erista.me/files/Redump/Sony%20-%20PlayStation%203/"
+  },
+  "psp": {
+    "name": "PlayStation Portable",
+    "url": "https://myrient.erista.me/files/Redump/Sony%20-%20PlayStation%20Portable/"
+  },
+  "dreamcast": {
+    "name": "Dreamcast",
+    "url": "https://myrient.erista.me/files/Redump/Sega%20-%20Dreamcast/"
+  },
+  "xbox": {
+    "name": "Xbox",
+    "url": "https://myrient.erista.me/files/Redump/Microsoft%20-%20Xbox/"
+  },
+  "ss": {
+    "name": "Sega Saturn",
+    "url": "https://myrient.erista.me/files/Redump/Sega%20-%20Saturn/"
+  },
+  "sg": {
+    "name": "Sega Genesis",
+    "url": "https://myrient.erista.me/files/No-Intro/Sega%20-%20Mega%20Drive%20-%20Genesis/"
+  },
+  "gg": {
+    "name": "Game Gear",
+    "url": "https://myrient.erista.me/files/No-Intro/Sega%20-%20Game%20Gear/"
+  },
+  "gb": {
+    "name": "Game Boy",
+    "url": "https://myrient.erista.me/files/No-Intro/Nintendo%20-%20Game%20Boy/"
+  },
+  "gbc": {
+    "name": "Game Boy Color",
+    "url": "https://myrient.erista.me/files/No-Intro/Nintendo%20-%20Game%20Boy%20Color/"
+  },
+  "gba": {
+    "name": "Game Boy Advance",
+    "url": "https://myrient.erista.me/files/No-Intro/Nintendo%20-%20Game%20Boy%20Advance/"
+  },
+  "n64": {
+    "name": "Nintendo 64",
+    "url": "https://myrient.erista.me/files/No-Intro/Nintendo%20-%20Nintendo%2064%20%28BigEndian%29/"
+  },
+  "nds": {
+    "name": "Nintendo DS",
+    "url": "https://myrient.erista.me/files/No-Intro/Nintendo%20-%20Nintendo%20DS%20%28Decrypted%29/"
+  },
+  "n3ds": {
+    "name": "Nintendo 3DS",
+    "url": "https://myrient.erista.me/files/No-Intro/Nintendo%20-%20Nintendo%203DS%20%28Decrypted%29/"
+  },
+  "ngc": {
+    "name": "Nintendo Game Cube",
+    "url": "https://myrient.erista.me/files/Redump/Nintendo%20-%20GameCube%20-%20NKit%20RVZ%20%5Bzstd-19-128k%5D/"
+  },
+  "wii": {
+    "name": "Nintendo Wii",
+    "url": "https://myrient.erista.me/files/Redump/Nintendo%20-%20Wii%20-%20NKit%20RVZ%20%5Bzstd-19-128k%5D/"
+  },
+  "wiiu": {
+    "name": "Nintendo Wii U",
+    "url": "https://myrient.erista.me/files/Redump/Nintendo%20-%20Wii%20U%20-%20WUX/"
+  },
+  "nes": {
+    "name": "Nintendo Entertainment System",
+    "url": "https://myrient.erista.me/files/No-Intro/Nintendo%20-%20Nintendo%20Entertainment%20System%20%28Headered%29/"
+  },
+  "snes": {
+    "name": "Super Nintendo",
+    "url": "https://myrient.erista.me/files/No-Intro/Nintendo%20-%20Super%20Nintendo%20Entertainment%20System/"
+  }
+}

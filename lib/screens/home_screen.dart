@@ -30,7 +30,7 @@ class HomeScreen extends ConsumerWidget {
         child: Column(
           children: [
             Controls(
-              consoles: appState.consoles,
+              consoles: appState.consolesList,
               selectedConsole: appState.selectedConsole,
               onConsoleSelect: appStateNotifier.selectConsole,
             ),

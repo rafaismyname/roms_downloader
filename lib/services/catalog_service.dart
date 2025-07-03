@@ -1,23 +1,55 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:roms_downloader/data/consoles.dart';
 import 'package:roms_downloader/models/console_model.dart';
 import 'package:roms_downloader/models/game_model.dart';
 
 class CatalogService {
-  Future<List<Console>> getConsoles() async {
-    // TODO1: fetch from json instead of hardcoded list
-    return getConsolesList();
+  static final Map<String, Map<String, Console>> _consolesCache = {};
+
+  Future<Map<String, Console>> getConsoles([String consolesFilePath = 'consoles.json']) async {
+    if (_consolesCache.containsKey(consolesFilePath) && _consolesCache[consolesFilePath]!.isNotEmpty) {
+      return _consolesCache[consolesFilePath]!;
+    }
+
+    String jsonStr = '';
+    try {
+      final documentsDir = await getDownloadsDirectory();
+      final consolesFile = File('$documentsDir/$consolesFilePath');
+      if (await consolesFile.exists()) {
+        jsonStr = await consolesFile.readAsString();
+      } else {
+        jsonStr = await rootBundle.loadString('assets/$consolesFilePath');
+      }
+    } catch (e) {
+      debugPrint('Error reading consoles file: $e');
+      return {};
+    }
+
+    final Map<String, dynamic> jsonList = jsonDecode(jsonStr);
+    Map<String, Console> consoles = jsonList.map((key, value) {
+      final consoleData = Map<String, dynamic>.from(value);
+      return MapEntry(key, Console(id: key, name: consoleData['name'], url: consoleData['url']));
+    });
+
+    if (consoles.isNotEmpty) {
+      _consolesCache[consolesFilePath] = consoles;
+    }
+
+    return consoles;
   }
 
   Future<List<Game>> loadCatalog(String consoleId) async {
     final consoles = await getConsoles();
-    final console = consoles.firstWhere(
-      (c) => c.id == consoleId,
-      orElse: () => throw Exception("Console with id '$consoleId' not found"),
-    );
+
+    if (!consoles.containsKey(consoleId)) {
+      debugPrint("Console with id '$consoleId' not found");
+      return [];
+    }
+
+    Console console = consoles[consoleId]!;
 
     final cacheFile = await _getCacheFile(console.cacheFile);
     if (await cacheFile.exists()) {
@@ -126,9 +158,9 @@ class CatalogService {
     }
   }
 
-  Future<File> _getCacheFile(String filename) async {
-    final dir = await getApplicationDocumentsDirectory();
-    debugPrint('Catalog Cache directory: ${dir.path}');
-    return File('${dir.path}/$filename');
+  Future<File> _getCacheFile(String cacheFile) async {
+    final dir = await getApplicationCacheDirectory();
+    final cachedFilePath = '${dir.path}/$cacheFile';
+    return File(cachedFilePath);
   }
 }

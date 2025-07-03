@@ -10,7 +10,7 @@ typedef FileCheckData = ({String filename, String downloadDir});
 typedef FileCheckResult = ({bool hasFile, bool hasExtracted});
 
 class DirectoryService {
-  Map<String, List<FileSystemEntity>> _cachedDirsContent = {};
+  static final Map<String, List<FileSystemEntity>> _cachedDirsContent = {};
 
   Future<String> getDownloadDir() async {
     final prefs = await SharedPreferences.getInstance();
