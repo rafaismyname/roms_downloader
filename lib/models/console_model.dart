@@ -3,16 +3,12 @@ class Console {
   final String name;
   final String url;
   final String cacheFile;
-  final bool filterUsaOnly;
-  final bool excludeDemos;
 
   const Console({
     required this.id,
     required this.name,
     required this.url,
     required this.cacheFile,
-    required this.filterUsaOnly,
-    required this.excludeDemos,
   });
 
   factory Console.fromJson(Map<String, dynamic> json) {
@@ -21,8 +17,6 @@ class Console {
       name: json['name'],
       url: json['url'],
       cacheFile: json['cacheFile'],
-      filterUsaOnly: json['filterUsaOnly'],
-      excludeDemos: json['excludeDemos'],
     );
   }
 
@@ -32,8 +26,6 @@ class Console {
       'name': name,
       'url': url,
       'cacheFile': cacheFile,
-      'filterUsaOnly': filterUsaOnly,
-      'excludeDemos': excludeDemos,
     };
   }
 }

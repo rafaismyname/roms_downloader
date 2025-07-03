@@ -79,20 +79,11 @@ class CatalogService {
       final title = match.namedGroup('title') ?? match.namedGroup('text')!;
       final sizeStr = match.namedGroup('size')!;
 
-      if (!_shouldAcceptGame(title, console)) {
-        continue;
-      }
-
-      if (!href.endsWith('.7z') && !href.endsWith('.zip') && !href.endsWith('.bin') && !href.endsWith('.img') && !href.endsWith('.iso')) {
-        continue;
-      }
-
       final sizeBytes = _parseSizeBytes(sizeStr);
-      final cleanTitle = _cleanTitle(title, console);
       final fullUrl = href.startsWith('http') ? href : '${console.url}$href';
 
       games.add(Game(
-        title: cleanTitle,
+        title: title,
         url: fullUrl,
         size: sizeBytes,
         consoleId: console.id,
@@ -102,40 +93,36 @@ class CatalogService {
     return games;
   }
 
-  bool _shouldAcceptGame(String title, Console console) {
-    final isUsa = title.contains("(USA");
-    final isDemo = title.toLowerCase().contains("demo");
-
-    final usaFilterPasses = !console.filterUsaOnly || isUsa;
-    final demoFilterPasses = !console.excludeDemos || !isDemo;
-
-    return usaFilterPasses && demoFilterPasses;
-  }
-
-  String _cleanTitle(String title, Console console) {
-    var cleaned = title;
-    if (console.filterUsaOnly) {
-      cleaned = cleaned.replaceAll("(USA)", "");
-    }
-    return cleaned.trim();
-  }
-
   int _parseSizeBytes(String sizeStr) {
-    final parts = sizeStr.trim().split(' ');
-    if (parts.length != 2) return 0;
+    try {
+      final trimmed = sizeStr.trim();
+      if (trimmed.isEmpty) return 0;
 
-    final num = double.tryParse(parts[0]) ?? 0.0;
-    final unit = parts[1];
+      final match = RegExp(r'^(\d+(?:\.\d+)?)\s*([a-zA-Z]*)$').firstMatch(trimmed);
+      if (match == null) return 0;
 
-    switch (unit) {
-      case "KiB":
-        return (num * 1024).round();
-      case "MiB":
-        return (num * 1024 * 1024).round();
-      case "GiB":
-        return (num * 1024 * 1024 * 1024).round();
-      default:
-        return 0;
+      final num = double.tryParse(match.group(1)!) ?? 0.0;
+      final unit = match.group(2)!;
+
+      switch (unit.toLowerCase()) {
+        case "k":
+        case "kb":
+        case "kib":
+          return (num * 1024).round();
+        case "m":
+        case "mb":
+        case "mib":
+          return (num * 1024 * 1024).round();
+        case "g":
+        case "gb":
+        case "gib":
+          return (num * 1024 * 1024 * 1024).round();
+        default:
+          return num.round();
+      }
+    } catch (e) {
+      debugPrint('Error parsing size "$sizeStr": $e');
+      return 0;
     }
   }
 
