@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:roms_downloader/models/console_model.dart';
 import 'package:roms_downloader/models/game_model.dart';
+import 'package:roms_downloader/utils/rom_parser.dart';
 
 class CatalogService {
   static final Map<String, Map<String, Console>> _consolesCache = {};
@@ -52,17 +53,17 @@ class CatalogService {
 
     Console console = consoles[consoleId]!;
 
-    final cacheFile = await _getCacheFile(console.cacheFile);
-    if (await cacheFile.exists()) {
-      try {
-        final jsonStr = await cacheFile.readAsString();
-        final List<dynamic> jsonList = jsonDecode(jsonStr);
-        return jsonList.map((json) => Game.fromJson(json)).toList();
-      } catch (e) {
-        debugPrint('Error reading cache: $e');
-        await cacheFile.delete();
-      }
-    }
+    // final cacheFile = await _getCacheFile(console.cacheFile);
+    // if (await cacheFile.exists()) {
+    //   try {
+    //     final jsonStr = await cacheFile.readAsString();
+    //     final List<dynamic> jsonList = jsonDecode(jsonStr);
+    //     return jsonList.map((json) => Game.fromJson(json)).toList();
+    //   } catch (e) {
+    //     debugPrint('Error reading cache: $e');
+    //     await cacheFile.delete();
+    //   }
+    // }
 
     return _fetchCatalog(console);
   }
@@ -109,12 +110,14 @@ class CatalogService {
 
       final sizeBytes = _parseSizeBytes(sizeStr);
       final fullUrl = href.startsWith('http') ? href : '${console.url}$href';
+      final metadata = RomParser.parseRomTitle(title);
 
       games.add(Game(
         title: title,
         url: fullUrl,
         size: sizeBytes,
         consoleId: console.id,
+        metadata: metadata,
       ));
     }
 
