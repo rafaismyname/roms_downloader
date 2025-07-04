@@ -108,7 +108,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
 
     final game = gameState.game;
     final settingsNotifier = _ref.read(settingsProvider.notifier);
-    
+
     final autoExtract = settingsNotifier.getAutoExtract(game.consoleId);
     if (!autoExtract) return;
 

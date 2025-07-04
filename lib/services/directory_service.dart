@@ -81,7 +81,7 @@ class DirectoryService {
     final extractionDir = path.join(data.downloadDir, filenameWithoutExt);
     final directory = Directory(extractionDir);
     bool hasExtracted = directory.existsSync();
-    
+
     // Check (one last time) if the file exists but with different extension
     if (!hasFile && !hasExtracted) {
       try {

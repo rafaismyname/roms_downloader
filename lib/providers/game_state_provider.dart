@@ -118,7 +118,7 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
     }
   }
 
-   void resolveState(String gameId) async {
+  void resolveState(String gameId) async {
     if (_resolving[gameId] == true) return;
 
     final gameState = state[gameId];
@@ -210,7 +210,7 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
     }
     state = updated;
   }
-  
+
   Set<GameAction> _getActions(GameStatus status, Game game) => switch (status) {
         GameStatus.ready => {GameAction.download},
         GameStatus.downloaded => _canExtract(game) ? {GameAction.extract} : const {},

@@ -39,7 +39,7 @@ class DownloadService {
 
     return FileDownloader();
   }
-  
+
   DownloadTask createDownloadTask({
     required String taskId,
     required String url,
