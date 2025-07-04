@@ -1,4 +1,4 @@
-import 'package:roms_downloader/models/game_metadata.dart';
+import 'package:roms_downloader/models/game_metadata_model.dart';
 
 class RomParser {
   static final Map<String, String> _regionCodes = {
@@ -111,20 +111,10 @@ class RomParser {
     String region = '';
     String language = '';
     String version = '';
-    bool isGoodDump = false;
-    bool isBadDump = false;
-    bool isOverdump = false;
-    bool isHack = false;
-    bool isTranslation = false;
-    bool isAlternate = false;
-    bool isFixed = false;
-    bool isTrainer = false;
-    bool isUnlicensed = false;
-    bool isDemo = false;
-    bool isSample = false;
-    bool isProto = false;
-    bool isBeta = false;
-    bool isAlpha = false;
+    Set<DumpQuality> dumpQualities = {};
+    Set<RomType> romTypes = {};
+    Set<ModificationType> modifications = {};
+    Set<DistributionType> distributionTypes = {};
     int revision = 0;
     String diskNumber = '';
     List<String> tags = [];
@@ -134,11 +124,6 @@ class RomParser {
     String publisher = '';
     String collection = '';
     String mediaType = '';
-    bool isEnhanced = false;
-    bool isSpecialEdition = false;
-    bool isAftermarket = false;
-    bool isPirate = false;
-    bool isMultiCart = false;
     String releaseDate = '';
     List<String> regions = [];
     List<String> languages = [];
@@ -148,60 +133,60 @@ class RomParser {
 
     final patterns = <RegExp, Function(Match)>{
       RegExp(r'\[!\]'): (match) {
-        isGoodDump = true;
+        dumpQualities.add(DumpQuality.goodDump);
         tags.add('Good Dump');
       },
       RegExp(r'\[b(\d*)\]'): (match) {
-        isBadDump = true;
+        dumpQualities.add(DumpQuality.badDump);
         tags.add('Bad Dump');
       },
       RegExp(r'\[o(\d*)\]'): (match) {
-        isOverdump = true;
+        dumpQualities.add(DumpQuality.overdump);
         tags.add('Overdump');
       },
       RegExp(r'\[h(\d*[A-Za-z]*)\]'): (match) {
-        isHack = true;
+        modifications.add(ModificationType.hack);
         tags.add('Hack');
       },
       RegExp(r'\[t(\d*[A-Za-z]*)\]'): (match) {
-        isTranslation = true;
+        modifications.add(ModificationType.translation);
         tags.add('Translation');
       },
       RegExp(r'\[a(\d*)\]'): (match) {
-        isAlternate = true;
+        distributionTypes.add(DistributionType.alternate);
         tags.add('Alternate');
       },
       RegExp(r'\[f(\d*)\]'): (match) {
-        isFixed = true;
+        modifications.add(ModificationType.fixed);
         tags.add('Fixed');
       },
       RegExp(r'\[T[+-][A-Za-z]*(\d*)\]'): (match) {
-        isTrainer = true;
+        modifications.add(ModificationType.trainer);
         tags.add('Trainer');
       },
-      RegExp(r'\[x\]'): (match) => isBadDump = true,
-      RegExp(r'\[p(\d*)\]'): (match) => isPirate = true,
-      RegExp(r'\[c\]'): (match) => isFixed = true,
-      RegExp(r'\[CR [^\]]+\]'): (match) => isPirate = true,
-      RegExp(r'\[m(\d*)\]'): (match) => isMultiCart = true,
+      RegExp(r'\[x\]'): (match) => dumpQualities.add(DumpQuality.badDump),
+      RegExp(r'\[p(\d*)\]'): (match) => distributionTypes.add(DistributionType.pirate),
+      RegExp(r'\[c\]'): (match) => modifications.add(ModificationType.fixed),
+      RegExp(r'\[CR [^\]]+\]'): (match) => distributionTypes.add(DistributionType.pirate),
+      RegExp(r'\[m(\d*)\]'): (match) => distributionTypes.add(DistributionType.multiCart),
       RegExp(r'\[S\]'): (match) => categories.add('Save'),
       RegExp(r'\[SCES-\d+\]'): (match) => categories.add('Sony Code'),
       RegExp(r'\[SLUS-\d+\]'): (match) => categories.add('Sony Code'),
       RegExp(r'\[SCUS-\d+\]'): (match) => categories.add('Sony Code'),
       RegExp(r'\[.*-\d+.*\]'): (match) => categories.add('Product Code'),
-      RegExp(r'\(M(\d+)\)'): (match) => isMultiCart = true,
-      RegExp(r'\(Unl\)'): (match) => isUnlicensed = true,
-      RegExp(r'\(Unlicensed\)'): (match) => isUnlicensed = true,
-      RegExp(r'\(PD\)'): (match) => {isUnlicensed = true, regions.add('Public Domain')},
-      RegExp(r'\(Demo[^)]*\)'): (match) => isDemo = true,
-      RegExp(r'\(Kiosk Demo\)'): (match) => {isDemo = true, categories.add('Kiosk')},
-      RegExp(r'\(Sample\)'): (match) => isSample = true,
-      RegExp(r'\(Proto[^)]*\)'): (match) => isProto = true,
-      RegExp(r'\(Prototype[^)]*\)'): (match) => isProto = true,
-      RegExp(r'\(Beta[^)]*\)'): (match) => isBeta = true,
-      RegExp(r'\(Alpha[^)]*\)'): (match) => isAlpha = true,
-      RegExp(r'\(Preview\)'): (match) => isBeta = true,
-      RegExp(r'\(Pre-Release\)'): (match) => isBeta = true,
+      RegExp(r'\(M(\d+)\)'): (match) => distributionTypes.add(DistributionType.multiCart),
+      RegExp(r'\(Unl\)'): (match) => distributionTypes.add(DistributionType.unlicensed),
+      RegExp(r'\(Unlicensed\)'): (match) => distributionTypes.add(DistributionType.unlicensed),
+      RegExp(r'\(PD\)'): (match) => {distributionTypes.add(DistributionType.unlicensed), regions.add('Public Domain')},
+      RegExp(r'\(Demo[^)]*\)'): (match) => romTypes.add(RomType.demo),
+      RegExp(r'\(Kiosk Demo\)'): (match) => {romTypes.add(RomType.demo), categories.add('Kiosk')},
+      RegExp(r'\(Sample\)'): (match) => romTypes.add(RomType.sample),
+      RegExp(r'\(Proto[^)]*\)'): (match) => romTypes.add(RomType.proto),
+      RegExp(r'\(Prototype[^)]*\)'): (match) => romTypes.add(RomType.proto),
+      RegExp(r'\(Beta[^)]*\)'): (match) => romTypes.add(RomType.beta),
+      RegExp(r'\(Alpha[^)]*\)'): (match) => romTypes.add(RomType.alpha),
+      RegExp(r'\(Preview\)'): (match) => romTypes.add(RomType.beta),
+      RegExp(r'\(Pre-Release\)'): (match) => romTypes.add(RomType.beta),
       RegExp(r'\(Final\)'): (match) => categories.add('Final'),
       RegExp(r'\(Gold\)'): (match) => categories.add('Gold Master'),
       RegExp(r'\(Master\)'): (match) => categories.add('Master'),
@@ -239,24 +224,24 @@ class RomParser {
         releaseDate = match.group(1)!;
         tags.add('Year ${match.group(1)!}');
       },
-      RegExp(r'\(SGB Enhanced\)'): (match) => {isEnhanced = true, mediaType = 'SGB Enhanced'},
+      RegExp(r'\(SGB Enhanced\)'): (match) => {distributionTypes.add(DistributionType.enhanced), mediaType = 'SGB Enhanced'},
       RegExp(r'\(NKit[^)]*\)'): (match) => mediaType = 'NKit',
       RegExp(r'\(RVZ[^)]*\)'): (match) => mediaType = 'RVZ',
       RegExp(r'\(CDI\)'): (match) => mediaType = 'CDI',
       RegExp(r'\(GDI\)'): (match) => mediaType = 'GDI',
       RegExp(r'\(Decrypted\)'): (match) => mediaType = 'Decrypted',
       RegExp(r'\(Encrypted\)'): (match) => mediaType = 'Encrypted',
-      RegExp(r'\(Aftermarket\)'): (match) => isAftermarket = true,
-      RegExp(r'\(Homebrew\)'): (match) => isAftermarket = true,
-      RegExp(r'\(Pirate\)'): (match) => isPirate = true,
-      RegExp(r'\(Multicart[^)]*\)'): (match) => isMultiCart = true,
-      RegExp(r'\(Multi[^)]*\)'): (match) => isMultiCart = true,
-      RegExp(r'\(\d+[ -]?in[ -]?\d+\)'): (match) => isMultiCart = true,
-      RegExp(r'\(Possible Proto\)'): (match) => isProto = true,
-      RegExp(r'\(Trainer\)'): (match) => isTrainer = true,
+      RegExp(r'\(Aftermarket\)'): (match) => distributionTypes.add(DistributionType.aftermarket),
+      RegExp(r'\(Homebrew\)'): (match) => distributionTypes.add(DistributionType.aftermarket),
+      RegExp(r'\(Pirate\)'): (match) => distributionTypes.add(DistributionType.pirate),
+      RegExp(r'\(Multicart[^)]*\)'): (match) => distributionTypes.add(DistributionType.multiCart),
+      RegExp(r'\(Multi[^)]*\)'): (match) => distributionTypes.add(DistributionType.multiCart),
+      RegExp(r'\(\d+[ -]?in[ -]?\d+\)'): (match) => distributionTypes.add(DistributionType.multiCart),
+      RegExp(r'\(Possible Proto\)'): (match) => romTypes.add(RomType.proto),
+      RegExp(r'\(Trainer\)'): (match) => modifications.add(ModificationType.trainer),
       RegExp(r'\([^)]*Collection[^)]*\)'): (match) => {collection = match.group(0)!.replaceAll(RegExp(r'[()]'), ''), categories.add('Collection')},
       RegExp(r'\([^)]*Edition[^)]*\)'): (match) =>
-          {isSpecialEdition = true, collection = match.group(0)!.replaceAll(RegExp(r'[()]'), ''), categories.add('Special Edition')},
+          {distributionTypes.add(DistributionType.specialEdition), collection = match.group(0)!.replaceAll(RegExp(r'[()]'), ''), categories.add('Special Edition')},
       RegExp(r'\([^)]*Pack[^)]*\)'): (match) => {collection = match.group(0)!.replaceAll(RegExp(r'[()]'), ''), categories.add('Pack')},
       RegExp(r'\([^)]*Bundle[^)]*\)'): (match) => {collection = match.group(0)!.replaceAll(RegExp(r'[()]'), ''), categories.add('Bundle')},
       RegExp(r'\(NTSC\)'): (match) => categories.add('NTSC'),
@@ -557,19 +542,10 @@ class RomParser {
     normalizedTitle = normalizedTitle.replaceAll(RegExp(r'\s+'), ' ').trim();
 
     categories.addAll(_generateCategories(
-      isDemo: isDemo,
-      isSample: isSample,
-      isProto: isProto,
-      isBeta: isBeta,
-      isAlpha: isAlpha,
-      isHack: isHack,
-      isTranslation: isTranslation,
-      isUnlicensed: isUnlicensed,
-      isAftermarket: isAftermarket,
-      isPirate: isPirate,
-      isMultiCart: isMultiCart,
-      isEnhanced: isEnhanced,
-      isSpecialEdition: isSpecialEdition,
+      dumpQualities: dumpQualities,
+      romTypes: romTypes,
+      modifications: modifications,
+      distributionTypes: distributionTypes,
       mediaType: mediaType,
       collection: collection,
     ));
@@ -579,20 +555,10 @@ class RomParser {
       region: region,
       language: language,
       version: version,
-      isGoodDump: isGoodDump,
-      isBadDump: isBadDump,
-      isOverdump: isOverdump,
-      isHack: isHack,
-      isTranslation: isTranslation,
-      isAlternate: isAlternate,
-      isFixed: isFixed,
-      isTrainer: isTrainer,
-      isUnlicensed: isUnlicensed,
-      isDemo: isDemo,
-      isSample: isSample,
-      isProto: isProto,
-      isBeta: isBeta,
-      isAlpha: isAlpha,
+      dumpQualities: dumpQualities,
+      romTypes: romTypes,
+      modifications: modifications,
+      distributionTypes: distributionTypes,
       revision: revision,
       diskNumber: diskNumber,
       tags: tags,
@@ -601,11 +567,6 @@ class RomParser {
       publisher: publisher,
       collection: collection,
       mediaType: mediaType,
-      isEnhanced: isEnhanced,
-      isSpecialEdition: isSpecialEdition,
-      isAftermarket: isAftermarket,
-      isPirate: isPirate,
-      isMultiCart: isMultiCart,
       releaseDate: releaseDate,
       regions: regions,
       languages: languages,
@@ -614,44 +575,35 @@ class RomParser {
   }
 
   static List<String> _generateCategories({
-    required bool isDemo,
-    required bool isSample,
-    required bool isProto,
-    required bool isBeta,
-    required bool isAlpha,
-    required bool isHack,
-    required bool isTranslation,
-    required bool isUnlicensed,
-    required bool isAftermarket,
-    required bool isPirate,
-    required bool isMultiCart,
-    required bool isEnhanced,
-    required bool isSpecialEdition,
+    required Set<DumpQuality> dumpQualities,
+    required Set<RomType> romTypes,
+    required Set<ModificationType> modifications,
+    required Set<DistributionType> distributionTypes,
     required String mediaType,
     required String collection,
   }) {
     final categories = <String>[];
 
     // Development status categories
-    if (isDemo) categories.add('Demo');
-    if (isSample) categories.add('Sample');
-    if (isProto) categories.add('Prototype');
-    if (isBeta) categories.add('Beta');
-    if (isAlpha) categories.add('Alpha');
+    if (romTypes.contains(RomType.demo)) categories.add('Demo');
+    if (romTypes.contains(RomType.sample)) categories.add('Sample');
+    if (romTypes.contains(RomType.proto)) categories.add('Prototype');
+    if (romTypes.contains(RomType.beta)) categories.add('Beta');
+    if (romTypes.contains(RomType.alpha)) categories.add('Alpha');
 
     // Modification categories
-    if (isHack) categories.add('Hack');
-    if (isTranslation) categories.add('Translation');
+    if (modifications.contains(ModificationType.hack)) categories.add('Hack');
+    if (modifications.contains(ModificationType.translation)) categories.add('Translation');
 
     // Distribution categories
-    if (isUnlicensed) categories.add('Unlicensed');
-    if (isAftermarket) categories.add('Aftermarket');
-    if (isPirate) categories.add('Pirate');
+    if (distributionTypes.contains(DistributionType.unlicensed)) categories.add('Unlicensed');
+    if (distributionTypes.contains(DistributionType.aftermarket)) categories.add('Aftermarket');
+    if (distributionTypes.contains(DistributionType.pirate)) categories.add('Pirate');
 
     // Special features
-    if (isMultiCart) categories.add('Multi-Game');
-    if (isEnhanced) categories.add('Enhanced');
-    if (isSpecialEdition) categories.add('Special Edition');
+    if (distributionTypes.contains(DistributionType.multiCart)) categories.add('Multi-Game');
+    if (distributionTypes.contains(DistributionType.enhanced)) categories.add('Enhanced');
+    if (distributionTypes.contains(DistributionType.specialEdition)) categories.add('Special Edition');
 
     // Media type
     if (mediaType.isNotEmpty) {

@@ -1,4 +1,4 @@
-import 'package:roms_downloader/models/game_metadata.dart';
+import 'package:roms_downloader/models/game_metadata_model.dart';
 
 class Game {
   final String title;
@@ -44,9 +44,7 @@ class Game {
 
   String get displayTitle => metadata?.normalizedTitle ?? title;
 
-  String get region => metadata?.region ?? '';
+  String get region => metadata?.region ?? metadata?.regions.firstOrNull ?? '';
 
-  String get language => metadata?.language ?? '';
-
-  bool get isGoodDump => metadata?.isGoodDump ?? false;
+  String get language => metadata?.language ?? metadata?.languages.firstOrNull ?? '';
 }

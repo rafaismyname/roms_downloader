@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:roms_downloader/models/catalog_model.dart';
-import 'package:roms_downloader/models/catalog_filter.dart';
+import 'package:roms_downloader/models/catalog_filter_model.dart';
 import 'package:roms_downloader/models/console_model.dart';
 import 'package:roms_downloader/services/catalog_service.dart';
 
@@ -121,50 +121,44 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
     updateFilter(newFilter);
   }
 
-  void toggleDumpTypeFilter(String type, bool value) {
+  void toggleFlagFilter(String flagType, String flag) {
     CatalogFilter newFilter;
-    switch (type) {
-      case 'goodDumps':
-        newFilter = state.filter.copyWith(showGoodDumps: value);
+    switch (flagType) {
+      case 'dumpQualities':
+        final flags = Set<String>.from(state.filter.allowedDumpQualities);
+        if (flags.contains(flag)) {
+          flags.remove(flag);
+        } else {
+          flags.add(flag);
+        }
+        newFilter = state.filter.copyWith(allowedDumpQualities: flags);
         break;
-      case 'badDumps':
-        newFilter = state.filter.copyWith(showBadDumps: value);
+      case 'romTypes':
+        final flags = Set<String>.from(state.filter.allowedRomTypes);
+        if (flags.contains(flag)) {
+          flags.remove(flag);
+        } else {
+          flags.add(flag);
+        }
+        newFilter = state.filter.copyWith(allowedRomTypes: flags);
         break;
-      case 'overdumps':
-        newFilter = state.filter.copyWith(showOverdumps: value);
+      case 'modifications':
+        final flags = Set<String>.from(state.filter.allowedModifications);
+        if (flags.contains(flag)) {
+          flags.remove(flag);
+        } else {
+          flags.add(flag);
+        }
+        newFilter = state.filter.copyWith(allowedModifications: flags);
         break;
-      case 'hacks':
-        newFilter = state.filter.copyWith(showHacks: value);
-        break;
-      case 'translations':
-        newFilter = state.filter.copyWith(showTranslations: value);
-        break;
-      case 'alternates':
-        newFilter = state.filter.copyWith(showAlternates: value);
-        break;
-      case 'fixed':
-        newFilter = state.filter.copyWith(showFixed: value);
-        break;
-      case 'trainer':
-        newFilter = state.filter.copyWith(showTrainer: value);
-        break;
-      case 'unlicensed':
-        newFilter = state.filter.copyWith(showUnlicensed: value);
-        break;
-      case 'demos':
-        newFilter = state.filter.copyWith(showDemos: value);
-        break;
-      case 'samples':
-        newFilter = state.filter.copyWith(showSamples: value);
-        break;
-      case 'protos':
-        newFilter = state.filter.copyWith(showProtos: value);
-        break;
-      case 'betas':
-        newFilter = state.filter.copyWith(showBetas: value);
-        break;
-      case 'alphas':
-        newFilter = state.filter.copyWith(showAlphas: value);
+      case 'distributionTypes':
+        final flags = Set<String>.from(state.filter.allowedDistributionTypes);
+        if (flags.contains(flag)) {
+          flags.remove(flag);
+        } else {
+          flags.add(flag);
+        }
+        newFilter = state.filter.copyWith(allowedDistributionTypes: flags);
         break;
       default:
         return;

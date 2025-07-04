@@ -26,7 +26,7 @@ class CatalogFilter extends ConsumerWidget {
       children: [
         Container(
           constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.6, // Limit to 60% of screen height
+            maxHeight: MediaQuery.of(context).size.height * 0.6,
           ),
           child: SingleChildScrollView(
             child: Padding(
@@ -66,80 +66,144 @@ class CatalogFilter extends ConsumerWidget {
                     ),
                     const SizedBox(height: 16),
                   ],
-                  Text('Dump Types', style: Theme.of(context).textTheme.titleSmall),
+                  Text('Dump Qualities', style: Theme.of(context).textTheme.titleSmall),
                   const SizedBox(height: 8),
                   Wrap(
                     spacing: 8,
                     children: [
                       FilterChip(
                         label: const Text('Good Dumps'),
-                        selected: filter.showGoodDumps,
-                        onSelected: (value) => catalogNotifier.toggleDumpTypeFilter('goodDumps', value),
+                        selected: filter.allowedDumpQualities.contains('goodDump'),
+                        onSelected: (_) => catalogNotifier.toggleFlagFilter('dumpQualities', 'goodDump'),
                       ),
                       FilterChip(
                         label: const Text('Bad Dumps'),
-                        selected: filter.showBadDumps,
-                        onSelected: (value) => catalogNotifier.toggleDumpTypeFilter('badDumps', value),
+                        selected: filter.allowedDumpQualities.contains('badDump'),
+                        onSelected: (_) => catalogNotifier.toggleFlagFilter('dumpQualities', 'badDump'),
                       ),
                       FilterChip(
                         label: const Text('Overdumps'),
-                        selected: filter.showOverdumps,
-                        onSelected: (value) => catalogNotifier.toggleDumpTypeFilter('overdumps', value),
+                        selected: filter.allowedDumpQualities.contains('overdump'),
+                        onSelected: (_) => catalogNotifier.toggleFlagFilter('dumpQualities', 'overdump'),
                       ),
-                      FilterChip(
-                        label: const Text('Hacks'),
-                        selected: filter.showHacks,
-                        onSelected: (value) => catalogNotifier.toggleDumpTypeFilter('hacks', value),
-                      ),
-                      FilterChip(
-                        label: const Text('Translations'),
-                        selected: filter.showTranslations,
-                        onSelected: (value) => catalogNotifier.toggleDumpTypeFilter('translations', value),
-                      ),
-                      FilterChip(
-                        label: const Text('Alternates'),
-                        selected: filter.showAlternates,
-                        onSelected: (value) => catalogNotifier.toggleDumpTypeFilter('alternates', value),
-                      ),
-                      FilterChip(
-                        label: const Text('Fixed'),
-                        selected: filter.showFixed,
-                        onSelected: (value) => catalogNotifier.toggleDumpTypeFilter('fixed', value),
-                      ),
-                      FilterChip(
-                        label: const Text('Trainer'),
-                        selected: filter.showTrainer,
-                        onSelected: (value) => catalogNotifier.toggleDumpTypeFilter('trainer', value),
-                      ),
-                      FilterChip(
-                        label: const Text('Unlicensed'),
-                        selected: filter.showUnlicensed,
-                        onSelected: (value) => catalogNotifier.toggleDumpTypeFilter('unlicensed', value),
-                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Text('ROM Types', style: Theme.of(context).textTheme.titleSmall),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    children: [
                       FilterChip(
                         label: const Text('Demos'),
-                        selected: filter.showDemos,
-                        onSelected: (value) => catalogNotifier.toggleDumpTypeFilter('demos', value),
+                        selected: filter.allowedRomTypes.contains('demo'),
+                        onSelected: (_) => catalogNotifier.toggleFlagFilter('romTypes', 'demo'),
                       ),
                       FilterChip(
                         label: const Text('Samples'),
-                        selected: filter.showSamples,
-                        onSelected: (value) => catalogNotifier.toggleDumpTypeFilter('samples', value),
+                        selected: filter.allowedRomTypes.contains('sample'),
+                        onSelected: (_) => catalogNotifier.toggleFlagFilter('romTypes', 'sample'),
                       ),
                       FilterChip(
                         label: const Text('Prototypes'),
-                        selected: filter.showProtos,
-                        onSelected: (value) => catalogNotifier.toggleDumpTypeFilter('protos', value),
+                        selected: filter.allowedRomTypes.contains('proto'),
+                        onSelected: (_) => catalogNotifier.toggleFlagFilter('romTypes', 'proto'),
                       ),
                       FilterChip(
                         label: const Text('Betas'),
-                        selected: filter.showBetas,
-                        onSelected: (value) => catalogNotifier.toggleDumpTypeFilter('betas', value),
+                        selected: filter.allowedRomTypes.contains('beta'),
+                        onSelected: (_) => catalogNotifier.toggleFlagFilter('romTypes', 'beta'),
                       ),
                       FilterChip(
                         label: const Text('Alphas'),
-                        selected: filter.showAlphas,
-                        onSelected: (value) => catalogNotifier.toggleDumpTypeFilter('alphas', value),
+                        selected: filter.allowedRomTypes.contains('alpha'),
+                        onSelected: (_) => catalogNotifier.toggleFlagFilter('romTypes', 'alpha'),
+                      ),
+                      FilterChip(
+                        label: const Text('Normal ROMs'),
+                        selected: filter.allowedRomTypes.contains('normal'),
+                        onSelected: (_) => catalogNotifier.toggleFlagFilter('romTypes', 'normal'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Text('Modifications', style: Theme.of(context).textTheme.titleSmall),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    children: [
+                      FilterChip(
+                        label: const Text('Hacks'),
+                        selected: filter.allowedModifications.contains('hack'),
+                        onSelected: (_) => catalogNotifier.toggleFlagFilter('modifications', 'hack'),
+                      ),
+                      FilterChip(
+                        label: const Text('Translations'),
+                        selected: filter.allowedModifications.contains('translation'),
+                        onSelected: (_) => catalogNotifier.toggleFlagFilter('modifications', 'translation'),
+                      ),
+                      FilterChip(
+                        label: const Text('Fixed'),
+                        selected: filter.allowedModifications.contains('fixed'),
+                        onSelected: (_) => catalogNotifier.toggleFlagFilter('modifications', 'fixed'),
+                      ),
+                      FilterChip(
+                        label: const Text('Trainer'),
+                        selected: filter.allowedModifications.contains('trainer'),
+                        onSelected: (_) => catalogNotifier.toggleFlagFilter('modifications', 'trainer'),
+                      ),
+                      FilterChip(
+                        label: const Text('Unmodified'),
+                        selected: filter.allowedModifications.contains('none'),
+                        onSelected: (_) => catalogNotifier.toggleFlagFilter('modifications', 'none'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Text('Distribution Types', style: Theme.of(context).textTheme.titleSmall),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    children: [
+                      FilterChip(
+                        label: const Text('Enhanced'),
+                        selected: filter.allowedDistributionTypes.contains('enhanced'),
+                        onSelected: (_) => catalogNotifier.toggleFlagFilter('distributionTypes', 'enhanced'),
+                      ),
+                      FilterChip(
+                        label: const Text('Special Editions'),
+                        selected: filter.allowedDistributionTypes.contains('specialEdition'),
+                        onSelected: (_) => catalogNotifier.toggleFlagFilter('distributionTypes', 'specialEdition'),
+                      ),
+                      FilterChip(
+                        label: const Text('Alternates'),
+                        selected: filter.allowedDistributionTypes.contains('alternate'),
+                        onSelected: (_) => catalogNotifier.toggleFlagFilter('distributionTypes', 'alternate'),
+                      ),
+                      FilterChip(
+                        label: const Text('Unlicensed'),
+                        selected: filter.allowedDistributionTypes.contains('unlicensed'),
+                        onSelected: (_) => catalogNotifier.toggleFlagFilter('distributionTypes', 'unlicensed'),
+                      ),
+                      FilterChip(
+                        label: const Text('Aftermarket'),
+                        selected: filter.allowedDistributionTypes.contains('aftermarket'),
+                        onSelected: (_) => catalogNotifier.toggleFlagFilter('distributionTypes', 'aftermarket'),
+                      ),
+                      FilterChip(
+                        label: const Text('Pirate'),
+                        selected: filter.allowedDistributionTypes.contains('pirate'),
+                        onSelected: (_) => catalogNotifier.toggleFlagFilter('distributionTypes', 'pirate'),
+                      ),
+                      FilterChip(
+                        label: const Text('Multi-Cart'),
+                        selected: filter.allowedDistributionTypes.contains('multiCart'),
+                        onSelected: (_) => catalogNotifier.toggleFlagFilter('distributionTypes', 'multiCart'),
+                      ),
+                      FilterChip(
+                        label: const Text('Standard'),
+                        selected: filter.allowedDistributionTypes.contains('standard'),
+                        onSelected: (_) => catalogNotifier.toggleFlagFilter('distributionTypes', 'standard'),
                       ),
                     ],
                   ),
