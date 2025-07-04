@@ -56,6 +56,8 @@ class RomParser {
     'Russia': 'Russia',
     'P': 'Portugal',
     'POR': 'Portugal',
+    'Norway': 'Norway',
+    'Denmark': 'Denmark',
     'Portugal': 'Portugal',
     'Unknown': 'Unknown',
   };
@@ -156,13 +158,16 @@ class RomParser {
       RegExp(r'\(Proto[^)]*\)'): (match) => romTypes.add(RomType.proto),
       RegExp(r'\(Prototype[^)]*\)'): (match) => romTypes.add(RomType.proto),
       RegExp(r'\(Beta[^)]*\)'): (match) => romTypes.add(RomType.beta),
+      RegExp(r'\(Beta(?:[^)]*)?\)'): (match) => romTypes.add(RomType.beta),
       RegExp(r'\(Alpha[^)]*\)'): (match) => romTypes.add(RomType.alpha),
       RegExp(r'\(Preview\)'): (match) => romTypes.add(RomType.beta),
       RegExp(r'\(Pre-Release\)'): (match) => romTypes.add(RomType.beta),
+      RegExp(r'\(Beta\)'): (match) => romTypes.add(RomType.beta),
       RegExp(r'\(Final\)'): (match) => categories.add('Final'),
       RegExp(r'\(Gold\)'): (match) => categories.add('Gold Master'),
       RegExp(r'\(Master\)'): (match) => categories.add('Master'),
       RegExp(r'\((?:Rev|REV|rev) ([A-Z\d]+)\)'): (match) => revision = int.tryParse(match.group(1)!) ?? 0,
+      RegExp(r'\(Revised\)'): (match) => revision = 0,
       RegExp(r'\(Disk ([A-Z\d]+)\)'): (match) => diskNumber = match.group(1)!,
       RegExp(r'\(Disc ([A-Z\d]+)\)'): (match) => diskNumber = match.group(1)!,
       RegExp(r'\[Disc ([A-Z\d]+)\]'): (match) => diskNumber = match.group(1)!,
@@ -185,6 +190,11 @@ class RomParser {
       RegExp(r'\(Possible Proto\)'): (match) => romTypes.add(RomType.proto),
       RegExp(r'\(Trainer\)'): (match) => modifications.add(ModificationType.trainer),
       RegExp(r'\([^)]*Collection[^)]*\)'): (match) => {collection = match.group(0)!.replaceAll(RegExp(r'[()]'), ''), categories.add('Collection')},
+      RegExp(r'(-?\s*(Gold|Special) Edition)'): (match) => {
+        distributionTypes.add(DistributionType.specialEdition),
+        collection = '${match.group(2)} Edition',
+        categories.add('Special Edition')
+      },
       RegExp(r'\([^)]*Edition[^)]*\)'): (match) => {
             distributionTypes.add(DistributionType.specialEdition),
             collection = match.group(0)!.replaceAll(RegExp(r'[()]'), ''),
@@ -343,14 +353,12 @@ class RomParser {
 
     displayTitle = displayTitle.replaceAll(RegExp(r'\s+'), ' ').trim();
 
-    if (displayTitle.contains(' - ')) {
-      final parts = displayTitle.split(' - ');
-      if (parts.length >= 2) {
-        displayTitle = parts[0];
-      }
+    if (displayTitle.contains(', The - ')) {
+      final parts = displayTitle.split(', The - ');
+      displayTitle = 'The ${parts[0]} - ${parts[1]}';
+    } else if (displayTitle.endsWith(', The')) {
+      displayTitle = 'The ${displayTitle.substring(0, displayTitle.length - 5)}';
     }
-
-    displayTitle = displayTitle.replaceAll(RegExp(r'\s+'), ' ').trim();
 
     return GameMetadata(
       displayTitle: displayTitle,

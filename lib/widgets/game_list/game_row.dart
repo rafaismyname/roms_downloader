@@ -67,7 +67,7 @@ class GameRow extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      game.title,
+                      game.metadata?.displayTitle ?? game.title,
                       style: TextStyle(
                         fontSize: 13,
                         color: gameState.status == GameStatus.extracted ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface,
