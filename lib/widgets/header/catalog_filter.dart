@@ -106,8 +106,11 @@ class CatalogFilter extends ConsumerWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(vertical: 6),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+                      color: Theme.of(context).colorScheme.surface,
                       borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.outline.withAlpha(50),
+                      ),
                     ),
                     child: Row(
                       children: [
