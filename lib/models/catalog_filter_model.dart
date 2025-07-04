@@ -16,16 +16,16 @@ class CatalogFilter {
   final int? maxYear;
 
   const CatalogFilter({
-    this.regions = const {},
+    this.regions = const {'World', 'USA'},
     this.languages = const {},
     this.categories = const {},
     this.mediaTypes = const {},
     this.publishers = const {},
     this.series = const {},
     this.allowedDumpQualities = const {'goodDump'},
-    this.allowedRomTypes = const {'normal', 'demo', 'sample', 'proto', 'beta', 'alpha'},
-    this.allowedModifications = const {'none', 'hack', 'translation', 'fixed', 'trainer'},
-    this.allowedDistributionTypes = const {'standard', 'enhanced', 'specialEdition', 'alternate', 'multiCart'},
+    this.allowedRomTypes = const {'normal'},
+    this.allowedModifications = const {'none'},
+    this.allowedDistributionTypes = const {'standard', 'enhanced', 'specialEdition', 'multiCart'},
     this.versionFilter = '',
     this.minYear,
     this.maxYear,
@@ -64,28 +64,18 @@ class CatalogFilter {
   }
 
   bool get isActive {
-    const defaultDumpQualities = {'goodDump'};
-    const defaultRomTypes = {'normal', 'demo', 'sample', 'proto', 'beta', 'alpha'};
-    const defaultModifications = {'none', 'hack', 'translation', 'fixed', 'trainer'};
-    const defaultDistributionTypes = {'standard', 'enhanced', 'specialEdition', 'alternate', 'multiCart'};
-
     return regions.isNotEmpty ||
         languages.isNotEmpty ||
         categories.isNotEmpty ||
         mediaTypes.isNotEmpty ||
         publishers.isNotEmpty ||
         series.isNotEmpty ||
-        !_setsEqual(allowedDumpQualities, defaultDumpQualities) ||
-        !_setsEqual(allowedRomTypes, defaultRomTypes) ||
-        !_setsEqual(allowedModifications, defaultModifications) ||
-        !_setsEqual(allowedDistributionTypes, defaultDistributionTypes) ||
+        allowedDumpQualities.isNotEmpty ||
+        allowedRomTypes.isNotEmpty ||
+        allowedModifications.isNotEmpty ||
+        allowedDistributionTypes.isNotEmpty ||
         versionFilter.isNotEmpty ||
         minYear != null ||
         maxYear != null;
-  }
-
-  bool _setsEqual(Set<String> set1, Set<String> set2) {
-    if (set1.length != set2.length) return false;
-    return set1.every((element) => set2.contains(element));
   }
 }

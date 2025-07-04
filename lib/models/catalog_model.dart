@@ -76,11 +76,11 @@ class CatalogState {
       final metadata = game.metadata;
       if (metadata == null) return true;
 
-      if (filter.regions.isNotEmpty && !filter.regions.any((region) => metadata.regions.contains(region) || metadata.region == region)) {
+      if (filter.regions.isNotEmpty && !filter.regions.any((region) => metadata.regions.contains(region) || metadata.regions.isEmpty)) {
         return false;
       }
 
-      if (filter.languages.isNotEmpty && !filter.languages.any((language) => metadata.languages.contains(language) || metadata.language == language)) {
+      if (filter.languages.isNotEmpty && !filter.languages.any((language) => metadata.languages.contains(language) || metadata.languages.isEmpty)) {
         return false;
       }
 

@@ -106,10 +106,16 @@ class RomParser {
     'Thai': 'Thai',
   };
 
+  static List<String> _splitRegions(String regionString) {
+    return regionString
+        .split('/')
+        .map((region) => region.trim())
+        .where((region) => region.isNotEmpty)
+        .toList();
+  }
+
   static GameMetadata parseRomTitle(String title) {
     String normalizedTitle = title;
-    String region = '';
-    String language = '';
     String version = '';
     Set<DumpQuality> dumpQualities = {};
     Set<RomType> romTypes = {};
@@ -175,6 +181,7 @@ class RomParser {
       RegExp(r'\[SCUS-\d+\]'): (match) => categories.add('Sony Code'),
       RegExp(r'\[.*-\d+.*\]'): (match) => categories.add('Product Code'),
       RegExp(r'\(M(\d+)\)'): (match) => distributionTypes.add(DistributionType.multiCart),
+      RegExp(r'\(Disc \d+\)'): (match) => distributionTypes.add(DistributionType.multiCart),
       RegExp(r'\(Unl\)'): (match) => distributionTypes.add(DistributionType.unlicensed),
       RegExp(r'\(Unlicensed\)'): (match) => distributionTypes.add(DistributionType.unlicensed),
       RegExp(r'\(PD\)'): (match) => {distributionTypes.add(DistributionType.unlicensed), regions.add('Public Domain')},
@@ -240,8 +247,11 @@ class RomParser {
       RegExp(r'\(Possible Proto\)'): (match) => romTypes.add(RomType.proto),
       RegExp(r'\(Trainer\)'): (match) => modifications.add(ModificationType.trainer),
       RegExp(r'\([^)]*Collection[^)]*\)'): (match) => {collection = match.group(0)!.replaceAll(RegExp(r'[()]'), ''), categories.add('Collection')},
-      RegExp(r'\([^)]*Edition[^)]*\)'): (match) =>
-          {distributionTypes.add(DistributionType.specialEdition), collection = match.group(0)!.replaceAll(RegExp(r'[()]'), ''), categories.add('Special Edition')},
+      RegExp(r'\([^)]*Edition[^)]*\)'): (match) => {
+            distributionTypes.add(DistributionType.specialEdition),
+            collection = match.group(0)!.replaceAll(RegExp(r'[()]'), ''),
+            categories.add('Special Edition')
+          },
       RegExp(r'\([^)]*Pack[^)]*\)'): (match) => {collection = match.group(0)!.replaceAll(RegExp(r'[()]'), ''), categories.add('Pack')},
       RegExp(r'\([^)]*Bundle[^)]*\)'): (match) => {collection = match.group(0)!.replaceAll(RegExp(r'[()]'), ''), categories.add('Bundle')},
       RegExp(r'\(NTSC\)'): (match) => categories.add('NTSC'),
@@ -295,10 +305,13 @@ class RomParser {
 
       for (final part in parts) {
         if (_regionCodes.containsKey(part)) {
-          regions.add(_regionCodes[part]!);
+          final regionValue = _regionCodes[part]!;
+          final splitRegions = _splitRegions(regionValue);
+          regions.addAll(splitRegions);
           isRegionOrLanguage = true;
         } else if (_regionCodes.containsValue(part)) {
-          regions.add(part);
+          final splitRegions = _splitRegions(part);
+          regions.addAll(splitRegions);
           isRegionOrLanguage = true;
         } else if (_languageCodes.containsKey(part)) {
           languages.add(_languageCodes[part]!);
@@ -314,9 +327,7 @@ class RomParser {
       }
     }
 
-    // Additional region detection for titles without parentheses
     if (regions.isEmpty) {
-      // Check for region keywords in the title itself
       final regionKeywords = {
         'USA': 'USA',
         'Europe': 'Europe',
@@ -346,7 +357,6 @@ class RomParser {
       }
     }
 
-    // Enhanced language detection for standalone language codes
     if (languages.isEmpty) {
       final languagePatterns = [
         RegExp(r'\b(En|English)\b', caseSensitive: false),
@@ -416,74 +426,74 @@ class RomParser {
       }
     }
 
-    if (regions.isNotEmpty) region = regions.first;
-    if (languages.isNotEmpty) language = languages.first;
+    final regionToLanguage = {
+      'USA': 'English',
+      'United Kingdom': 'English',
+      'Australia': 'English',
+      'Canada': 'English',
+      'Europe': 'English',
+      'France': 'French',
+      'Germany': 'German',
+      'Spain': 'Spanish',
+      'Italy': 'Italian',
+      'Portugal': 'Portuguese',
+      'Netherlands': 'Dutch',
+      'Sweden': 'Swedish',
+      'Brazil': 'Portuguese',
+      'Russia': 'Russian',
+      'Japan': 'Japanese',
+      'Korea': 'Korean',
+      'China': 'Chinese',
+      'Taiwan': 'Chinese',
+    };
 
-    // Assume language from region if language is not detected
-    if (language.isEmpty && region.isNotEmpty) {
-      final regionToLanguage = {
-        'USA': 'English',
-        'United Kingdom': 'English',
-        'Australia': 'English',
-        'Canada': 'English',
-        'Europe': 'English',
-        'France': 'French',
-        'Germany': 'German',
-        'Spain': 'Spanish',
-        'Italy': 'Italian',
-        'Portugal': 'Portuguese',
-        'Netherlands': 'Dutch',
-        'Sweden': 'Swedish',
-        'Brazil': 'Portuguese',
-        'Russia': 'Russian',
-        'Japan': 'Japanese',
-        'Korea': 'Korean',
-        'China': 'Chinese',
-        'Taiwan': 'Chinese',
-        'World': 'English',
-        'USA/Europe': 'English',
-      };
+    final languageToRegion = {
+      'English': 'USA',
+      'French': 'France',
+      'German': 'Germany',
+      'Spanish': 'Spain',
+      'Italian': 'Italy',
+      'Portuguese': 'Portugal',
+      'Dutch': 'Netherlands',
+      'Swedish': 'Sweden',
+      'Norwegian': 'Europe',
+      'Danish': 'Europe',
+      'Finnish': 'Europe',
+      'Japanese': 'Japan',
+      'Korean': 'Korea',
+      'Chinese': 'China',
+      'Russian': 'Russia',
+      'Polish': 'Europe',
+      'Czech': 'Europe',
+      'Hungarian': 'Europe',
+      'Turkish': 'Europe',
+      'Arabic': 'Asia',
+      'Hebrew': 'Asia',
+      'Thai': 'Asia',
+    };
 
-      if (regionToLanguage.containsKey(region)) {
-        language = regionToLanguage[region]!;
-        languages.add(language);
+    if (languages.isEmpty && regions.isNotEmpty) {
+      for (final region in regions) {
+        if (regionToLanguage.containsKey(region)) {
+          final language = regionToLanguage[region]!;
+          if (!languages.contains(language)) {
+            languages.add(language);
+          }
+        }
       }
     }
 
-    // Assume region from language if region is not detected
-    if (region.isEmpty && language.isNotEmpty) {
-      final languageToRegion = {
-        'English': 'USA',
-        'French': 'France',
-        'German': 'Germany',
-        'Spanish': 'Spain',
-        'Italian': 'Italy',
-        'Portuguese': 'Portugal',
-        'Dutch': 'Netherlands',
-        'Swedish': 'Sweden',
-        'Norwegian': 'Europe',
-        'Danish': 'Europe',
-        'Finnish': 'Europe',
-        'Japanese': 'Japan',
-        'Korean': 'Korea',
-        'Chinese': 'China',
-        'Russian': 'Russia',
-        'Polish': 'Europe',
-        'Czech': 'Europe',
-        'Hungarian': 'Europe',
-        'Turkish': 'Europe',
-        'Arabic': 'Asia',
-        'Hebrew': 'Asia',
-        'Thai': 'Asia',
-      };
-
-      if (languageToRegion.containsKey(language)) {
-        region = languageToRegion[language]!;
-        regions.add(region);
+    if (regions.isEmpty && languages.isNotEmpty) {
+      for (final language in languages) {
+        if (languageToRegion.containsKey(language)) {
+          final region = languageToRegion[language]!;
+          if (!regions.contains(region)) {
+            regions.add(region);
+          }
+        }
       }
     }
 
-    // Clean up HTML entities and special characters
     normalizedTitle = normalizedTitle
         .replaceAll('&amp;', '&')
         .replaceAll('&lt;', '<')
@@ -552,8 +562,6 @@ class RomParser {
 
     return GameMetadata(
       normalizedTitle: normalizedTitle,
-      region: region,
-      language: language,
       version: version,
       dumpQualities: dumpQualities,
       romTypes: romTypes,

@@ -20,8 +20,6 @@ class GameMetadata {
   final int revision;
 
   // Regional and language data
-  final String region;
-  final String language;
   final List<String> regions;
   final List<String> languages;
 
@@ -41,8 +39,6 @@ class GameMetadata {
 
   const GameMetadata({
     required this.normalizedTitle,
-    this.region = '',
-    this.language = '',
     this.version = '',
     this.dumpQualities = const {},
     this.romTypes = const {},
@@ -51,8 +47,6 @@ class GameMetadata {
     this.revision = 0,
     this.diskNumber = '',
     this.tags = const [],
-
-    // Enhanced fields
     this.subtitle = '',
     this.series = '',
     this.publisher = '',
@@ -114,8 +108,6 @@ class GameMetadata {
 
     return GameMetadata(
       normalizedTitle: json['normalizedTitle'] ?? '',
-      region: json['region'] ?? '',
-      language: json['language'] ?? '',
       version: json['version'] ?? '',
       dumpQualities: parseFlags('dumpQualities', dumpQualityMap),
       romTypes: parseFlags('romTypes', romTypeMap),
@@ -139,8 +131,6 @@ class GameMetadata {
   Map<String, dynamic> toJson() {
     return {
       'normalizedTitle': normalizedTitle,
-      'region': region,
-      'language': language,
       'version': version,
       'dumpQualities': dumpQualities.map((e) => e.name).toList(),
       'romTypes': romTypes.map((e) => e.name).toList(),

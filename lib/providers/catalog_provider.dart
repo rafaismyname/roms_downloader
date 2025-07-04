@@ -32,16 +32,16 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
     try {
       final games = await catalogService.loadCatalog(console.id);
 
-      final regions = <String>{};
-      final languages = <String>{};
+      Set<String> regions = <String>{};
+      Set<String> languages = <String>{};
 
       for (final game in games) {
         if (game.metadata != null) {
-          if (game.metadata!.region.isNotEmpty) {
-            regions.add(game.metadata!.region);
+          if (game.metadata!.regions.isNotEmpty) {
+            regions.addAll(game.metadata!.regions);
           }
-          if (game.metadata!.language.isNotEmpty) {
-            languages.add(game.metadata!.language);
+          if (game.metadata!.languages.isNotEmpty) {
+            languages.addAll(game.metadata!.languages);
           }
         }
       }

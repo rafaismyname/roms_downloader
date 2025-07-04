@@ -44,7 +44,7 @@ class Game {
 
   String get displayTitle => metadata?.normalizedTitle ?? title;
 
-  String get region => metadata?.region ?? metadata?.regions.firstOrNull ?? '';
+  String get region => metadata?.regions.firstOrNull ?? '';
 
-  String get language => metadata?.language ?? metadata?.languages.firstOrNull ?? '';
+  String get language => metadata?.languages.firstOrNull ?? '';
 }
