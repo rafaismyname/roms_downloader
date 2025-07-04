@@ -31,7 +31,7 @@ I do not own nor recommend those sources. As a matter of fact, the first step in
 - [x] Background Downloader
 - [X] Background Unzip
 - [x] Auto-extract after download
-- [ ] Filters (like country/language, type, extension, etc.)
+- [x] Filters (like country/language, type, extension, etc.)
 - [x] Allow custom consoles (via JSON)
 - [ ] Allow navigating other consoles and search while download/extraction is in progress
 - [ ] Improve file detection system (custom rexeg per console)

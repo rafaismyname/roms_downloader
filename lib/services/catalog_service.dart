@@ -53,17 +53,20 @@ class CatalogService {
 
     Console console = consoles[consoleId]!;
 
-    // final cacheFile = await _getCacheFile(console.cacheFile);
-    // if (await cacheFile.exists()) {
-    //   try {
-    //     final jsonStr = await cacheFile.readAsString();
-    //     final List<dynamic> jsonList = jsonDecode(jsonStr);
-    //     return jsonList.map((json) => Game.fromJson(json)).toList();
-    //   } catch (e) {
-    //     debugPrint('Error reading cache: $e');
-    //     await cacheFile.delete();
-    //   }
-    // }
+    final cacheFile = await _getCacheFile(console.cacheFile);
+    if (await cacheFile.exists()) {
+      try {
+        final jsonStr = await cacheFile.readAsString();
+        final List<dynamic> jsonList = jsonDecode(jsonStr);
+        final cachedResult = jsonList.map((json) => Game.fromJson(json)).toList();
+        if (cachedResult.isNotEmpty && cachedResult.first.metadata != null) {
+          return cachedResult;
+        }
+      } catch (e) {
+        debugPrint('Error reading cache: $e');
+        await cacheFile.delete();
+      }
+    }
 
     return _fetchCatalog(console);
   }
