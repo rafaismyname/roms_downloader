@@ -9,7 +9,7 @@ class CatalogFilter {
   final Set<String> distributionTypes;
 
   const CatalogFilter({
-    this.regions = const {'World', 'USA'},
+    this.regions = const {'USA'},
     this.languages = const {},
     this.categories = const {},
     this.mediaTypes = const {},

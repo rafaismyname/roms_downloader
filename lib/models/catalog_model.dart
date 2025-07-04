@@ -12,7 +12,6 @@ class CatalogState {
   final CatalogFilter filter;
   final Set<String> availableRegions;
   final Set<String> availableLanguages;
-
   final Set<String> availableCategories;
   final Set<String> availableMediaTypes;
   final Set<String> availablePublishers;

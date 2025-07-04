@@ -167,6 +167,17 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
   }
 
   void clearFilters() {
+    updateFilter(const CatalogFilter(
+      regions: {},
+      languages: {},
+      dumpQualities: {},
+      romTypes: {},
+      modifications: {},
+      distributionTypes: {},
+    ));
+  }
+
+  void defaultFilters() {
     updateFilter(const CatalogFilter());
   }
 }
