@@ -73,17 +73,17 @@ class CatalogFilter extends ConsumerWidget {
                     children: [
                       FilterChip(
                         label: const Text('Good Dumps'),
-                        selected: filter.allowedDumpQualities.contains('goodDump'),
+                        selected: filter.dumpQualities.contains('goodDump'),
                         onSelected: (_) => catalogNotifier.toggleFlagFilter('dumpQualities', 'goodDump'),
                       ),
                       FilterChip(
                         label: const Text('Bad Dumps'),
-                        selected: filter.allowedDumpQualities.contains('badDump'),
+                        selected: filter.dumpQualities.contains('badDump'),
                         onSelected: (_) => catalogNotifier.toggleFlagFilter('dumpQualities', 'badDump'),
                       ),
                       FilterChip(
                         label: const Text('Overdumps'),
-                        selected: filter.allowedDumpQualities.contains('overdump'),
+                        selected: filter.dumpQualities.contains('overdump'),
                         onSelected: (_) => catalogNotifier.toggleFlagFilter('dumpQualities', 'overdump'),
                       ),
                     ],
@@ -96,32 +96,32 @@ class CatalogFilter extends ConsumerWidget {
                     children: [
                       FilterChip(
                         label: const Text('Demos'),
-                        selected: filter.allowedRomTypes.contains('demo'),
+                        selected: filter.romTypes.contains('demo'),
                         onSelected: (_) => catalogNotifier.toggleFlagFilter('romTypes', 'demo'),
                       ),
                       FilterChip(
                         label: const Text('Samples'),
-                        selected: filter.allowedRomTypes.contains('sample'),
+                        selected: filter.romTypes.contains('sample'),
                         onSelected: (_) => catalogNotifier.toggleFlagFilter('romTypes', 'sample'),
                       ),
                       FilterChip(
                         label: const Text('Prototypes'),
-                        selected: filter.allowedRomTypes.contains('proto'),
+                        selected: filter.romTypes.contains('proto'),
                         onSelected: (_) => catalogNotifier.toggleFlagFilter('romTypes', 'proto'),
                       ),
                       FilterChip(
                         label: const Text('Betas'),
-                        selected: filter.allowedRomTypes.contains('beta'),
+                        selected: filter.romTypes.contains('beta'),
                         onSelected: (_) => catalogNotifier.toggleFlagFilter('romTypes', 'beta'),
                       ),
                       FilterChip(
                         label: const Text('Alphas'),
-                        selected: filter.allowedRomTypes.contains('alpha'),
+                        selected: filter.romTypes.contains('alpha'),
                         onSelected: (_) => catalogNotifier.toggleFlagFilter('romTypes', 'alpha'),
                       ),
                       FilterChip(
                         label: const Text('Normal ROMs'),
-                        selected: filter.allowedRomTypes.contains('normal'),
+                        selected: filter.romTypes.contains('normal'),
                         onSelected: (_) => catalogNotifier.toggleFlagFilter('romTypes', 'normal'),
                       ),
                     ],
@@ -134,27 +134,27 @@ class CatalogFilter extends ConsumerWidget {
                     children: [
                       FilterChip(
                         label: const Text('Hacks'),
-                        selected: filter.allowedModifications.contains('hack'),
+                        selected: filter.modifications.contains('hack'),
                         onSelected: (_) => catalogNotifier.toggleFlagFilter('modifications', 'hack'),
                       ),
                       FilterChip(
                         label: const Text('Translations'),
-                        selected: filter.allowedModifications.contains('translation'),
+                        selected: filter.modifications.contains('translation'),
                         onSelected: (_) => catalogNotifier.toggleFlagFilter('modifications', 'translation'),
                       ),
                       FilterChip(
                         label: const Text('Fixed'),
-                        selected: filter.allowedModifications.contains('fixed'),
+                        selected: filter.modifications.contains('fixed'),
                         onSelected: (_) => catalogNotifier.toggleFlagFilter('modifications', 'fixed'),
                       ),
                       FilterChip(
                         label: const Text('Trainer'),
-                        selected: filter.allowedModifications.contains('trainer'),
+                        selected: filter.modifications.contains('trainer'),
                         onSelected: (_) => catalogNotifier.toggleFlagFilter('modifications', 'trainer'),
                       ),
                       FilterChip(
                         label: const Text('Unmodified'),
-                        selected: filter.allowedModifications.contains('none'),
+                        selected: filter.modifications.contains('none'),
                         onSelected: (_) => catalogNotifier.toggleFlagFilter('modifications', 'none'),
                       ),
                     ],
@@ -167,42 +167,42 @@ class CatalogFilter extends ConsumerWidget {
                     children: [
                       FilterChip(
                         label: const Text('Enhanced'),
-                        selected: filter.allowedDistributionTypes.contains('enhanced'),
+                        selected: filter.distributionTypes.contains('enhanced'),
                         onSelected: (_) => catalogNotifier.toggleFlagFilter('distributionTypes', 'enhanced'),
                       ),
                       FilterChip(
                         label: const Text('Special Editions'),
-                        selected: filter.allowedDistributionTypes.contains('specialEdition'),
+                        selected: filter.distributionTypes.contains('specialEdition'),
                         onSelected: (_) => catalogNotifier.toggleFlagFilter('distributionTypes', 'specialEdition'),
                       ),
                       FilterChip(
                         label: const Text('Alternates'),
-                        selected: filter.allowedDistributionTypes.contains('alternate'),
+                        selected: filter.distributionTypes.contains('alternate'),
                         onSelected: (_) => catalogNotifier.toggleFlagFilter('distributionTypes', 'alternate'),
                       ),
                       FilterChip(
                         label: const Text('Unlicensed'),
-                        selected: filter.allowedDistributionTypes.contains('unlicensed'),
+                        selected: filter.distributionTypes.contains('unlicensed'),
                         onSelected: (_) => catalogNotifier.toggleFlagFilter('distributionTypes', 'unlicensed'),
                       ),
                       FilterChip(
                         label: const Text('Aftermarket'),
-                        selected: filter.allowedDistributionTypes.contains('aftermarket'),
+                        selected: filter.distributionTypes.contains('aftermarket'),
                         onSelected: (_) => catalogNotifier.toggleFlagFilter('distributionTypes', 'aftermarket'),
                       ),
                       FilterChip(
                         label: const Text('Pirate'),
-                        selected: filter.allowedDistributionTypes.contains('pirate'),
+                        selected: filter.distributionTypes.contains('pirate'),
                         onSelected: (_) => catalogNotifier.toggleFlagFilter('distributionTypes', 'pirate'),
                       ),
                       FilterChip(
                         label: const Text('Multi-Cart'),
-                        selected: filter.allowedDistributionTypes.contains('multiCart'),
+                        selected: filter.distributionTypes.contains('multiCart'),
                         onSelected: (_) => catalogNotifier.toggleFlagFilter('distributionTypes', 'multiCart'),
                       ),
                       FilterChip(
                         label: const Text('Standard'),
-                        selected: filter.allowedDistributionTypes.contains('standard'),
+                        selected: filter.distributionTypes.contains('standard'),
                         onSelected: (_) => catalogNotifier.toggleFlagFilter('distributionTypes', 'standard'),
                       ),
                     ],

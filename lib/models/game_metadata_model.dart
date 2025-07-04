@@ -7,52 +7,29 @@ enum ModificationType { hack, translation, fixed, trainer }
 enum DistributionType { enhanced, specialEdition, alternate, unlicensed, aftermarket, pirate, multiCart }
 
 class GameMetadata {
-  // Core identification
-  final String normalizedTitle;
-  final String subtitle;
-  final String series;
+  final String displayTitle;
   final String collection;
-
-  // Release information
-  final String publisher;
-  final String releaseDate;
-  final String version;
   final int revision;
-
-  // Regional and language data
   final List<String> regions;
   final List<String> languages;
-
-  // Media information
   final String mediaType;
   final String diskNumber;
-
-  // Flag groups - typed collections
   final Set<DumpQuality> dumpQualities;
   final Set<RomType> romTypes;
   final Set<ModificationType> modifications;
   final Set<DistributionType> distributionTypes;
-
-  // Additional metadata
-  final List<String> tags;
   final List<String> categories;
 
   const GameMetadata({
-    required this.normalizedTitle,
-    this.version = '',
+    required this.displayTitle,
     this.dumpQualities = const {},
     this.romTypes = const {},
     this.modifications = const {},
     this.distributionTypes = const {},
     this.revision = 0,
     this.diskNumber = '',
-    this.tags = const [],
-    this.subtitle = '',
-    this.series = '',
-    this.publisher = '',
     this.collection = '',
     this.mediaType = '',
-    this.releaseDate = '',
     this.regions = const [],
     this.languages = const [],
     this.categories = const [],
@@ -107,21 +84,15 @@ class GameMetadata {
     };
 
     return GameMetadata(
-      normalizedTitle: json['normalizedTitle'] ?? '',
-      version: json['version'] ?? '',
+      displayTitle: json['displayTitle'] ?? '',
       dumpQualities: parseFlags('dumpQualities', dumpQualityMap),
       romTypes: parseFlags('romTypes', romTypeMap),
       modifications: parseFlags('modifications', modificationMap),
       distributionTypes: parseFlags('distributionTypes', distributionMap),
       revision: json['revision'] ?? 0,
       diskNumber: json['diskNumber'] ?? '',
-      tags: List<String>.from(json['tags'] ?? []),
-      subtitle: json['subtitle'] ?? '',
-      series: json['series'] ?? '',
-      publisher: json['publisher'] ?? '',
       collection: json['collection'] ?? '',
       mediaType: json['mediaType'] ?? '',
-      releaseDate: json['releaseDate'] ?? '',
       regions: List<String>.from(json['regions'] ?? []),
       languages: List<String>.from(json['languages'] ?? []),
       categories: List<String>.from(json['categories'] ?? []),
@@ -130,21 +101,15 @@ class GameMetadata {
 
   Map<String, dynamic> toJson() {
     return {
-      'normalizedTitle': normalizedTitle,
-      'version': version,
+      'displayTitle': displayTitle,
       'dumpQualities': dumpQualities.map((e) => e.name).toList(),
       'romTypes': romTypes.map((e) => e.name).toList(),
       'modifications': modifications.map((e) => e.name).toList(),
       'distributionTypes': distributionTypes.map((e) => e.name).toList(),
       'revision': revision,
       'diskNumber': diskNumber,
-      'tags': tags,
-      'subtitle': subtitle,
-      'series': series,
-      'publisher': publisher,
       'collection': collection,
       'mediaType': mediaType,
-      'releaseDate': releaseDate,
       'regions': regions,
       'languages': languages,
       'categories': categories,

@@ -125,40 +125,40 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
     CatalogFilter newFilter;
     switch (flagType) {
       case 'dumpQualities':
-        final flags = Set<String>.from(state.filter.allowedDumpQualities);
+        final flags = Set<String>.from(state.filter.dumpQualities);
         if (flags.contains(flag)) {
           flags.remove(flag);
         } else {
           flags.add(flag);
         }
-        newFilter = state.filter.copyWith(allowedDumpQualities: flags);
+        newFilter = state.filter.copyWith(dumpQualities: flags);
         break;
       case 'romTypes':
-        final flags = Set<String>.from(state.filter.allowedRomTypes);
+        final flags = Set<String>.from(state.filter.romTypes);
         if (flags.contains(flag)) {
           flags.remove(flag);
         } else {
           flags.add(flag);
         }
-        newFilter = state.filter.copyWith(allowedRomTypes: flags);
+        newFilter = state.filter.copyWith(romTypes: flags);
         break;
       case 'modifications':
-        final flags = Set<String>.from(state.filter.allowedModifications);
+        final flags = Set<String>.from(state.filter.modifications);
         if (flags.contains(flag)) {
           flags.remove(flag);
         } else {
           flags.add(flag);
         }
-        newFilter = state.filter.copyWith(allowedModifications: flags);
+        newFilter = state.filter.copyWith(modifications: flags);
         break;
       case 'distributionTypes':
-        final flags = Set<String>.from(state.filter.allowedDistributionTypes);
+        final flags = Set<String>.from(state.filter.distributionTypes);
         if (flags.contains(flag)) {
           flags.remove(flag);
         } else {
           flags.add(flag);
         }
-        newFilter = state.filter.copyWith(allowedDistributionTypes: flags);
+        newFilter = state.filter.copyWith(distributionTypes: flags);
         break;
       default:
         return;

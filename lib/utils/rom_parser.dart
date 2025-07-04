@@ -107,69 +107,34 @@ class RomParser {
   };
 
   static List<String> _splitRegions(String regionString) {
-    return regionString
-        .split('/')
-        .map((region) => region.trim())
-        .where((region) => region.isNotEmpty)
-        .toList();
+    return regionString.split('/').map((region) => region.trim()).where((region) => region.isNotEmpty).toList();
   }
 
   static GameMetadata parseRomTitle(String title) {
-    String normalizedTitle = title;
-    String version = '';
+    String displayTitle = title;
     Set<DumpQuality> dumpQualities = {};
     Set<RomType> romTypes = {};
     Set<ModificationType> modifications = {};
     Set<DistributionType> distributionTypes = {};
     int revision = 0;
     String diskNumber = '';
-    List<String> tags = [];
-
-    String subtitle = '';
-    String series = '';
-    String publisher = '';
     String collection = '';
     String mediaType = '';
-    String releaseDate = '';
     List<String> regions = [];
     List<String> languages = [];
     List<String> categories = [];
 
-    normalizedTitle = title.replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), '');
+    displayTitle = title.replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), '');
 
     final patterns = <RegExp, Function(Match)>{
-      RegExp(r'\[!\]'): (match) {
-        dumpQualities.add(DumpQuality.goodDump);
-        tags.add('Good Dump');
-      },
-      RegExp(r'\[b(\d*)\]'): (match) {
-        dumpQualities.add(DumpQuality.badDump);
-        tags.add('Bad Dump');
-      },
-      RegExp(r'\[o(\d*)\]'): (match) {
-        dumpQualities.add(DumpQuality.overdump);
-        tags.add('Overdump');
-      },
-      RegExp(r'\[h(\d*[A-Za-z]*)\]'): (match) {
-        modifications.add(ModificationType.hack);
-        tags.add('Hack');
-      },
-      RegExp(r'\[t(\d*[A-Za-z]*)\]'): (match) {
-        modifications.add(ModificationType.translation);
-        tags.add('Translation');
-      },
-      RegExp(r'\[a(\d*)\]'): (match) {
-        distributionTypes.add(DistributionType.alternate);
-        tags.add('Alternate');
-      },
-      RegExp(r'\[f(\d*)\]'): (match) {
-        modifications.add(ModificationType.fixed);
-        tags.add('Fixed');
-      },
-      RegExp(r'\[T[+-][A-Za-z]*(\d*)\]'): (match) {
-        modifications.add(ModificationType.trainer);
-        tags.add('Trainer');
-      },
+      RegExp(r'\[!\]'): (match) => dumpQualities.add(DumpQuality.goodDump),
+      RegExp(r'\[b(\d*)\]'): (match) => dumpQualities.add(DumpQuality.badDump),
+      RegExp(r'\[o(\d*)\]'): (match) => dumpQualities.add(DumpQuality.overdump),
+      RegExp(r'\[h(\d*[A-Za-z]*)\]'): (match) => modifications.add(ModificationType.hack),
+      RegExp(r'\[t(\d*[A-Za-z]*)\]'): (match) => modifications.add(ModificationType.translation),
+      RegExp(r'\[a(\d*)\]'): (match) => distributionTypes.add(DistributionType.alternate),
+      RegExp(r'\[f(\d*)\]'): (match) => modifications.add(ModificationType.fixed),
+      RegExp(r'\[T[+-][A-Za-z]*(\d*)\]'): (match) => modifications.add(ModificationType.trainer),
       RegExp(r'\[x\]'): (match) => dumpQualities.add(DumpQuality.badDump),
       RegExp(r'\[p(\d*)\]'): (match) => distributionTypes.add(DistributionType.pirate),
       RegExp(r'\[c\]'): (match) => modifications.add(ModificationType.fixed),
@@ -197,40 +162,13 @@ class RomParser {
       RegExp(r'\(Final\)'): (match) => categories.add('Final'),
       RegExp(r'\(Gold\)'): (match) => categories.add('Gold Master'),
       RegExp(r'\(Master\)'): (match) => categories.add('Master'),
-      RegExp(r'\(V([\d.]+)\)'): (match) {
-        version = match.group(1)!;
-        tags.add('Version ${match.group(1)!}');
-      },
-      RegExp(r'\(Rev ([A-Z\d]+)\)'): (match) {
-        final revValue = match.group(1)!;
-        revision = int.tryParse(revValue) ?? 0;
-        tags.add('Revision $revValue');
-      },
-      RegExp(r'\(REV ([A-Z\d]+)\)'): (match) {
-        final revValue = match.group(1)!;
-        revision = int.tryParse(revValue) ?? 0;
-        tags.add('Revision $revValue');
-      },
-      RegExp(r'\(Disk ([A-Z\d]+)\)'): (match) {
-        diskNumber = match.group(1)!;
-        tags.add('Disk ${match.group(1)!}');
-      },
-      RegExp(r'\(Disc ([A-Z\d]+)\)'): (match) {
-        diskNumber = match.group(1)!;
-        tags.add('Disc ${match.group(1)!}');
-      },
-      RegExp(r'\[Disc ([A-Z\d]+)\]'): (match) {
-        diskNumber = match.group(1)!;
-        tags.add('Disc ${match.group(1)!}');
-      },
+      RegExp(r'\((?:Rev|REV|rev) ([A-Z\d]+)\)'): (match) => revision = int.tryParse(match.group(1)!) ?? 0,
+      RegExp(r'\(Disk ([A-Z\d]+)\)'): (match) => diskNumber = match.group(1)!,
+      RegExp(r'\(Disc ([A-Z\d]+)\)'): (match) => diskNumber = match.group(1)!,
+      RegExp(r'\[Disc ([A-Z\d]+)\]'): (match) => diskNumber = match.group(1)!,
       RegExp(r'\(Side ([AB])\)'): (match) => diskNumber = match.group(1)!,
       RegExp(r'\(Tape ([AB\d]+)\)'): (match) => diskNumber = match.group(1)!,
       RegExp(r'\(Cart ([AB\d]+)\)'): (match) => diskNumber = match.group(1)!,
-      RegExp(r'\(\d{4}-\d{2}-\d{2}\)'): (match) => releaseDate = match.group(0)!.replaceAll(RegExp(r'[()]'), ''),
-      RegExp(r'\((\d{4})\)'): (match) {
-        releaseDate = match.group(1)!;
-        tags.add('Year ${match.group(1)!}');
-      },
       RegExp(r'\(SGB Enhanced\)'): (match) => {distributionTypes.add(DistributionType.enhanced), mediaType = 'SGB Enhanced'},
       RegExp(r'\(NKit[^)]*\)'): (match) => mediaType = 'NKit',
       RegExp(r'\(RVZ[^)]*\)'): (match) => mediaType = 'RVZ',
@@ -288,14 +226,14 @@ class RomParser {
     };
 
     for (final entry in patterns.entries) {
-      normalizedTitle = normalizedTitle.replaceAllMapped(entry.key, (match) {
+      displayTitle = displayTitle.replaceAllMapped(entry.key, (match) {
         entry.value(match);
         return '';
       });
     }
 
     final regionPattern = RegExp(r'\(([^)]+)\)');
-    final remainingMatches = regionPattern.allMatches(normalizedTitle).toList();
+    final remainingMatches = regionPattern.allMatches(displayTitle).toList();
 
     for (final match in remainingMatches) {
       final content = match.group(1)!;
@@ -323,106 +261,7 @@ class RomParser {
       }
 
       if (isRegionOrLanguage) {
-        normalizedTitle = normalizedTitle.replaceAll(match.group(0)!, '');
-      }
-    }
-
-    if (regions.isEmpty) {
-      final regionKeywords = {
-        'USA': 'USA',
-        'Europe': 'Europe',
-        'European': 'Europe',
-        'Japan': 'Japan',
-        'Japanese': 'Japan',
-        'Korea': 'Korea',
-        'Korean': 'Korea',
-        'China': 'China',
-        'Chinese': 'China',
-        'Brazil': 'Brazil',
-        'Australian': 'Australia',
-        'Canada': 'Canada',
-        'Canadian': 'Canada',
-        'World': 'World',
-        'Global': 'World',
-        'International': 'World',
-        'Asia': 'Asia',
-        'Asian': 'Asia',
-      };
-
-      for (final entry in regionKeywords.entries) {
-        if (normalizedTitle.toLowerCase().contains(entry.key.toLowerCase()) || subtitle.toLowerCase().contains(entry.key.toLowerCase())) {
-          regions.add(entry.value);
-          break;
-        }
-      }
-    }
-
-    if (languages.isEmpty) {
-      final languagePatterns = [
-        RegExp(r'\b(En|English)\b', caseSensitive: false),
-        RegExp(r'\b(Fr|French|Français)\b', caseSensitive: false),
-        RegExp(r'\b(De|German|Deutsch)\b', caseSensitive: false),
-        RegExp(r'\b(Es|Spanish|Español)\b', caseSensitive: false),
-        RegExp(r'\b(It|Italian|Italiano)\b', caseSensitive: false),
-        RegExp(r'\b(Ja|Japanese|日本語)\b', caseSensitive: false),
-        RegExp(r'\b(Ko|Korean|한국어)\b', caseSensitive: false),
-        RegExp(r'\b(Pt|Portuguese|Português)\b', caseSensitive: false),
-        RegExp(r'\b(Nl|Dutch|Nederlands)\b', caseSensitive: false),
-        RegExp(r'\b(Sv|Swedish|Svenska)\b', caseSensitive: false),
-        RegExp(r'\b(Norwegian|Norsk)\b', caseSensitive: false),
-        RegExp(r'\b(Da|Danish|Dansk)\b', caseSensitive: false),
-        RegExp(r'\b(Fi|Finnish|Suomi)\b', caseSensitive: false),
-      ];
-
-      final languageMap = {
-        'en': 'English',
-        'english': 'English',
-        'fr': 'French',
-        'french': 'French',
-        'français': 'French',
-        'de': 'German',
-        'german': 'German',
-        'deutsch': 'German',
-        'es': 'Spanish',
-        'spanish': 'Spanish',
-        'español': 'Spanish',
-        'it': 'Italian',
-        'italian': 'Italian',
-        'italiano': 'Italian',
-        'ja': 'Japanese',
-        'japanese': 'Japanese',
-        '日本語': 'Japanese',
-        'ko': 'Korean',
-        'korean': 'Korean',
-        '한국어': 'Korean',
-        'pt': 'Portuguese',
-        'portuguese': 'Portuguese',
-        'português': 'Portuguese',
-        'nl': 'Dutch',
-        'dutch': 'Dutch',
-        'nederlands': 'Dutch',
-        'sv': 'Swedish',
-        'swedish': 'Swedish',
-        'svenska': 'Swedish',
-        'norwegian': 'Norwegian',
-        'norsk': 'Norwegian',
-        'da': 'Danish',
-        'danish': 'Danish',
-        'dansk': 'Danish',
-        'fi': 'Finnish',
-        'finnish': 'Finnish',
-        'suomi': 'Finnish',
-      };
-
-      for (final pattern in languagePatterns) {
-        final match = pattern.firstMatch(title);
-        if (match != null) {
-          final langCode = match.group(1)!.toLowerCase();
-          if (languageMap.containsKey(langCode)) {
-            languages.add(languageMap[langCode]!);
-            break;
-          }
-        }
+        displayTitle = displayTitle.replaceAll(match.group(0)!, '');
       }
     }
 
@@ -494,7 +333,7 @@ class RomParser {
       }
     }
 
-    normalizedTitle = normalizedTitle
+    displayTitle = displayTitle
         .replaceAll('&amp;', '&')
         .replaceAll('&lt;', '<')
         .replaceAll('&gt;', '>')
@@ -502,127 +341,30 @@ class RomParser {
         .replaceAll('&#39;', "'")
         .replaceAll('&nbsp;', ' ');
 
-    subtitle = subtitle
-        .replaceAll('&amp;', '&')
-        .replaceAll('&lt;', '<')
-        .replaceAll('&gt;', '>')
-        .replaceAll('&quot;', '"')
-        .replaceAll('&#39;', "'")
-        .replaceAll('&nbsp;', ' ');
+    displayTitle = displayTitle.replaceAll(RegExp(r'\s+'), ' ').trim();
 
-    normalizedTitle = normalizedTitle.replaceAll(RegExp(r'\s+'), ' ').trim();
-
-    if (normalizedTitle.contains(' - ')) {
-      final parts = normalizedTitle.split(' - ');
+    if (displayTitle.contains(' - ')) {
+      final parts = displayTitle.split(' - ');
       if (parts.length >= 2) {
-        subtitle = parts.sublist(1).join(' - ');
-        normalizedTitle = parts[0];
-
-        final seriesPatterns = [
-          RegExp(r'^(.+?)\s+(\d+|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII)\s*$'),
-          RegExp(r'^(.+?)\s+(Jr|Sr|Junior|Senior)\s*$'),
-          RegExp(r'^(.+?)\s+(Part\s+\d+)\s*$'),
-          RegExp(r'^(.+?)\s+(Episode\s+\d+)\s*$'),
-          RegExp(r'^(.+?)\s+(Chapter\s+\d+)\s*$'),
-        ];
-
-        for (final pattern in seriesPatterns) {
-          final seriesMatch = pattern.firstMatch(normalizedTitle);
-          if (seriesMatch != null) {
-            series = seriesMatch.group(1)!;
-            break;
-          }
-        }
+        displayTitle = parts[0];
       }
     }
 
-    final publisherPatterns = [
-      RegExp(
-          r'^(Nintendo|Sega|Sony|Microsoft|Capcom|Konami|Square|Enix|Square Enix|Namco|Bandai|Atari|Electronic Arts|EA|Activision|Ubisoft|THQ|Midway|Acclaim|Tecmo|Koei|SNK|Neo Geo|Hudson|Taito|Irem|Data East|Ocean|Psygnosis|Eidos|Core Design|Rare|Free Radical|Rockstar|Take-Two|2K|Bethesda|id Software|Epic|Valve|Blizzard)\b'),
-    ];
-
-    for (final pattern in publisherPatterns) {
-      final match = pattern.firstMatch(normalizedTitle);
-      if (match != null) {
-        publisher = match.group(1)!;
-        break;
-      }
-    }
-
-    normalizedTitle = normalizedTitle.replaceAll(RegExp(r'\s+'), ' ').trim();
-
-    categories.addAll(_generateCategories(
-      dumpQualities: dumpQualities,
-      romTypes: romTypes,
-      modifications: modifications,
-      distributionTypes: distributionTypes,
-      mediaType: mediaType,
-      collection: collection,
-    ));
+    displayTitle = displayTitle.replaceAll(RegExp(r'\s+'), ' ').trim();
 
     return GameMetadata(
-      normalizedTitle: normalizedTitle,
-      version: version,
+      displayTitle: displayTitle,
       dumpQualities: dumpQualities,
       romTypes: romTypes,
       modifications: modifications,
       distributionTypes: distributionTypes,
       revision: revision,
       diskNumber: diskNumber,
-      tags: tags,
-      subtitle: subtitle,
-      series: series,
-      publisher: publisher,
       collection: collection,
       mediaType: mediaType,
-      releaseDate: releaseDate,
       regions: regions,
       languages: languages,
       categories: categories,
     );
-  }
-
-  static List<String> _generateCategories({
-    required Set<DumpQuality> dumpQualities,
-    required Set<RomType> romTypes,
-    required Set<ModificationType> modifications,
-    required Set<DistributionType> distributionTypes,
-    required String mediaType,
-    required String collection,
-  }) {
-    final categories = <String>[];
-
-    // Development status categories
-    if (romTypes.contains(RomType.demo)) categories.add('Demo');
-    if (romTypes.contains(RomType.sample)) categories.add('Sample');
-    if (romTypes.contains(RomType.proto)) categories.add('Prototype');
-    if (romTypes.contains(RomType.beta)) categories.add('Beta');
-    if (romTypes.contains(RomType.alpha)) categories.add('Alpha');
-
-    // Modification categories
-    if (modifications.contains(ModificationType.hack)) categories.add('Hack');
-    if (modifications.contains(ModificationType.translation)) categories.add('Translation');
-
-    // Distribution categories
-    if (distributionTypes.contains(DistributionType.unlicensed)) categories.add('Unlicensed');
-    if (distributionTypes.contains(DistributionType.aftermarket)) categories.add('Aftermarket');
-    if (distributionTypes.contains(DistributionType.pirate)) categories.add('Pirate');
-
-    // Special features
-    if (distributionTypes.contains(DistributionType.multiCart)) categories.add('Multi-Game');
-    if (distributionTypes.contains(DistributionType.enhanced)) categories.add('Enhanced');
-    if (distributionTypes.contains(DistributionType.specialEdition)) categories.add('Special Edition');
-
-    // Media type
-    if (mediaType.isNotEmpty) {
-      categories.add(mediaType);
-    }
-
-    // Collection
-    if (collection.isNotEmpty) {
-      categories.add('Collection');
-    }
-
-    return categories;
   }
 }

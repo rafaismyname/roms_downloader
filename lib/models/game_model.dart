@@ -42,7 +42,7 @@ class Game {
 
   String get taskId => '$consoleId/$filename';
 
-  String get displayTitle => metadata?.normalizedTitle ?? title;
+  String get displayTitle => metadata?.displayTitle ?? title;
 
   String get region => metadata?.regions.firstOrNull ?? '';
 

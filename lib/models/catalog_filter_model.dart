@@ -3,32 +3,20 @@ class CatalogFilter {
   final Set<String> languages;
   final Set<String> categories;
   final Set<String> mediaTypes;
-  final Set<String> publishers;
-  final Set<String> series;
-
-  final Set<String> allowedDumpQualities;
-  final Set<String> allowedRomTypes;
-  final Set<String> allowedModifications;
-  final Set<String> allowedDistributionTypes;
-
-  final String versionFilter;
-  final int? minYear;
-  final int? maxYear;
+  final Set<String> dumpQualities;
+  final Set<String> romTypes;
+  final Set<String> modifications;
+  final Set<String> distributionTypes;
 
   const CatalogFilter({
     this.regions = const {'World', 'USA'},
     this.languages = const {},
     this.categories = const {},
     this.mediaTypes = const {},
-    this.publishers = const {},
-    this.series = const {},
-    this.allowedDumpQualities = const {'goodDump'},
-    this.allowedRomTypes = const {'normal'},
-    this.allowedModifications = const {'none'},
-    this.allowedDistributionTypes = const {'standard', 'enhanced', 'specialEdition', 'multiCart'},
-    this.versionFilter = '',
-    this.minYear,
-    this.maxYear,
+    this.dumpQualities = const {'goodDump'},
+    this.romTypes = const {'normal'},
+    this.modifications = const {'none'},
+    this.distributionTypes = const {'standard', 'enhanced', 'specialEdition', 'multiCart'},
   });
 
   CatalogFilter copyWith({
@@ -38,11 +26,11 @@ class CatalogFilter {
     Set<String>? mediaTypes,
     Set<String>? publishers,
     Set<String>? series,
-    Set<String>? allowedDumpQualities,
-    Set<String>? allowedRomTypes,
-    Set<String>? allowedModifications,
-    Set<String>? allowedDistributionTypes,
-    String? versionFilter,
+    Set<String>? dumpQualities,
+    Set<String>? romTypes,
+    Set<String>? modifications,
+    Set<String>? distributionTypes,
+    String? version,
     int? minYear,
     int? maxYear,
   }) {
@@ -51,15 +39,10 @@ class CatalogFilter {
       languages: languages ?? this.languages,
       categories: categories ?? this.categories,
       mediaTypes: mediaTypes ?? this.mediaTypes,
-      publishers: publishers ?? this.publishers,
-      series: series ?? this.series,
-      allowedDumpQualities: allowedDumpQualities ?? this.allowedDumpQualities,
-      allowedRomTypes: allowedRomTypes ?? this.allowedRomTypes,
-      allowedModifications: allowedModifications ?? this.allowedModifications,
-      allowedDistributionTypes: allowedDistributionTypes ?? this.allowedDistributionTypes,
-      versionFilter: versionFilter ?? this.versionFilter,
-      minYear: minYear ?? this.minYear,
-      maxYear: maxYear ?? this.maxYear,
+      dumpQualities: dumpQualities ?? this.dumpQualities,
+      romTypes: romTypes ?? this.romTypes,
+      modifications: modifications ?? this.modifications,
+      distributionTypes: distributionTypes ?? this.distributionTypes,
     );
   }
 
@@ -68,14 +51,9 @@ class CatalogFilter {
         languages.isNotEmpty ||
         categories.isNotEmpty ||
         mediaTypes.isNotEmpty ||
-        publishers.isNotEmpty ||
-        series.isNotEmpty ||
-        allowedDumpQualities.isNotEmpty ||
-        allowedRomTypes.isNotEmpty ||
-        allowedModifications.isNotEmpty ||
-        allowedDistributionTypes.isNotEmpty ||
-        versionFilter.isNotEmpty ||
-        minYear != null ||
-        maxYear != null;
+        dumpQualities.isNotEmpty ||
+        romTypes.isNotEmpty ||
+        modifications.isNotEmpty ||
+        distributionTypes.isNotEmpty;
   }
 }

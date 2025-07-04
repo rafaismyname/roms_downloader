@@ -68,9 +68,7 @@ class CatalogState {
       if (filterText.isNotEmpty) {
         final titleMatch = game.displayTitle.toLowerCase().contains(filterText.toLowerCase());
         final originalMatch = game.title.toLowerCase().contains(filterText.toLowerCase());
-        final seriesMatch = game.metadata?.series.toLowerCase().contains(filterText.toLowerCase()) ?? false;
-        final publisherMatch = game.metadata?.publisher.toLowerCase().contains(filterText.toLowerCase()) ?? false;
-        if (!titleMatch && !originalMatch && !seriesMatch && !publisherMatch) return false;
+        if (!titleMatch && !originalMatch) return false;
       }
 
       final metadata = game.metadata;
@@ -92,58 +90,38 @@ class CatalogState {
         return false;
       }
 
-      if (filter.publishers.isNotEmpty && !filter.publishers.contains(metadata.publisher)) {
-        return false;
-      }
-
-      if (filter.series.isNotEmpty && !filter.series.contains(metadata.series)) {
-        return false;
-      }
-
-      if (filter.versionFilter.isNotEmpty && !metadata.version.contains(filter.versionFilter)) {
-        return false;
-      }
-
-      if (filter.minYear != null || filter.maxYear != null) {
-        final releaseYear = _extractYear(metadata.releaseDate);
-        if (releaseYear != null) {
-          if (filter.minYear != null && releaseYear < filter.minYear!) return false;
-          if (filter.maxYear != null && releaseYear > filter.maxYear!) return false;
-        }
-      }
-
-      if (filter.allowedDumpQualities.isNotEmpty) {
+      if (filter.dumpQualities.isNotEmpty) {
         if (metadata.dumpQualities.isEmpty) {
-          if (!filter.allowedDumpQualities.contains('goodDump')) return false;
+          if (!filter.dumpQualities.contains('goodDump')) return false;
         } else {
-          final hasAllowedDumpQuality = metadata.dumpQualities.any((quality) => filter.allowedDumpQualities.contains(quality.name));
+          final hasAllowedDumpQuality = metadata.dumpQualities.any((quality) => filter.dumpQualities.contains(quality.name));
           if (!hasAllowedDumpQuality) return false;
         }
       }
 
-      if (filter.allowedRomTypes.isNotEmpty) {
+      if (filter.romTypes.isNotEmpty) {
         if (metadata.romTypes.isEmpty) {
-          if (!filter.allowedRomTypes.contains('normal')) return false;
+          if (!filter.romTypes.contains('normal')) return false;
         } else {
-          final hasAllowedRomType = metadata.romTypes.any((type) => filter.allowedRomTypes.contains(type.name));
+          final hasAllowedRomType = metadata.romTypes.any((type) => filter.romTypes.contains(type.name));
           if (!hasAllowedRomType) return false;
         }
       }
 
-      if (filter.allowedModifications.isNotEmpty) {
+      if (filter.modifications.isNotEmpty) {
         if (metadata.modifications.isEmpty) {
-          if (!filter.allowedModifications.contains('none')) return false;
+          if (!filter.modifications.contains('none')) return false;
         } else {
-          final hasAllowedModification = metadata.modifications.any((mod) => filter.allowedModifications.contains(mod.name));
+          final hasAllowedModification = metadata.modifications.any((mod) => filter.modifications.contains(mod.name));
           if (!hasAllowedModification) return false;
         }
       }
 
-      if (filter.allowedDistributionTypes.isNotEmpty) {
+      if (filter.distributionTypes.isNotEmpty) {
         if (metadata.distributionTypes.isEmpty) {
-          if (!filter.allowedDistributionTypes.contains('standard')) return false;
+          if (!filter.distributionTypes.contains('standard')) return false;
         } else {
-          final hasAllowedDistribution = metadata.distributionTypes.any((dist) => filter.allowedDistributionTypes.contains(dist.name));
+          final hasAllowedDistribution = metadata.distributionTypes.any((dist) => filter.distributionTypes.contains(dist.name));
           if (!hasAllowedDistribution) return false;
         }
       }
@@ -158,12 +136,6 @@ class CatalogState {
     });
 
     return filtered;
-  }
-
-  int? _extractYear(String releaseDate) {
-    if (releaseDate.isEmpty) return null;
-    final yearMatch = RegExp(r'(\d{4})').firstMatch(releaseDate);
-    return yearMatch != null ? int.tryParse(yearMatch.group(1)!) : null;
   }
 
   List<Game> get paginatedFilteredGames {
