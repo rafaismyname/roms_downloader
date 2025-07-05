@@ -35,7 +35,11 @@ class DownloadService {
       tapOpensFile: false,
     );
 
-    await FileDownloader().start();
+    await FileDownloader().start(
+      doTrackTasks: true,
+      markDownloadedComplete: true,
+      doRescheduleKilledTasks: false,
+    );
 
     return FileDownloader();
   }
