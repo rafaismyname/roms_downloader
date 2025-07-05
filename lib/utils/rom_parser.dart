@@ -48,7 +48,7 @@ class RomParser {
     'JUE': 'Japan/USA/Europe',
     'W': 'World',
     'World': 'World',
-    'UK': 'United Kingdom',
+    'UK': 'UK',
     'Asia': 'Asia',
     'Taiwan': 'Taiwan',
     'R': 'Russia',
@@ -261,7 +261,7 @@ class RomParser {
 
     final regionToLanguage = {
       'USA': 'English',
-      'United Kingdom': 'English',
+      'UK': 'English',
       'Australia': 'English',
       'Canada': 'English',
       'Europe': 'English',

@@ -116,6 +116,47 @@ class GameRow extends ConsumerWidget {
                             ),
                           ),
                         ],
+                        if (game.metadata?.regions.isNotEmpty == true) ...[
+                          const SizedBox(width: 4),
+                          ...game.metadata!.regions.take(3).map((region) => Padding(
+                            padding: const EdgeInsets.only(right: 2),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.primary.withAlpha(20),
+                                borderRadius: BorderRadius.circular(2),
+                                border: Border.all(
+                                  color: Theme.of(context).colorScheme.primary.withAlpha(60),
+                                  width: 0.5,
+                                ),
+                              ),
+                              child: Text(
+                                region,
+                                style: TextStyle(
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.w600,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                              ),
+                            ),
+                          )),
+                          if (game.metadata!.regions.length > 3)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                              child: Text(
+                                '+${game.metadata!.regions.length - 3}',
+                                style: TextStyle(
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.w500,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ),
+                        ],
                       ],
                     ),
                     if (_getGameTags().isNotEmpty) ...[
