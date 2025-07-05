@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:roms_downloader/models/game_model.dart';
 import 'package:roms_downloader/models/game_state_model.dart';
@@ -22,18 +23,26 @@ class GameActionButtons extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      alignment: WrapAlignment.center,
-      spacing: 2.0,
-      runSpacing: 2.0,
-      children: _buildActionButtons(context),
+    return Center(
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: _buildActionButtons(context)
+              .map((button) => Padding(
+                    padding: EdgeInsets.symmetric(horizontal: Platform.isAndroid ? 0 : 8),
+                    child: button,
+                  ))
+              .toList(),
+        ),
+      ),
     );
   }
 
   List<Widget> _buildActionButtons(BuildContext context) {
     final List<Widget> buttons = [];
     final buttonSize = isNarrow ? 20.0 : 24.0;
-    final buttonConstraints = BoxConstraints(minWidth: 8, minHeight: 8);
+    final buttonConstraints = BoxConstraints(minWidth: 20, minHeight: 20);
 
     for (final action in gameState.availableActions) {
       switch (action) {
@@ -138,8 +147,8 @@ class GameActionButtons extends StatelessWidget {
         case GameAction.loading:
           buttons.add(
             SizedBox(
-              width: buttonConstraints.minWidth,
-              height: buttonConstraints.minHeight,
+              width: 36,
+              height: 36,
               child: Center(
                 child: SizedBox(
                   width: buttonSize,

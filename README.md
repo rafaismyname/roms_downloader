@@ -38,6 +38,7 @@ I do not own nor recommend those sources. As a matter of fact, the first step in
 - [x] Custom settings per console (dest. dir/unzip rules/default filters/etc.)
 - [x] Permissions control
 - [ ] Game metadata fetcher (cover, images, info, etc)
+- [ ] Info/About page
 - [x] Android support
 - [x] Mac support
 - [x] Windows support

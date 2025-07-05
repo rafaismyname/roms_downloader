@@ -91,7 +91,6 @@ class Controls extends ConsumerWidget {
                   flex: 7,
                   child: SearchField(
                     initialText: catalogState.filterText,
-                    isEnabled: isInteractive,
                     onChanged: (text) => catalogNotifier.updateFilterText(text),
                   ),
                 ),
@@ -105,7 +104,7 @@ class Controls extends ConsumerWidget {
                         catalogState.filter.isActive ? Icons.filter_alt : Icons.filter_alt_outlined,
                         color: catalogState.filter.isActive ? Theme.of(context).colorScheme.primary : null,
                       ),
-                      onPressed: isInteractive ? () => FilterModal.show(context) : null,
+                      onPressed: () => FilterModal.show(context),
                       tooltip: 'Filters',
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),

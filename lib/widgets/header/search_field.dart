@@ -9,7 +9,7 @@ class SearchField extends StatefulWidget {
   const SearchField({
     super.key,
     required this.initialText,
-    required this.isEnabled,
+    this.isEnabled = true,
     required this.onChanged,
   });
 

@@ -17,15 +17,18 @@ class GameTitle extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: Text(
-            game.metadata?.displayTitle ?? game.title,
-            style: TextStyle(
-              fontSize: 13,
-              color: gameState.status == GameStatus.extracted ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface,
-              fontWeight: gameState.status == GameStatus.extracted ? FontWeight.bold : FontWeight.normal,
+          child: Tooltip(
+            message: game.title,
+            child: Text(
+              game.metadata?.displayTitle ?? game.title,
+              style: TextStyle(
+                fontSize: 13,
+                color: gameState.status == GameStatus.extracted ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface,
+                fontWeight: gameState.status == GameStatus.extracted ? FontWeight.bold : FontWeight.normal,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
           ),
         ),
         if (game.metadata?.diskNumber.isNotEmpty == true) ...[

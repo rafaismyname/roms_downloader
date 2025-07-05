@@ -15,7 +15,7 @@ class GameProgressBar extends StatelessWidget {
     if (!gameState.showProgressBar) return const SizedBox.shrink();
 
     return Padding(
-      padding: const EdgeInsets.only(left: 40, right: 16, top: 4),
+      padding: const EdgeInsets.only(left: 30, right: 6, top: 6),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

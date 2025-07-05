@@ -44,7 +44,7 @@ class _GameListState extends ConsumerState<GameList> {
 
     final sizeColumnWidth = isNarrow ? 60.0 : 100.0;
     final statusColumnWidth = isNarrow ? 80.0 : 100.0;
-    final actionsColumnWidth = isNarrow ? 100.0 : 100.0;
+    final actionsColumnWidth = isNarrow ? 70.0 : 80.0;
 
     return Column(
       children: [
@@ -64,7 +64,7 @@ class _GameListState extends ConsumerState<GameList> {
           ),
           child: Row(
             children: [
-              const SizedBox(width: 40),
+              const SizedBox(width: 24),
               Expanded(
                 child: Text(
                   'Title',
@@ -101,7 +101,7 @@ class _GameListState extends ConsumerState<GameList> {
                 ),
               ),
               SizedBox(
-                width: actionsColumnWidth,
+                width: actionsColumnWidth - 5,
                 child: Text(
                   'Actions',
                   style: TextStyle(
