@@ -12,7 +12,7 @@ import 'package:roms_downloader/widgets/game_list/game_tags.dart';
 import 'package:roms_downloader/widgets/game_list/game_action_buttons.dart';
 import 'package:roms_downloader/widgets/game_list/game_progress_bar.dart';
 
-class GameRow extends ConsumerWidget {
+class GameRow extends ConsumerStatefulWidget {
   final Game game;
   final bool isNarrow;
   final double sizeColumnWidth;
@@ -29,17 +29,24 @@ class GameRow extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<GameRow> createState() => _GameRowState();
+}
+
+class _GameRowState extends ConsumerState<GameRow> {
+  @override
+  Widget build(BuildContext context) {
     final catalogNotifier = ref.read(catalogProvider.notifier);
     final downloadNotifier = ref.read(downloadProvider.notifier);
     final extractionNotifier = ref.read(extractionProvider.notifier);
 
-    final gameId = game.taskId;
-    final gameState = ref.watch(gameStateProvider(game));
+    final gameId = widget.game.taskId;
+    final gameState = ref.watch(gameStateProvider(widget.game));
 
     if (gameState.status == GameStatus.init) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        ref.read(gameStateManagerProvider.notifier).resolveState(gameId);
+        if (mounted) {
+          ref.read(gameStateManagerProvider.notifier).resolveState(gameId);
+        }
       });
     }
 
@@ -71,13 +78,13 @@ class GameRow extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     GameTitle(
-                      game: game,
+                      game: widget.game,
                       gameState: gameState,
                     ),
-                    GameTags(game: game),
-                    if (isNarrow)
+                    GameTags(game: widget.game),
+                    if (widget.isNarrow)
                       Text(
-                        formatBytes(game.size),
+                        formatBytes(widget.game.size),
                         style: TextStyle(
                           fontSize: 10,
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -86,11 +93,11 @@ class GameRow extends ConsumerWidget {
                   ],
                 ),
               ),
-              if (!isNarrow)
+              if (!widget.isNarrow)
                 SizedBox(
-                  width: sizeColumnWidth,
+                  width: widget.sizeColumnWidth,
                   child: Text(
-                    formatBytes(game.size),
+                    formatBytes(widget.game.size),
                     style: TextStyle(
                       fontSize: 12,
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -99,7 +106,7 @@ class GameRow extends ConsumerWidget {
                   ),
                 ),
               SizedBox(
-                width: statusColumnWidth,
+                width: widget.statusColumnWidth,
                 child: Text(
                   gameState.statusText,
                   style: TextStyle(
@@ -111,13 +118,13 @@ class GameRow extends ConsumerWidget {
                 ),
               ),
               SizedBox(
-                width: actionsColumnWidth,
+                width: widget.actionsColumnWidth,
                 child: GameActionButtons(
-                  game: game,
+                  game: widget.game,
                   gameState: gameState,
                   downloadNotifier: downloadNotifier,
                   extractionNotifier: extractionNotifier,
-                  isNarrow: isNarrow,
+                  isNarrow: widget.isNarrow,
                 ),
               ),
             ],

@@ -23,7 +23,9 @@ class GameActionButtons extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Wrap(
-      alignment: WrapAlignment.spaceEvenly,
+      alignment: WrapAlignment.center,
+      spacing: 2.0,
+      runSpacing: 2.0,
       children: _buildActionButtons(context),
     );
   }
@@ -31,10 +33,7 @@ class GameActionButtons extends StatelessWidget {
   List<Widget> _buildActionButtons(BuildContext context) {
     final List<Widget> buttons = [];
     final buttonSize = isNarrow ? 20.0 : 24.0;
-    final buttonConstraints = BoxConstraints(
-      minWidth: isNarrow ? 24 : 30,
-      minHeight: isNarrow ? 24 : 30,
-    );
+    final buttonConstraints = BoxConstraints(minWidth: 8, minHeight: 8);
 
     for (final action in gameState.availableActions) {
       switch (action) {
@@ -47,6 +46,7 @@ class GameActionButtons extends StatelessWidget {
                 onPressed: () => downloadNotifier.startSingleDownload(game),
                 constraints: buttonConstraints,
                 padding: EdgeInsets.zero,
+                visualDensity: VisualDensity.compact,
               ),
             ),
           );
@@ -60,6 +60,7 @@ class GameActionButtons extends StatelessWidget {
                 onPressed: () => downloadNotifier.pauseTask(game.taskId),
                 constraints: buttonConstraints,
                 padding: EdgeInsets.zero,
+                visualDensity: VisualDensity.compact,
               ),
             ),
           );
@@ -73,6 +74,7 @@ class GameActionButtons extends StatelessWidget {
                 onPressed: () => downloadNotifier.resumeTask(game.taskId),
                 constraints: buttonConstraints,
                 padding: EdgeInsets.zero,
+                visualDensity: VisualDensity.compact,
               ),
             ),
           );
@@ -86,6 +88,7 @@ class GameActionButtons extends StatelessWidget {
                 onPressed: () => downloadNotifier.cancelTask(game.taskId),
                 constraints: buttonConstraints,
                 padding: EdgeInsets.zero,
+                visualDensity: VisualDensity.compact,
               ),
             ),
           );
@@ -99,6 +102,7 @@ class GameActionButtons extends StatelessWidget {
                 onPressed: () => extractionNotifier.extractFile(game.taskId),
                 constraints: buttonConstraints,
                 padding: EdgeInsets.zero,
+                visualDensity: VisualDensity.compact,
               ),
             ),
           );
@@ -112,6 +116,7 @@ class GameActionButtons extends StatelessWidget {
                 onPressed: () => downloadNotifier.startSingleDownload(game),
                 constraints: buttonConstraints,
                 padding: EdgeInsets.zero,
+                visualDensity: VisualDensity.compact,
               ),
             ),
           );
@@ -125,6 +130,7 @@ class GameActionButtons extends StatelessWidget {
                 onPressed: () => extractionNotifier.extractFile(game.taskId),
                 constraints: buttonConstraints,
                 padding: EdgeInsets.zero,
+                visualDensity: VisualDensity.compact,
               ),
             ),
           );

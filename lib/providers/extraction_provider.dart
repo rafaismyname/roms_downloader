@@ -6,7 +6,7 @@ import 'package:roms_downloader/models/extraction_model.dart';
 import 'package:roms_downloader/providers/game_state_provider.dart';
 import 'package:roms_downloader/providers/settings_provider.dart';
 import 'package:roms_downloader/services/directory_service.dart';
-import 'package:roms_downloader/tasks/extraction_task.dart';
+import 'package:roms_downloader/services/extraction_service.dart';
 
 final extractionProvider = StateNotifierProvider<ExtractionNotifier, ExtractionState>((ref) {
   final gameStateManager = ref.read(gameStateManagerProvider.notifier);
@@ -54,7 +54,7 @@ class ExtractionNotifier extends StateNotifier<ExtractionState> {
     debugPrint('Starting extraction for: $filePath');
 
     try {
-      ExtractionTask.startExtraction(
+      ExtractionService.startExtraction(
         taskId: taskId,
         filePath: filePath,
         extractionDir: extractionDir,
