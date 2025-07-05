@@ -59,7 +59,7 @@ class Footer extends ConsumerWidget {
               children: [
                 Expanded(
                   child: Text(
-                    _buildStatusText(appState.loading, downloadingGames, extractingGames, catalogState.filteredGames.length),
+                    _buildStatusText(appState.loading, downloadingGames, extractingGames, catalogState.filteredGamesCount),
                     style: TextStyle(
                       fontSize: 12,
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -116,7 +116,7 @@ class Footer extends ConsumerWidget {
                   child: Text(
                     appState.loading
                         ? "Loading catalog..."
-                        : _buildStatusText(appState.loading, downloadingGames, extractingGames, catalogState.filteredGames.length),
+                        : _buildStatusText(appState.loading, downloadingGames, extractingGames, catalogState.filteredGamesCount),
                     style: TextStyle(
                       fontSize: 12,
                       color: Theme.of(context).colorScheme.onSurfaceVariant,

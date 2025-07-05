@@ -132,7 +132,7 @@ class FilterModal extends ConsumerWidget {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  '${catalogState.filteredGames.length} games',
+                  '${catalogState.filteredGamesCount} games',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                         fontWeight: FontWeight.w500,

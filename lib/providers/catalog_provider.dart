@@ -4,6 +4,7 @@ import 'package:roms_downloader/models/catalog_model.dart';
 import 'package:roms_downloader/models/catalog_filter_model.dart';
 import 'package:roms_downloader/models/console_model.dart';
 import 'package:roms_downloader/services/catalog_service.dart';
+import 'package:roms_downloader/services/filtering_service.dart';
 
 final gameSelectionProvider = Provider.family<bool, String>((ref, gameId) {
   final catalogState = ref.watch(catalogProvider);
@@ -49,10 +50,11 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
       state = state.copyWith(
         games: games,
         loading: false,
-        displayedCount: kDefaultCatalogDisplaySize,
         availableRegions: regions,
         availableLanguages: languages,
       );
+
+      await _updateFilteredGames();
     } catch (e) {
       debugPrint('Error loading catalog: $e');
       state = state.copyWith(
@@ -62,13 +64,53 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
     }
   }
 
-  void updateFilterText(String filter) {
-    state = state.copyWith(filterText: filter, displayedCount: kDefaultCatalogDisplaySize);
+  Future<void> _updateFilteredGames() async {
+    if (state.games.isEmpty) return;
+
+    try {
+      final result = await compute(FilteringService.filterAndPaginate, FilterInput(
+        games: state.games,
+        filterText: state.filterText,
+        filter: state.filter,
+        skip: 0,
+        limit: kDefaultCatalogDisplaySize,
+      ));
+
+      state = state.copyWith(
+        cachedFilteredGames: result.games,
+        cachedTotalCount: result.totalCount,
+        cachedHasMore: result.hasMore,
+      );
+    } catch (e) {
+      debugPrint('Error filtering games: $e');
+    }
   }
 
-  void loadMoreItems() {
+  void updateFilterText(String filter) async {
+    state = state.copyWith(filterText: filter);
+    await _updateFilteredGames();
+  }
+
+  void loadMoreItems() async {
     if (!state.hasMoreItems) return;
-    state = state.copyWith(displayedCount: state.displayedCount + kDefaultCatalogDisplaySize);
+    
+    try {
+      final result = await compute(FilteringService.filterAndPaginate, FilterInput(
+        games: state.games,
+        filterText: state.filterText,
+        filter: state.filter,
+        skip: state.paginatedFilteredGames.length,
+        limit: kDefaultCatalogDisplaySize,
+      ));
+
+      state = state.copyWith(
+        cachedFilteredGames: [...state.paginatedFilteredGames, ...result.games],
+        cachedTotalCount: result.totalCount,
+        cachedHasMore: result.hasMore,
+      );
+    } catch (e) {
+      debugPrint('Error loading more items: $e');
+    }
   }
 
   void toggleGameSelection(String gameId) {
@@ -95,11 +137,12 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
     state = state.copyWith(selectedGames: selectedGames);
   }
 
-  void updateFilter(CatalogFilter filter) {
-    state = state.copyWith(filter: filter, displayedCount: kDefaultCatalogDisplaySize);
+  void updateFilter(CatalogFilter filter) async {
+    state = state.copyWith(filter: filter);
+    await _updateFilteredGames();
   }
 
-  void toggleRegionFilter(String region) {
+  void toggleRegionFilter(String region) async {
     final regions = Set<String>.from(state.filter.regions);
     if (regions.contains(region)) {
       regions.remove(region);
@@ -110,7 +153,7 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
     updateFilter(newFilter);
   }
 
-  void toggleLanguageFilter(String language) {
+  void toggleLanguageFilter(String language) async {
     final languages = Set<String>.from(state.filter.languages);
     if (languages.contains(language)) {
       languages.remove(language);
@@ -121,7 +164,7 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
     updateFilter(newFilter);
   }
 
-  void toggleFlagFilter(String flagType, String flag) {
+  void toggleFlagFilter(String flagType, String flag) async {
     CatalogFilter newFilter;
     switch (flagType) {
       case 'dumpQualities':
@@ -166,7 +209,7 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
     updateFilter(newFilter);
   }
 
-  void clearFilters() {
+  void clearFilters() async {
     updateFilter(const CatalogFilter(
       regions: {},
       languages: {},
@@ -177,7 +220,7 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
     ));
   }
 
-  void defaultFilters() {
+  void defaultFilters() async {
     updateFilter(const CatalogFilter());
   }
 }
