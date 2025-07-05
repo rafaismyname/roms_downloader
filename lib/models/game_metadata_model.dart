@@ -4,16 +4,14 @@ enum RomType { demo, sample, proto, beta, alpha }
 
 enum ModificationType { hack, translation, fixed, trainer }
 
-enum DistributionType { enhanced, specialEdition, alternate, unlicensed, aftermarket, pirate, multiCart }
+enum DistributionType { alternate, unlicensed, aftermarket, pirate, multiCart }
 
 class GameMetadata {
   final String displayTitle;
-  final String collection;
-  final int revision;
   final List<String> regions;
   final List<String> languages;
-  final String mediaType;
   final String diskNumber;
+  final String revision;
   final Set<DumpQuality> dumpQualities;
   final Set<RomType> romTypes;
   final Set<ModificationType> modifications;
@@ -26,10 +24,8 @@ class GameMetadata {
     this.romTypes = const {},
     this.modifications = const {},
     this.distributionTypes = const {},
-    this.revision = 0,
+    this.revision = '',
     this.diskNumber = '',
-    this.collection = '',
-    this.mediaType = '',
     this.regions = const [],
     this.languages = const [],
     this.categories = const [],
@@ -74,8 +70,6 @@ class GameMetadata {
     };
 
     final distributionMap = {
-      'enhanced': DistributionType.enhanced,
-      'specialEdition': DistributionType.specialEdition,
       'alternate': DistributionType.alternate,
       'unlicensed': DistributionType.unlicensed,
       'aftermarket': DistributionType.aftermarket,
@@ -91,8 +85,6 @@ class GameMetadata {
       distributionTypes: parseFlags('distributionTypes', distributionMap),
       revision: json['revision'] ?? 0,
       diskNumber: json['diskNumber'] ?? '',
-      collection: json['collection'] ?? '',
-      mediaType: json['mediaType'] ?? '',
       regions: List<String>.from(json['regions'] ?? []),
       languages: List<String>.from(json['languages'] ?? []),
       categories: List<String>.from(json['categories'] ?? []),
@@ -108,8 +100,6 @@ class GameMetadata {
       'distributionTypes': distributionTypes.map((e) => e.name).toList(),
       'revision': revision,
       'diskNumber': diskNumber,
-      'collection': collection,
-      'mediaType': mediaType,
       'regions': regions,
       'languages': languages,
       'categories': categories,

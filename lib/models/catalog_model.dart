@@ -85,10 +85,6 @@ class CatalogState {
         return false;
       }
 
-      if (filter.mediaTypes.isNotEmpty && !filter.mediaTypes.contains(metadata.mediaType)) {
-        return false;
-      }
-
       if (filter.dumpQualities.isNotEmpty) {
         if (metadata.dumpQualities.isEmpty) {
           if (!filter.dumpQualities.contains('goodDump')) return false;

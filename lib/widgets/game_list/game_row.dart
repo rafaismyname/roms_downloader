@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:roms_downloader/models/game_model.dart';
 import 'package:roms_downloader/models/game_state_model.dart';
+import 'package:roms_downloader/models/game_metadata_model.dart';
 import 'package:roms_downloader/utils/formatters.dart';
 import 'package:roms_downloader/providers/download_provider.dart';
 import 'package:roms_downloader/providers/catalog_provider.dart';
@@ -61,21 +62,84 @@ class GameRow extends ConsumerWidget {
                   value: gameState.isSelected,
                   onChanged: gameState.isInteractable ? (_) => catalogNotifier.toggleGameSelection(gameId) : null,
                 ),
-              ),
-              Expanded(
+              ),                Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      game.metadata?.displayTitle ?? game.title,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: gameState.status == GameStatus.extracted ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface,
-                        fontWeight: gameState.status == GameStatus.extracted ? FontWeight.bold : FontWeight.normal,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            game.metadata?.displayTitle ?? game.title,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: gameState.status == GameStatus.extracted ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface,
+                              fontWeight: gameState.status == GameStatus.extracted ? FontWeight.bold : FontWeight.normal,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (game.metadata?.diskNumber.isNotEmpty == true) ...[
+                          const SizedBox(width: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular(3),
+                            ),
+                            child: Text(
+                              'Disk ${game.metadata!.diskNumber}',
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w500,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                        ],
+                        if (game.metadata?.revision.isNotEmpty == true) ...[
+                          const SizedBox(width: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular(3),
+                            ),
+                            child: Text(
+                              'Rev ${game.metadata!.revision}',
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w500,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
+                    if (_getGameTags().isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Wrap(
+                        spacing: 3,
+                        runSpacing: 2,
+                        children: _getGameTags().map((tag) => Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: _getTagColor(tag),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                          child: Text(
+                            tag,
+                            style: TextStyle(
+                              fontSize: 8,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                        )).toList(),
+                      ),
+                    ],
                     if (isNarrow)
                       Text(
                         formatBytes(game.size),
@@ -317,6 +381,59 @@ class GameRow extends ConsumerWidget {
         return 'Processing...';
       default:
         return '';
+    }
+  }
+
+  List<String> _getGameTags() {
+    final tags = <String>[];
+    final metadata = game.metadata;
+    if (metadata == null) return tags;
+
+    if (metadata.dumpQualities.contains(DumpQuality.badDump)) tags.add('Bad');
+    if (metadata.dumpQualities.contains(DumpQuality.overdump)) tags.add('Over');
+    
+    if (metadata.romTypes.contains(RomType.demo)) tags.add('Demo');
+    if (metadata.romTypes.contains(RomType.sample)) tags.add('Sample');
+    if (metadata.romTypes.contains(RomType.proto)) tags.add('Proto');
+    if (metadata.romTypes.contains(RomType.beta)) tags.add('Beta');
+    if (metadata.romTypes.contains(RomType.alpha)) tags.add('Alpha');
+    
+    if (metadata.modifications.contains(ModificationType.hack)) tags.add('Hack');
+    if (metadata.modifications.contains(ModificationType.translation)) tags.add('Transl.');
+    if (metadata.modifications.contains(ModificationType.fixed)) tags.add('Fixed');
+    if (metadata.modifications.contains(ModificationType.trainer)) tags.add('Trainer');
+
+    if (metadata.distributionTypes.contains(DistributionType.alternate)) tags.add('Alt');
+    if (metadata.distributionTypes.contains(DistributionType.unlicensed)) tags.add('Unlic');
+    if (metadata.distributionTypes.contains(DistributionType.aftermarket)) tags.add('After');
+    if (metadata.distributionTypes.contains(DistributionType.pirate)) tags.add('Pirate');
+
+    return tags;
+  }
+
+  Color _getTagColor(String tag) {
+    switch (tag) {
+      case 'Bad':
+      case 'Over':
+        return Colors.red.shade600;
+      case 'Demo':
+      case 'Sample':
+      case 'Proto':
+      case 'Beta':
+      case 'Alpha':
+        return Colors.orange.shade600;
+      case 'Hack':
+      case 'Trans':
+      case 'Fixed':
+      case 'Trainer':
+        return Colors.blue.shade600;
+      case 'Alt':
+      case 'Unlic':
+      case 'After':
+      case 'Pirate':
+        return Colors.purple.shade600;
+      default:
+        return Colors.grey.shade600;
     }
   }
 }

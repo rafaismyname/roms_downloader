@@ -310,8 +310,8 @@ class _AdvancedFiltersSectionState extends State<_AdvancedFiltersSection> {
           _FilterSection(
             title: 'Distribution',
             icon: Icons.inventory,
-            items: const ['standard', 'enhanced', 'specialEdition', 'alternate', 'unlicensed', 'aftermarket', 'pirate', 'multiCart'],
-            labels: const ['Standard', 'Enhanced', 'Special Ed.', 'Alternate', 'Unlicensed', 'Aftermarket', 'Pirate', 'Multi-Cart'],
+            items: const ['standard', 'alternate', 'unlicensed', 'aftermarket', 'pirate', 'multiCart'],
+            labels: const ['Standard', 'Alternate', 'Unlicensed', 'Aftermarket', 'Pirate', 'Multi-Cart'],
             selectedItems: widget.filter.distributionTypes,
             onToggle: (item) => widget.catalogNotifier.toggleFlagFilter('distributionTypes', item),
           ),

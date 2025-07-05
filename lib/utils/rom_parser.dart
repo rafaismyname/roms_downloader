@@ -118,10 +118,8 @@ class RomParser {
     Set<RomType> romTypes = {};
     Set<ModificationType> modifications = {};
     Set<DistributionType> distributionTypes = {};
-    int revision = 0;
+    String revision = '';
     String diskNumber = '';
-    String collection = '';
-    String mediaType = '';
     List<String> regions = [];
     List<String> languages = [];
     List<String> categories = [];
@@ -148,7 +146,6 @@ class RomParser {
       RegExp(r'\[SCUS-\d+\]'): (match) => categories.add('Sony Code'),
       RegExp(r'\[.*-\d+.*\]'): (match) => categories.add('Product Code'),
       RegExp(r'\(M(\d+)\)'): (match) => distributionTypes.add(DistributionType.multiCart),
-      RegExp(r'\(Disc \d+\)'): (match) => distributionTypes.add(DistributionType.multiCart),
       RegExp(r'\(Unl\)'): (match) => distributionTypes.add(DistributionType.unlicensed),
       RegExp(r'\(Unlicensed\)'): (match) => distributionTypes.add(DistributionType.unlicensed),
       RegExp(r'\(PD\)'): (match) => {distributionTypes.add(DistributionType.unlicensed), regions.add('Public Domain')},
@@ -166,21 +163,14 @@ class RomParser {
       RegExp(r'\(Final\)'): (match) => categories.add('Final'),
       RegExp(r'\(Gold\)'): (match) => categories.add('Gold Master'),
       RegExp(r'\(Master\)'): (match) => categories.add('Master'),
-      RegExp(r'\((?:Rev|REV|rev) ([A-Z\d]+)\)'): (match) => revision = int.tryParse(match.group(1)!) ?? 0,
-      RegExp(r'\(Revised\)'): (match) => revision = 0,
+      RegExp(r'\((?:Rev|REV|rev) ([A-Z\d]+)\)'): (match) => revision = match.group(1) ?? '0',
+      RegExp(r'\(Revised\)'): (match) => revision = '0',
       RegExp(r'\(Disk ([A-Z\d]+)\)'): (match) => diskNumber = match.group(1)!,
       RegExp(r'\(Disc ([A-Z\d]+)\)'): (match) => diskNumber = match.group(1)!,
       RegExp(r'\[Disc ([A-Z\d]+)\]'): (match) => diskNumber = match.group(1)!,
       RegExp(r'\(Side ([AB])\)'): (match) => diskNumber = match.group(1)!,
       RegExp(r'\(Tape ([AB\d]+)\)'): (match) => diskNumber = match.group(1)!,
       RegExp(r'\(Cart ([AB\d]+)\)'): (match) => diskNumber = match.group(1)!,
-      RegExp(r'\(SGB Enhanced\)'): (match) => {distributionTypes.add(DistributionType.enhanced), mediaType = 'SGB Enhanced'},
-      RegExp(r'\(NKit[^)]*\)'): (match) => mediaType = 'NKit',
-      RegExp(r'\(RVZ[^)]*\)'): (match) => mediaType = 'RVZ',
-      RegExp(r'\(CDI\)'): (match) => mediaType = 'CDI',
-      RegExp(r'\(GDI\)'): (match) => mediaType = 'GDI',
-      RegExp(r'\(Decrypted\)'): (match) => mediaType = 'Decrypted',
-      RegExp(r'\(Encrypted\)'): (match) => mediaType = 'Encrypted',
       RegExp(r'\(Aftermarket\)'): (match) => distributionTypes.add(DistributionType.aftermarket),
       RegExp(r'\(Homebrew\)'): (match) => distributionTypes.add(DistributionType.aftermarket),
       RegExp(r'\(Pirate\)'): (match) => distributionTypes.add(DistributionType.pirate),
@@ -189,19 +179,13 @@ class RomParser {
       RegExp(r'\(\d+[ -]?in[ -]?\d+\)'): (match) => distributionTypes.add(DistributionType.multiCart),
       RegExp(r'\(Possible Proto\)'): (match) => romTypes.add(RomType.proto),
       RegExp(r'\(Trainer\)'): (match) => modifications.add(ModificationType.trainer),
-      RegExp(r'\([^)]*Collection[^)]*\)'): (match) => {collection = match.group(0)!.replaceAll(RegExp(r'[()]'), ''), categories.add('Collection')},
-      RegExp(r'(-?\s*(Gold|Special) Edition)'): (match) => {
-        distributionTypes.add(DistributionType.specialEdition),
-        collection = '${match.group(2)} Edition',
-        categories.add('Special Edition')
-      },
-      RegExp(r'\([^)]*Edition[^)]*\)'): (match) => {
-            distributionTypes.add(DistributionType.specialEdition),
-            collection = match.group(0)!.replaceAll(RegExp(r'[()]'), ''),
-            categories.add('Special Edition')
-          },
-      RegExp(r'\([^)]*Pack[^)]*\)'): (match) => {collection = match.group(0)!.replaceAll(RegExp(r'[()]'), ''), categories.add('Pack')},
-      RegExp(r'\([^)]*Bundle[^)]*\)'): (match) => {collection = match.group(0)!.replaceAll(RegExp(r'[()]'), ''), categories.add('Bundle')},
+      RegExp(r'\(SGB Enhanced\)'): (match) => categories.add('SGB Enhanced'),
+      RegExp(r'\(NKit[^)]*\)'): (match) => categories.add('NKit'),
+      RegExp(r'\(RVZ[^)]*\)'): (match) => categories.add('RVZ'),
+      RegExp(r'\(CDI\)'): (match) => categories.add('CDI'),
+      RegExp(r'\(GDI\)'): (match) => categories.add('GDI'),
+      RegExp(r'\(Decrypted\)'): (match) => categories.add('Decrypted'),
+      RegExp(r'\(Encrypted\)'): (match) => categories.add('Encrypted'),
       RegExp(r'\(NTSC\)'): (match) => categories.add('NTSC'),
       RegExp(r'\(PAL\)'): (match) => categories.add('PAL'),
       RegExp(r'\(SECAM\)'): (match) => categories.add('SECAM'),
@@ -368,8 +352,6 @@ class RomParser {
       distributionTypes: distributionTypes,
       revision: revision,
       diskNumber: diskNumber,
-      collection: collection,
-      mediaType: mediaType,
       regions: regions,
       languages: languages,
       categories: categories,

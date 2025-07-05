@@ -16,7 +16,7 @@ class CatalogFilter {
     this.dumpQualities = const {'goodDump'},
     this.romTypes = const {'normal'},
     this.modifications = const {'none'},
-    this.distributionTypes = const {'standard', 'enhanced', 'specialEdition', 'multiCart'},
+    this.distributionTypes = const {'standard', 'multiCart'},
   });
 
   CatalogFilter copyWith({
