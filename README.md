@@ -29,7 +29,7 @@ I do not own nor recommend those sources. As a matter of fact, the first step in
 - [x] Unzip downloaded files
 - [x] In-Library detection improved to detect extracted files and similar-named content
 - [x] Background Downloader
-- [X] Background Unzip
+- [x] Background Unzip
 - [x] Auto-extract after download
 - [x] Filters (like country/language, type, extension, etc.)
 - [x] Allow custom consoles (via JSON)
@@ -38,7 +38,7 @@ I do not own nor recommend those sources. As a matter of fact, the first step in
 - [x] Custom settings per console (dest. dir/unzip rules/default filters/etc.)
 - [x] Permissions control
 - [ ] Game metadata fetcher (cover, images, info, etc)
-- [ ] Info/About page
+- [x] Info/About page
 - [x] Android support
 - [x] Mac support
 - [x] Windows support
