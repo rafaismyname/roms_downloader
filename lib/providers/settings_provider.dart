@@ -9,8 +9,7 @@ final settingsProvider = StateNotifierProvider<SettingsNotifier, AppSettings>((r
 final settingProvider = Provider.family<dynamic, ({String key, String? consoleId})>((ref, params) {
   final settings = ref.watch(settingsProvider);
   if (params.consoleId != null) {
-    return settings.consoleSettings[params.consoleId]?.getSetting(params.key) ?? 
-           settings.generalSettings.getSetting(params.key);
+    return settings.consoleSettings[params.consoleId]?.getSetting(params.key) ?? settings.generalSettings.getSetting(params.key);
   }
   return settings.generalSettings.getSetting(params.key);
 });
@@ -18,13 +17,13 @@ final settingProvider = Provider.family<dynamic, ({String key, String? consoleId
 final settingWatcherProvider = Provider.family<Map<String, dynamic>, String>((ref, key) {
   final settings = ref.watch(settingsProvider);
   final result = <String, dynamic>{};
-  
+
   result['general'] = settings.generalSettings.getSetting(key);
-  
+
   for (final entry in settings.consoleSettings.entries) {
     result[entry.key] = entry.value.getSetting(key);
   }
-  
+
   return result;
 });
 

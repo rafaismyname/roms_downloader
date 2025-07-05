@@ -10,6 +10,7 @@ import 'package:roms_downloader/screens/settings_screen.dart';
 import 'package:roms_downloader/widgets/header/console_dropdown.dart';
 import 'package:roms_downloader/widgets/header/download_button.dart';
 import 'package:roms_downloader/widgets/header/search_field.dart';
+import 'package:roms_downloader/widgets/header/filter_modal.dart';
 
 class Controls extends ConsumerWidget {
   final List<Console> consoles;
@@ -87,14 +88,30 @@ class Controls extends ConsumerWidget {
             child: Row(
               children: [
                 Expanded(
-                  flex: 9,
+                  flex: 7,
                   child: SearchField(
                     initialText: catalogState.filterText,
-                    isEnabled: isInteractive,
                     onChanged: (text) => catalogNotifier.updateFilterText(text),
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
+                Expanded(
+                  flex: 1,
+                  child: SizedBox(
+                    height: double.infinity,
+                    child: IconButton(
+                      icon: Icon(
+                        catalogState.filter.isActive ? Icons.filter_alt : Icons.filter_alt_outlined,
+                        color: catalogState.filter.isActive ? Theme.of(context).colorScheme.primary : null,
+                      ),
+                      onPressed: () => FilterModal.show(context),
+                      tooltip: 'Filters',
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 6),
                 Expanded(
                   flex: 1,
                   child: DownloadButton(

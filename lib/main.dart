@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:roms_downloader/app.dart';
-import 'package:roms_downloader/tasks/extraction_task.dart';
+import 'package:roms_downloader/services/extraction_service.dart';
 
 void main() {
-  ExtractionTask.initialize();
+  ExtractionService.initialize();
   WidgetsFlutterBinding.ensureInitialized();
   runApp(
     const ProviderScope(

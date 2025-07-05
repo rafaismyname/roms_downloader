@@ -1,14 +1,18 @@
+import 'package:roms_downloader/models/game_metadata_model.dart';
+
 class Game {
   final String title;
   final String url;
   final int size;
   final String consoleId;
+  final GameMetadata? metadata;
 
   const Game({
     required this.title,
     required this.url,
     required this.size,
     required this.consoleId,
+    this.metadata,
   });
 
   factory Game.fromJson(Map<String, dynamic> json) {
@@ -17,6 +21,7 @@ class Game {
       url: json['url'],
       size: json['size'],
       consoleId: json['consoleId'],
+      metadata: json['metadata'] != null ? GameMetadata.fromJson(json['metadata']) : null,
     );
   }
 
@@ -26,6 +31,7 @@ class Game {
       'url': url,
       'size': size,
       'consoleId': consoleId,
+      'metadata': metadata?.toJson(),
     };
   }
 
@@ -35,4 +41,10 @@ class Game {
   }
 
   String get taskId => '$consoleId/$filename';
+
+  String get displayTitle => metadata?.displayTitle ?? title;
+
+  String get region => metadata?.regions.firstOrNull ?? '';
+
+  String get language => metadata?.languages.firstOrNull ?? '';
 }

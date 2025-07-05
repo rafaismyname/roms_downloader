@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:roms_downloader/providers/app_state_provider.dart';
+import 'package:roms_downloader/screens/about_screen.dart';
 import 'package:roms_downloader/widgets/header/controls.dart';
 import 'package:roms_downloader/widgets/game_list/game_list.dart';
 import 'package:roms_downloader/widgets/footer/footer.dart';
@@ -25,12 +26,25 @@ class HomeScreen extends ConsumerWidget {
         elevation: 0,
         scrolledUnderElevation: 0,
         toolbarHeight: 40,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.info_outline_rounded),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => AboutScreen(),
+                ),
+              );
+            },
+            tooltip: 'About',
+          ),
+        ],
       ),
       body: SafeArea(
         child: Column(
           children: [
             Controls(
-              consoles: appState.consoles,
+              consoles: appState.consolesList,
               selectedConsole: appState.selectedConsole,
               onConsoleSelect: appStateNotifier.selectConsole,
             ),

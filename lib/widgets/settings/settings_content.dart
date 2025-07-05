@@ -16,8 +16,6 @@ class SettingsContent extends StatelessWidget {
     required this.settingsNotifier,
   });
 
-  
-
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(

@@ -40,11 +40,20 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
           _handleProgressUpdate(update);
       }
     });
+
+    await fileDownloader.resumeFromBackground();
+
+    await _syncWithBackgroundTasks();
   }
 
   void _handleStatusUpdate(TaskStatusUpdate update) {
     final taskStatus = Map<String, TaskStatus>.from(state.taskStatus);
     taskStatus[update.task.taskId] = update.status;
+
+    if (!_tasks.containsKey(update.task.taskId) && update.task is DownloadTask) {
+      _tasks[update.task.taskId] = update.task as DownloadTask;
+      debugPrint('Registered background task ${update.task.taskId} with status ${update.status}');
+    }
 
     final completedTasks = Set<String>.from(state.completedTasks);
     if (update.status == TaskStatus.complete) {
@@ -72,6 +81,11 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
   void _handleProgressUpdate(TaskProgressUpdate update) {
     final taskProgress = Map<String, TaskProgressUpdate>.from(state.taskProgress);
     final taskStatus = state.taskStatus[update.task.taskId];
+
+    if (!_tasks.containsKey(update.task.taskId) && update.task is DownloadTask) {
+      _tasks[update.task.taskId] = update.task as DownloadTask;
+      debugPrint('Registered background task ${update.task.taskId} from progress update');
+    }
 
     if (taskStatus == TaskStatus.paused || update.progress <= 0.0) {
       final lastProgress = state.taskProgress[update.task.taskId];
@@ -108,7 +122,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
 
     final game = gameState.game;
     final settingsNotifier = _ref.read(settingsProvider.notifier);
-    
+
     final autoExtract = settingsNotifier.getAutoExtract(game.consoleId);
     if (!autoExtract) return;
 
@@ -231,6 +245,35 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
   bool hasDownloadableSelectedGames() {
     final catalogState = _ref.read(catalogProvider);
     return catalogState.selectedGames.any((taskId) => isTaskDownloadable(taskId));
+  }
+
+  Future<void> _syncWithBackgroundTasks() async {
+    try {
+      final allTasks = await FileDownloader().allTasks();
+      
+      final taskStatus = Map<String, TaskStatus>.from(state.taskStatus);
+      final taskProgress = Map<String, TaskProgressUpdate>.from(state.taskProgress);
+      
+      for (final task in allTasks) {
+        if (task is DownloadTask) {
+          _tasks[task.taskId] = task;
+
+          if (!taskStatus.containsKey(task.taskId)) {
+            taskStatus[task.taskId] = TaskStatus.running;
+            debugPrint('Discovered background task ${task.taskId}');
+          }
+        }
+      }
+      
+      state = state.copyWith(
+        taskStatus: taskStatus,
+        taskProgress: taskProgress,
+      );
+      
+      _updateDownloadingState();
+    } catch (e) {
+      debugPrint('Error syncing with background tasks: $e');
+    }
   }
 
   @override

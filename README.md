@@ -8,13 +8,13 @@ I plan to add more utilities that I often need for my voluntary work at my churc
 
 ## Data
 
-The data inside `lib/data/consoles.dart` is merely fictional for testing purposes, it's a placeholder/template.
+The data inside `assets/consoles.json` is merely fictional for testing purposes, it's a placeholder/template.
 I do not own nor recommend those sources. As a matter of fact, the first step in setting up this app to run locally is to edit that file, removing all the nonsense data and bringing your own index URLs.
 
 ## Instructions
 
 - Clone.
-- Update `lib/data/consoles.dart` by deleting the placeholder data and bringing your own indexes.
+- Update `assets/consoles.json` by deleting the placeholder data and bringing your own indexes (or use a custom file in the final app).
 - Build, run, be happy.
 - Treat others as you would like to be treated.
 
@@ -29,16 +29,16 @@ I do not own nor recommend those sources. As a matter of fact, the first step in
 - [x] Unzip downloaded files
 - [x] In-Library detection improved to detect extracted files and similar-named content
 - [x] Background Downloader
-- [X] Background Unzip
+- [x] Background Unzip
 - [x] Auto-extract after download
-- [ ] Filters (like country/language, type, extension, etc.) deprecating the hardcoded list filter
-- [ ] Allow custom consoles (via JSON)
+- [x] Filters (like country/language, type, extension, etc.)
+- [x] Allow custom consoles (via JSON)
+- [ ] Allow navigating other consoles and search while download/extraction is in progress
 - [ ] Improve file detection system (custom rexeg per console)
 - [x] Custom settings per console (dest. dir/unzip rules/default filters/etc.)
 - [x] Permissions control
-- [ ] Ignore (hide) file
-- [ ] Manually mark as in-library
 - [ ] Game metadata fetcher (cover, images, info, etc)
+- [x] Info/About page
 - [x] Android support
 - [x] Mac support
 - [x] Windows support

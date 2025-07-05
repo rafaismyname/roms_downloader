@@ -16,7 +16,7 @@ class DownloadService {
 
     FileDownloader().configureNotification(
       running: const TaskNotification(
-        'Downloading ROM: {filename}',
+        'Downloading: {filename}',
         'Progress: {progress} • {networkSpeed} • {timeRemaining}',
       ),
       complete: const TaskNotification(
@@ -35,11 +35,15 @@ class DownloadService {
       tapOpensFile: false,
     );
 
-    await FileDownloader().start();
+    await FileDownloader().start(
+      doTrackTasks: true,
+      markDownloadedComplete: true,
+      doRescheduleKilledTasks: false,
+    );
 
     return FileDownloader();
   }
-  
+
   DownloadTask createDownloadTask({
     required String taskId,
     required String url,

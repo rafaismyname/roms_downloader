@@ -6,7 +6,7 @@ import 'package:path/path.dart' as path;
 import 'package:archive/archive_io.dart' as virtual_archive;
 import 'package:flutter_archive/flutter_archive.dart';
 
-class ExtractionTask {
+class ExtractionService {
   static const String progressDataType = 'extraction_progress';
   static const String errorDataType = 'extraction_error';
   static const String completionDataType = 'extraction_completed';
@@ -59,18 +59,18 @@ class ExtractionTask {
       if (taskId == null) return;
 
       switch (type) {
-        case ExtractionTask.progressDataType:
+        case ExtractionService.progressDataType:
           final progress = data['value'] as double?;
           if (progress != null) _onProgressCallbacks[taskId]?.call(taskId, progress);
           break;
-        case ExtractionTask.errorDataType:
+        case ExtractionService.errorDataType:
           final error = data['message'] as String?;
           if (error != null) {
             _onErrorCallbacks[taskId]?.call(taskId, error, extractionDir);
             _cleanup(taskId);
           }
           break;
-        case ExtractionTask.completionDataType:
+        case ExtractionService.completionDataType:
           _onCompleteCallbacks[taskId]?.call(taskId, extractionDir);
           _cleanup(taskId);
           break;
@@ -195,7 +195,7 @@ class ExtractionTaskHandler extends TaskHandler {
       final extractionDir = data['extractionDir'] as String;
       FlutterForegroundTask.updateService(notificationText: 'Extracting $taskId...');
       FlutterForegroundTask.sendDataToMain({
-        'type': ExtractionTask.progressDataType,
+        'type': ExtractionService.progressDataType,
         'taskId': taskId,
         'value': 0.1,
       });
@@ -207,7 +207,7 @@ class ExtractionTaskHandler extends TaskHandler {
         ).then((_) {
           FlutterForegroundTask.updateService(notificationText: 'Extraction completed for $taskId');
           FlutterForegroundTask.sendDataToMain({
-            'type': ExtractionTask.completionDataType,
+            'type': ExtractionService.completionDataType,
             'taskId': taskId,
             'extractionDir': extractionDir,
           });
@@ -215,7 +215,7 @@ class ExtractionTaskHandler extends TaskHandler {
       } catch (e) {
         debugPrint('Extraction error: $e');
         FlutterForegroundTask.sendDataToMain({
-          'type': ExtractionTask.errorDataType,
+          'type': ExtractionService.errorDataType,
           'taskId': taskId,
           'extractionDir': extractionDir,
           'message': 'Failed to extract: $e',

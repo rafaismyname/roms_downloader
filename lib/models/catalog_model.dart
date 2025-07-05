@@ -1,4 +1,5 @@
 import 'package:roms_downloader/models/game_model.dart';
+import 'package:roms_downloader/models/catalog_filter_model.dart';
 
 const int kDefaultCatalogDisplaySize = 20;
 
@@ -7,41 +8,61 @@ class CatalogState {
   final String filterText;
   final bool loading;
   final Set<String> selectedGames;
-  final int displayedCount;
+  final CatalogFilter filter;
+  final Set<String> availableRegions;
+  final Set<String> availableLanguages;
+  final Set<String> availableCategories;
+  final List<Game> _cachedFilteredGames;
+  final int _cachedTotalCount;
+  final bool _cachedHasMore;
 
   const CatalogState({
     this.games = const [],
     this.filterText = '',
     this.loading = false,
     this.selectedGames = const {},
-    this.displayedCount = 20,
-  });
+    this.filter = const CatalogFilter(),
+    this.availableRegions = const {},
+    this.availableLanguages = const {},
+    this.availableCategories = const {},
+    List<Game>? cachedFilteredGames,
+    int? cachedTotalCount,
+    bool? cachedHasMore,
+  })  : _cachedFilteredGames = cachedFilteredGames ?? const [],
+        _cachedTotalCount = cachedTotalCount ?? 0,
+        _cachedHasMore = cachedHasMore ?? false;
 
   CatalogState copyWith({
     List<Game>? games,
     String? filterText,
     bool? loading,
     Set<String>? selectedGames,
-    int? displayedCount,
+    CatalogFilter? filter,
+    Set<String>? availableRegions,
+    Set<String>? availableLanguages,
+    Set<String>? availableCategories,
+    List<Game>? cachedFilteredGames,
+    int? cachedTotalCount,
+    bool? cachedHasMore,
   }) {
     return CatalogState(
       games: games ?? this.games,
       filterText: filterText ?? this.filterText,
       loading: loading ?? this.loading,
       selectedGames: selectedGames ?? this.selectedGames,
-      displayedCount: displayedCount ?? this.displayedCount,
+      filter: filter ?? this.filter,
+      availableRegions: availableRegions ?? this.availableRegions,
+      availableLanguages: availableLanguages ?? this.availableLanguages,
+      availableCategories: availableCategories ?? this.availableCategories,
+      cachedFilteredGames: cachedFilteredGames ?? _cachedFilteredGames,
+      cachedTotalCount: cachedTotalCount ?? _cachedTotalCount,
+      cachedHasMore: cachedHasMore ?? _cachedHasMore,
     );
   }
 
-  List<Game> get filteredGames {
-    return filterText.isEmpty ? games : games.where((game) => game.title.toLowerCase().contains(filterText.toLowerCase())).toList();
-  }
+  List<Game> get paginatedFilteredGames => _cachedFilteredGames;
 
-  List<Game> get paginatedFilteredGames {
-    return filteredGames.take(displayedCount).toList();
-  }
+  bool get hasMoreItems => _cachedHasMore;
 
-  bool get hasMoreItems {
-    return displayedCount < filteredGames.length;
-  }
+  int get filteredGamesCount => _cachedTotalCount;
 }

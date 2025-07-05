@@ -32,10 +32,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final settingsNotifier = ref.read(settingsProvider.notifier);
 
     if (widget.initialConsoleId != null && selectedConsole == null && appState.consoles.isNotEmpty) {
-      selectedConsole = appState.consoles.firstWhere(
-        (c) => c.id == widget.initialConsoleId,
-        orElse: () => appState.consoles.first,
-      );
+      selectedConsole = appState.consoles[widget.initialConsoleId] ?? appState.consoles.values.first;
     }
 
     return Scaffold(
@@ -57,12 +54,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             SettingsTabSelector(
               showGeneral: showGeneral,
               selectedConsole: selectedConsole,
-              consoles: appState.consoles,
+              consoles: appState.consolesList,
               onTabChanged: (isGeneral) {
                 setState(() {
                   showGeneral = isGeneral;
                   if (!showGeneral && selectedConsole == null) {
-                    selectedConsole = appState.consoles.isNotEmpty ? appState.consoles.first : null;
+                    selectedConsole = appState.consoles.isNotEmpty ? appState.consolesList.first : null;
                   }
                 });
               },
