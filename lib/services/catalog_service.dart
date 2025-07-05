@@ -6,7 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:roms_downloader/models/console_model.dart';
 import 'package:roms_downloader/models/game_model.dart';
-import 'package:roms_downloader/utils/rom_parser.dart';
+import 'package:roms_downloader/utils/title_metadata_parser.dart';
 
 class CatalogService {
   static final Map<String, Map<String, Console>> _consolesCache = {};
@@ -113,7 +113,7 @@ class CatalogService {
 
       final sizeBytes = _parseSizeBytes(sizeStr);
       final fullUrl = href.startsWith('http') ? href : '${console.url}$href';
-      final metadata = RomParser.parseRomTitle(title);
+      final metadata = TitleMetadataParser.parseRomTitle(title);
 
       games.add(Game(
         title: title,

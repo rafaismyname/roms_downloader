@@ -16,7 +16,7 @@ class DownloadService {
 
     FileDownloader().configureNotification(
       running: const TaskNotification(
-        'Downloading ROM: {filename}',
+        'Downloading: {filename}',
         'Progress: {progress} • {networkSpeed} • {timeRemaining}',
       ),
       complete: const TaskNotification(

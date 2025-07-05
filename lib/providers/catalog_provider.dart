@@ -36,6 +36,7 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
 
       Set<String> regions = <String>{};
       Set<String> languages = <String>{};
+      Set<String> categories = <String>{};
 
       for (final game in games) {
         if (game.metadata != null) {
@@ -45,6 +46,9 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
           if (game.metadata!.languages.isNotEmpty) {
             languages.addAll(game.metadata!.languages);
           }
+          if (game.metadata!.categories.isNotEmpty) {
+            categories.addAll(game.metadata!.categories);
+          }
         }
       }
 
@@ -53,6 +57,7 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
         loading: false,
         availableRegions: regions,
         availableLanguages: languages,
+        availableCategories: categories,
       );
 
       await _updateFilteredGames();

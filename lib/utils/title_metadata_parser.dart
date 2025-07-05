@@ -1,6 +1,6 @@
 import 'package:roms_downloader/models/game_metadata_model.dart';
 
-class RomParser {
+class TitleMetadataParser {
   static final Map<String, String> _regionCodes = {
     'U': 'USA',
     'USA': 'USA',
