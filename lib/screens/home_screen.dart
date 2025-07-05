@@ -4,7 +4,6 @@ import 'package:roms_downloader/providers/app_state_provider.dart';
 import 'package:roms_downloader/widgets/header/controls.dart';
 import 'package:roms_downloader/widgets/game_list/game_list.dart';
 import 'package:roms_downloader/widgets/footer/footer.dart';
-import 'package:roms_downloader/widgets/header/catalog_filter.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -47,12 +46,7 @@ class HomeScreen extends ConsumerWidget {
                         ],
                       ),
                     )
-                  : Column(
-                      children: [
-                        if (appState.selectedConsole != null) CatalogFilter(),
-                        Expanded(child: GameList()),
-                      ],
-                    ),
+                  : GameList(),
             ),
             Footer(),
           ],
