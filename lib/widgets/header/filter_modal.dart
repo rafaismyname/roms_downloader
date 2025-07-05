@@ -43,7 +43,7 @@ class FilterModal extends ConsumerWidget {
             ),
           ),
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
               border: Border(
                 bottom: BorderSide(
@@ -67,13 +67,10 @@ class FilterModal extends ConsumerWidget {
                         ),
                   ),
                 ),
-                TextButton(
-                  onPressed: catalogNotifier.defaultFilters,
-                  child: const Text('Reset'),
-                ),
-                TextButton(
-                  onPressed: catalogNotifier.clearFilters,
-                  child: const Text('Clear'),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close),
+                  tooltip: 'Close',
                 ),
               ],
             ),
@@ -139,6 +136,16 @@ class FilterModal extends ConsumerWidget {
                       ),
                 ),
                 const Spacer(),
+                TextButton(
+                  onPressed: catalogNotifier.clearFilters,
+                  child: const Text('Clear'),
+                ),
+                const SizedBox(width: 8),
+                TextButton(
+                  onPressed: catalogNotifier.defaultFilters,
+                  child: const Text('Reset'),
+                ),
+                const SizedBox(width: 8),
                 FilledButton(
                   onPressed: () => Navigator.pop(context),
                   child: const Text('Apply'),
