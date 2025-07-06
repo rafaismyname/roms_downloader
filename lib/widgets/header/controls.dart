@@ -38,7 +38,7 @@ class Controls extends ConsumerWidget {
     final screenHeight = MediaQuery.of(context).size.height;
     final isShort = isLandscape && screenHeight < 600;
 
-    final isInteractive = !appState.loading && !downloadState.downloading && !extractionState.isExtracting;
+    final isSettingsInteractive = !appState.loading && !downloadState.downloading && !extractionState.isExtracting;
     final canDownload = !appState.loading && downloadNotifier.hasDownloadableSelectedGames();
 
     return Container(
@@ -55,7 +55,7 @@ class Controls extends ConsumerWidget {
                   child: ConsoleDropdown(
                     consoles: consoles,
                     selectedConsole: selectedConsole,
-                    isInteractive: isInteractive,
+                    isInteractive: !appState.loading,
                     onConsoleSelect: onConsoleSelect,
                   ),
                 ),
@@ -64,7 +64,7 @@ class Controls extends ConsumerWidget {
                   flex: 1,
                   child: IconButton(
                     icon: const Icon(Icons.settings),
-                    onPressed: isInteractive
+                    onPressed: isSettingsInteractive
                         ? () {
                             Navigator.push(
                               context,

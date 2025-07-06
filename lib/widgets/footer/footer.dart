@@ -17,8 +17,7 @@ class Footer extends ConsumerWidget {
     final gameStateManager = ref.watch(gameStateManagerProvider);
     final settingsNotifier = ref.read(settingsProvider.notifier);
 
-    final activeGames =
-        catalogState.games.map((game) => gameStateManager[game.taskId]).whereType<GameState>().where((gameState) => gameState.isActive).toList();
+    final activeGames = gameStateManager.values.where((gameState) => gameState.isActive).toList();
 
     final downloadingGames = activeGames.where((state) => state.status == GameStatus.downloading || state.status == GameStatus.downloadQueued).length;
     final extractingGames = activeGames.where((state) => state.status == GameStatus.extracting).length;
