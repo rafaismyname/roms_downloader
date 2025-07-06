@@ -17,18 +17,16 @@ class Footer extends ConsumerWidget {
     final gameStateManager = ref.watch(gameStateManagerProvider);
     final settingsNotifier = ref.read(settingsProvider.notifier);
 
-    // Get all active games from the unified state system
     final activeGames =
         catalogState.games.map((game) => gameStateManager[game.taskId]).whereType<GameState>().where((gameState) => gameState.isActive).toList();
 
     final downloadingGames = activeGames.where((state) => state.status == GameStatus.downloading || state.status == GameStatus.downloadQueued).length;
-
     final extractingGames = activeGames.where((state) => state.status == GameStatus.extracting).length;
 
     final overallProgress = _calculateOverallProgress(activeGames);
     final overallNetworkSpeed = _calculateOverallNetworkSpeed(activeGames);
     final overallTimeRemaining = _calculateOverallTimeRemaining(activeGames);
-    final showProgressBar = activeGames.firstOrNull?.showProgressBar ?? false;
+    final showProgressBar = activeGames.any((state) => state.showProgressBar);
 
     final selectedConsole = appState.selectedConsole;
     final downloadDir = settingsNotifier.getDownloadDir(selectedConsole?.id);

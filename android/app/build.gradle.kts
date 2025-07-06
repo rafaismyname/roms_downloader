@@ -51,8 +51,10 @@ android {
     buildTypes {
         release {
             signingConfig = if (keystorePropertiesFile.exists()) {
+                println("[Gradle] Using RELEASE signing config for build.")
                 signingConfigs.getByName("release")
             } else {
+                println("[Gradle] Using DEBUG signing config for build.")
                 signingConfigs.getByName("debug")
             }
         }
