@@ -89,6 +89,14 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
     return getSetting(AppSettings.autoExtract, consoleId) ?? true;
   }
 
+  int getMaxParallelDownloads() {
+    return getGeneralSetting(AppSettings.maxParallelDownloads) ?? 5;
+  }
+
+  int getMaxParallelExtractions() {
+    return getGeneralSetting(AppSettings.maxParallelExtractions) ?? 2;
+  }
+
   Future<String?> selectDownloadDirectory() async {
     return await _settingsService.selectDownloadDirectory();
   }
