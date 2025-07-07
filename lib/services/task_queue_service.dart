@@ -7,14 +7,14 @@ import 'package:roms_downloader/providers/extraction_provider.dart';
 import 'package:roms_downloader/models/game_model.dart';
 
 class TaskQueueService {
-  Future<void> executeTask(QueuedTask task, Ref ref, TaskQueueNotifier notifier) async {
+  Future<void> executeTask(Ref ref, TaskQueueNotifier notifier, QueuedTask task) async {
     try {
       switch (task.type) {
         case TaskType.download:
-          await _executeDownloadTask(task, ref, notifier);
+          await _executeDownloadTask(ref, task, notifier);
           break;
         case TaskType.extraction:
-          await _executeExtractionTask(task, ref, notifier);
+          await _executeExtractionTask(ref, task, notifier);
           break;
       }
     } catch (e) {
@@ -23,7 +23,7 @@ class TaskQueueService {
     }
   }
 
-  Future<void> _executeDownloadTask(QueuedTask task, Ref ref, TaskQueueNotifier notifier) async {
+  Future<void> _executeDownloadTask(Ref ref, QueuedTask task, TaskQueueNotifier notifier) async {
     final downloadNotifier = ref.read(downloadProvider.notifier);
     final game = Game.fromJson(task.params['game']);
     final downloadDir = task.params['downloadDir'] as String;
@@ -33,7 +33,7 @@ class TaskQueueService {
     notifier.updateTaskStatus(task.id, TaskQueueStatus.completed);
   }
 
-  Future<void> _executeExtractionTask(QueuedTask task, Ref ref, TaskQueueNotifier notifier) async {
+  Future<void> _executeExtractionTask(Ref ref, QueuedTask task, TaskQueueNotifier notifier) async {
     final extractionNotifier = ref.read(extractionProvider.notifier);
     final taskId = task.params['taskId'] as String;
     

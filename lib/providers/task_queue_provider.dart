@@ -118,7 +118,7 @@ class TaskQueueNotifier extends StateNotifier<TaskQueueState> {
 
           for (final task in waitingTasks) {
             updateTaskStatus(task.id, TaskQueueStatus.running);
-            _service.executeTask(task, _ref, this);
+            _service.executeTask(_ref, this, task);
           }
         }
       }
