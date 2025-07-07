@@ -26,7 +26,6 @@ class BooleanSetting extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settingValue = ref.watch(settingProvider((key: settingKey, consoleId: console?.id))) ?? defaultValue;
-    debugPrint('BooleanSetting: $settingKey = $settingValue');
     final isEnabled = settingValue ?? false;
 
     return ListTile(

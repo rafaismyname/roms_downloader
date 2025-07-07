@@ -105,6 +105,9 @@ class ExtractionNotifier extends StateNotifier<ExtractionState> {
       );
     }
 
+    final queueNotifier = _ref.read(taskQueueProvider.notifier);
+    queueNotifier.updateTaskStatus(taskId, TaskQueueStatus.completed);
+
     gameStateManager.updateExtractionState(taskId, ExtractionStatus.completed, 1.0);
 
     try {
@@ -143,6 +146,9 @@ class ExtractionNotifier extends StateNotifier<ExtractionState> {
         isExtracting: _hasActiveExtractions(tasks),
       );
     }
+
+    final queueNotifier = _ref.read(taskQueueProvider.notifier);
+    queueNotifier.updateTaskStatus(taskId, TaskQueueStatus.failed, error: error);
 
     try {
       final dir = Directory(extractionDir);

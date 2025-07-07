@@ -5,7 +5,7 @@ import 'package:roms_downloader/providers/app_state_provider.dart';
 import 'package:roms_downloader/providers/download_provider.dart';
 import 'package:roms_downloader/providers/catalog_provider.dart';
 import 'package:roms_downloader/providers/extraction_provider.dart';
-import 'package:roms_downloader/providers/settings_provider.dart';
+import 'package:roms_downloader/services/task_queue_service.dart';
 import 'package:roms_downloader/screens/settings_screen.dart';
 import 'package:roms_downloader/widgets/header/console_dropdown.dart';
 import 'package:roms_downloader/widgets/header/download_button.dart';
@@ -32,7 +32,6 @@ class Controls extends ConsumerWidget {
     final catalogState = ref.watch(catalogProvider);
     final catalogNotifier = ref.read(catalogProvider.notifier);
     final extractionState = ref.watch(extractionProvider);
-    final settingsNotifier = ref.read(settingsProvider.notifier);
 
     final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
     final screenHeight = MediaQuery.of(context).size.height;
@@ -118,9 +117,9 @@ class Controls extends ConsumerWidget {
                     isEnabled: canDownload,
                     isDownloading: downloadState.downloading,
                     isLoading: appState.loading,
-                    onPressed: () async {
-                      final downloadDir = settingsNotifier.getDownloadDir(selectedConsole?.id);
-                      await downloadNotifier.startSelectedDownloads(downloadDir, selectedConsole?.id);
+                    onPressed: () {
+                      final selectedGames = catalogState.games.where((game) => catalogState.selectedGames.contains(game.taskId)).toList();
+                      TaskQueueService.startDownloads(ref, selectedGames, selectedConsole?.id);
                     },
                   ),
                 ),

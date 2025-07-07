@@ -5,6 +5,7 @@ import 'package:path/path.dart' as path;
 import 'package:roms_downloader/models/game_model.dart';
 import 'package:roms_downloader/models/game_state_model.dart';
 import 'package:roms_downloader/models/extraction_model.dart';
+import 'package:roms_downloader/models/task_queue_model.dart';
 import 'package:roms_downloader/models/settings_model.dart';
 import 'package:roms_downloader/providers/catalog_provider.dart';
 import 'package:roms_downloader/providers/settings_provider.dart';
@@ -61,13 +62,6 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
         isInteractable: false,
         availableActions: {GameAction.pause, GameAction.cancel},
       );
-    } else if (status == TaskStatus.enqueued) {
-      updated = current.copyWith(
-        status: GameStatus.downloadQueued,
-        showProgressBar: true,
-        isInteractable: false,
-        availableActions: {GameAction.cancel},
-      );
     } else if (status == TaskStatus.paused) {
       updated = current.copyWith(
         status: GameStatus.downloadPaused,
@@ -114,6 +108,21 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
     }
 
     if (updated != null && updated != current) {
+      state = {...state, gameId: updated};
+    }
+  }
+
+  void updateQueueState(String gameId, TaskType type) {
+    final current = state[gameId];
+    if (current == null) return;
+
+    GameState updated = current.copyWith(
+      status: type == TaskType.download ? GameStatus.downloadQueued : GameStatus.extractionQueued,
+      isInteractable: false,
+      availableActions: {GameAction.cancel},
+    );
+
+    if (updated != current) {
       state = {...state, gameId: updated};
     }
   }

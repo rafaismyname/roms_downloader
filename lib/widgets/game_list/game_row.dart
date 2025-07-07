@@ -3,9 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:roms_downloader/models/game_model.dart';
 import 'package:roms_downloader/models/game_state_model.dart';
 import 'package:roms_downloader/utils/formatters.dart';
-import 'package:roms_downloader/providers/download_provider.dart';
 import 'package:roms_downloader/providers/catalog_provider.dart';
-import 'package:roms_downloader/providers/extraction_provider.dart';
 import 'package:roms_downloader/providers/game_state_provider.dart';
 import 'package:roms_downloader/widgets/game_list/game_title.dart';
 import 'package:roms_downloader/widgets/game_list/game_tags.dart';
@@ -36,8 +34,6 @@ class _GameRowState extends ConsumerState<GameRow> {
   @override
   Widget build(BuildContext context) {
     final catalogNotifier = ref.read(catalogProvider.notifier);
-    final downloadNotifier = ref.read(downloadProvider.notifier);
-    final extractionNotifier = ref.read(extractionProvider.notifier);
 
     final gameId = widget.game.taskId;
     final gameState = ref.watch(gameStateProvider(widget.game));
@@ -122,8 +118,6 @@ class _GameRowState extends ConsumerState<GameRow> {
                 child: GameActionButtons(
                   game: widget.game,
                   gameState: gameState,
-                  downloadNotifier: downloadNotifier,
-                  extractionNotifier: extractionNotifier,
                   isNarrow: widget.isNarrow,
                 ),
               ),

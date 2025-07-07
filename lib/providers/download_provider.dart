@@ -56,12 +56,19 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       debugPrint('Registered background task ${update.task.taskId} with status ${update.status}');
     }
 
+    final queueNotifier = _ref.read(taskQueueProvider.notifier);
     final completedTasks = Set<String>.from(state.completedTasks);
     if (update.status == TaskStatus.complete) {
       completedTasks.add(update.task.taskId);
       catalogNotifier.deselectGame(update.task.taskId);
       debugPrint('Download completed for ${update.task.taskId}');
+      queueNotifier.updateTaskStatus(update.task.taskId, TaskQueueStatus.completed);
+      
       _triggerAutoExtraction(update.task.taskId);
+    } else if (update.status == TaskStatus.failed) {
+      queueNotifier.updateTaskStatus(update.task.taskId, TaskQueueStatus.failed);
+    } else if (update.status == TaskStatus.canceled) {
+      queueNotifier.updateTaskStatus(update.task.taskId, TaskQueueStatus.cancelled);
     }
 
     state = state.copyWith(

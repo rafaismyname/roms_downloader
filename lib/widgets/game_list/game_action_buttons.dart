@@ -1,34 +1,30 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:roms_downloader/models/game_model.dart';
 import 'package:roms_downloader/models/game_state_model.dart';
-import 'package:roms_downloader/providers/download_provider.dart';
-import 'package:roms_downloader/providers/extraction_provider.dart';
+import 'package:roms_downloader/services/task_queue_service.dart';
 
-class GameActionButtons extends StatelessWidget {
+class GameActionButtons extends ConsumerWidget {
   final Game game;
   final GameState gameState;
-  final DownloadNotifier downloadNotifier;
-  final ExtractionNotifier extractionNotifier;
   final bool isNarrow;
 
   const GameActionButtons({
     super.key,
     required this.game,
     required this.gameState,
-    required this.downloadNotifier,
-    required this.extractionNotifier,
     this.isNarrow = false,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Center(
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: _buildActionButtons(context)
+          children: _buildActionButtons(context, ref)
               .map((button) => Padding(
                     padding: EdgeInsets.symmetric(horizontal: Platform.isAndroid ? 0 : 8),
                     child: button,
@@ -39,7 +35,7 @@ class GameActionButtons extends StatelessWidget {
     );
   }
 
-  List<Widget> _buildActionButtons(BuildContext context) {
+  List<Widget> _buildActionButtons(BuildContext context, WidgetRef ref) {
     final List<Widget> buttons = [];
     final buttonSize = isNarrow ? 20.0 : 24.0;
     final buttonConstraints = BoxConstraints(minWidth: 20, minHeight: 20);
@@ -52,7 +48,7 @@ class GameActionButtons extends StatelessWidget {
               message: 'Download',
               child: IconButton(
                 icon: Icon(Icons.download, size: buttonSize),
-                onPressed: () => downloadNotifier.startSingleDownload(game),
+                onPressed: () => TaskQueueService.startDownloads(ref, [game], game.consoleId),
                 constraints: buttonConstraints,
                 padding: EdgeInsets.zero,
                 visualDensity: VisualDensity.compact,
@@ -66,7 +62,7 @@ class GameActionButtons extends StatelessWidget {
               message: 'Pause',
               child: IconButton(
                 icon: Icon(Icons.pause, size: buttonSize),
-                onPressed: () => downloadNotifier.pauseTask(game.taskId),
+                onPressed: () => TaskQueueService.pauseDownloadTask(ref, game.taskId),
                 constraints: buttonConstraints,
                 padding: EdgeInsets.zero,
                 visualDensity: VisualDensity.compact,
@@ -80,7 +76,7 @@ class GameActionButtons extends StatelessWidget {
               message: 'Resume',
               child: IconButton(
                 icon: Icon(Icons.play_arrow, size: buttonSize),
-                onPressed: () => downloadNotifier.resumeTask(game.taskId),
+                onPressed: () => TaskQueueService.resumeDownloadTask(ref, game.taskId),
                 constraints: buttonConstraints,
                 padding: EdgeInsets.zero,
                 visualDensity: VisualDensity.compact,
@@ -94,7 +90,7 @@ class GameActionButtons extends StatelessWidget {
               message: 'Cancel',
               child: IconButton(
                 icon: Icon(Icons.close, size: buttonSize),
-                onPressed: () => downloadNotifier.cancelTask(game.taskId),
+                onPressed: () => TaskQueueService.cancelDownloadTask(ref, game.taskId),
                 constraints: buttonConstraints,
                 padding: EdgeInsets.zero,
                 visualDensity: VisualDensity.compact,
@@ -108,7 +104,7 @@ class GameActionButtons extends StatelessWidget {
               message: 'Extract',
               child: IconButton(
                 icon: Icon(Icons.archive, size: buttonSize),
-                onPressed: () => extractionNotifier.extractFile(game.taskId),
+                onPressed: () => TaskQueueService.startExtraction(ref, game.taskId),
                 constraints: buttonConstraints,
                 padding: EdgeInsets.zero,
                 visualDensity: VisualDensity.compact,
@@ -122,7 +118,7 @@ class GameActionButtons extends StatelessWidget {
               message: 'Retry Download',
               child: IconButton(
                 icon: Icon(Icons.refresh, size: buttonSize),
-                onPressed: () => downloadNotifier.startSingleDownload(game),
+                onPressed: () => TaskQueueService.startDownloads(ref, [game], game.consoleId),
                 constraints: buttonConstraints,
                 padding: EdgeInsets.zero,
                 visualDensity: VisualDensity.compact,
@@ -136,7 +132,7 @@ class GameActionButtons extends StatelessWidget {
               message: 'Retry Extraction',
               child: IconButton(
                 icon: Icon(Icons.refresh, size: buttonSize),
-                onPressed: () => extractionNotifier.extractFile(game.taskId),
+                onPressed: () => TaskQueueService.startExtraction(ref, game.taskId),
                 constraints: buttonConstraints,
                 padding: EdgeInsets.zero,
                 visualDensity: VisualDensity.compact,

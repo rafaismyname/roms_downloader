@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:roms_downloader/models/task_queue_model.dart';
 import 'package:roms_downloader/services/task_queue_service.dart';
 import 'package:roms_downloader/providers/settings_provider.dart';
+import 'package:roms_downloader/providers/game_state_provider.dart';
 
 final taskQueueProvider = StateNotifierProvider<TaskQueueNotifier, TaskQueueState>((ref) {
   return TaskQueueNotifier(ref);
@@ -10,7 +12,6 @@ final taskQueueProvider = StateNotifierProvider<TaskQueueNotifier, TaskQueueStat
 
 class TaskQueueNotifier extends StateNotifier<TaskQueueState> {
   final Ref _ref;
-  final TaskQueueService _service = TaskQueueService();
   Timer? _processingTimer;
 
   TaskQueueNotifier(this._ref) : super(const TaskQueueState()) {
@@ -27,20 +28,25 @@ class TaskQueueNotifier extends StateNotifier<TaskQueueState> {
 
     final updatedTasks = [...state.tasks, task];
     state = state.copyWith(tasks: updatedTasks);
+    
+    final gameStateManager = _ref.read(gameStateManagerProvider.notifier);
+    gameStateManager.updateQueueState(taskId, type);
+    
     _processQueue();
   }
 
   void updateTaskStatus(String taskId, TaskQueueStatus status, {String? error}) {
-    final updatedTasks = state.tasks.map((task) {
-      if (task.id == taskId) {
-        return task.copyWith(
+    // TODO: change state.tasks to a map instead of a list for better performance
+    final updatedTasks = state.tasks.map((currentTask) {
+      if (currentTask.id == taskId) {
+        return currentTask.copyWith(
           status: status,
-          startedAt: status == TaskQueueStatus.running ? DateTime.now() : task.startedAt,
-          completedAt: status.isCompleted ? DateTime.now() : task.completedAt,
+          startedAt: status == TaskQueueStatus.running ? DateTime.now() : currentTask.startedAt,
+          completedAt: status.isCompleted ? DateTime.now() : currentTask.completedAt,
           error: error,
         );
       }
-      return task;
+      return currentTask;
     }).toList();
 
     final runningCounts = <TaskType, int>{};
@@ -55,35 +61,6 @@ class TaskQueueNotifier extends StateNotifier<TaskQueueState> {
       runningCounts: runningCounts,
     );
 
-    if (status.isCompleted) {
-      _processQueue();
-    }
-  }
-
-  void cancelTask(String taskId) {
-    final task = state.tasks.firstWhere((t) => t.id == taskId, orElse: () => throw ArgumentError('Task not found'));
-    
-    if (task.status == TaskQueueStatus.running) {
-      _service.cancelTask(task);
-    }
-    
-    updateTaskStatus(taskId, TaskQueueStatus.cancelled);
-  }
-
-  void retryTask(String taskId) {
-    final updatedTasks = state.tasks.map((task) {
-      if (task.id == taskId && task.status == TaskQueueStatus.failed) {
-        return task.copyWith(
-          status: TaskQueueStatus.waiting,
-          error: null,
-          startedAt: null,
-          completedAt: null,
-        );
-      }
-      return task;
-    }).toList();
-
-    state = state.copyWith(tasks: updatedTasks);
     _processQueue();
   }
 
@@ -93,7 +70,7 @@ class TaskQueueNotifier extends StateNotifier<TaskQueueState> {
 
   void _processQueue() async {
     if (state.isProcessing) return;
-
+    debugPrint('Processing task queue...');
     state = state.copyWith(isProcessing: true);
 
     try {
@@ -118,7 +95,11 @@ class TaskQueueNotifier extends StateNotifier<TaskQueueState> {
 
           for (final task in waitingTasks) {
             updateTaskStatus(task.id, TaskQueueStatus.running);
-            _service.executeTask(_ref, this, task);
+            try {
+              await TaskQueueService.executeTask(_ref, this, task);
+            } catch (e) {
+              updateTaskStatus(task.id, TaskQueueStatus.failed, error: e.toString());
+            }
           }
         }
       }
