@@ -4,7 +4,7 @@ class DownloadService {
   Future<FileDownloader> initialize() async {
     FileDownloader().configure(
       globalConfig: [
-        (Config.holdingQueue, true),
+        (Config.holdingQueue, null), // Disable this queue, use our queue system instead
         (Config.requestTimeout, 60),
         (Config.resourceTimeout, 3600),
       ],
