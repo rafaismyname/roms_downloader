@@ -32,6 +32,7 @@ class TaskQueueNotifier extends StateNotifier<TaskQueueState> {
     final gameStateManager = _ref.read(gameStateManagerProvider.notifier);
     gameStateManager.updateQueueState(taskId, type);
 
+    _startTimerIfNeeded();
     _processQueue();
   }
 
@@ -65,7 +66,18 @@ class TaskQueueNotifier extends StateNotifier<TaskQueueState> {
   }
 
   void _startProcessing() {
-    _processingTimer = Timer.periodic(const Duration(seconds: 2), (_) => _processQueue());
+    _processingTimer ??= Timer.periodic(const Duration(seconds: 2), (_) => _processQueue());
+  }
+
+  void _stopProcessing() {
+    _processingTimer?.cancel();
+    _processingTimer = null;
+  }
+
+  void _startTimerIfNeeded() {
+    if (_processingTimer == null) {
+      _startProcessing();
+    }
   }
 
   void _processQueue() async {
@@ -100,9 +112,17 @@ class TaskQueueNotifier extends StateNotifier<TaskQueueState> {
           }
         }
       }
+
+      if (!_hasPendingTasks()) {
+        _stopProcessing();
+      }
     } finally {
       state = state.copyWith(isProcessing: false);
     }
+  }
+
+  bool _hasPendingTasks() {
+    return state.tasks.any((task) => task.status == TaskQueueStatus.waiting || task.status == TaskQueueStatus.running);
   }
 
   @override
