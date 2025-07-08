@@ -28,10 +28,10 @@ class TaskQueueNotifier extends StateNotifier<TaskQueueState> {
 
     final updatedTasks = [...state.tasks, task];
     state = state.copyWith(tasks: updatedTasks);
-    
+
     final gameStateManager = _ref.read(gameStateManagerProvider.notifier);
     gameStateManager.updateQueueState(taskId, type);
-    
+
     _processQueue();
   }
 
@@ -65,7 +65,7 @@ class TaskQueueNotifier extends StateNotifier<TaskQueueState> {
   }
 
   void _startProcessing() {
-    _processingTimer = Timer.periodic(const Duration(milliseconds: 500), (_) => _processQueue());
+    _processingTimer = Timer.periodic(const Duration(seconds: 2), (_) => _processQueue());
   }
 
   void _processQueue() async {
@@ -89,17 +89,14 @@ class TaskQueueNotifier extends StateNotifier<TaskQueueState> {
         final availableSlots = maxCount - runningCount;
 
         if (availableSlots > 0) {
-          final waitingTasks = state.tasks
-              .where((task) => task.type == type && task.status == TaskQueueStatus.waiting)
-              .take(availableSlots);
+          final waitingTasks = state.tasks.where((task) => task.type == type && task.status == TaskQueueStatus.waiting).take(availableSlots);
 
           for (final task in waitingTasks) {
             updateTaskStatus(task.id, TaskQueueStatus.running);
-            try {
-              await TaskQueueService.executeTask(_ref, this, task);
-            } catch (e) {
+
+            TaskQueueService.executeTask(_ref, this, task).catchError((e) {
               updateTaskStatus(task.id, TaskQueueStatus.failed, error: e.toString());
-            }
+            });
           }
         }
       }
