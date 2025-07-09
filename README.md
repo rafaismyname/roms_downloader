@@ -31,7 +31,7 @@ I do not own nor recommend those sources. As a matter of fact, the first step in
 - [x] Background Downloader
 - [x] Background Unzip
 - [x] Auto-extract after download
-- [ ] Tasks Queue
+- [x] Tasks Queue
 - [x] Filters (like country/language, type, extension, etc.)
 - [x] Allow custom consoles (via JSON)
 - [x] Allow navigating other consoles and search while download/extraction is in progress
