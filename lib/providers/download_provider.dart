@@ -63,7 +63,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       catalogNotifier.deselectGame(update.task.taskId);
       debugPrint('Download completed for ${update.task.taskId}');
       queueNotifier.updateTaskStatus(update.task.taskId, TaskQueueStatus.completed);
-      
+
       _triggerAutoExtraction(update.task.taskId);
     } else if (update.status == TaskStatus.failed) {
       queueNotifier.updateTaskStatus(update.task.taskId, TaskQueueStatus.failed);
@@ -136,7 +136,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
 
     debugPrint('Auto-extracting for task: $taskId');
     final queueNotifier = _ref.read(taskQueueProvider.notifier);
-    queueNotifier.enqueue(taskId, TaskType.extraction, {'taskId': taskId});
+    Future.microtask(() => queueNotifier.enqueue(taskId, TaskType.extraction, {'taskId': taskId}));
   }
 
   bool isTaskDownloadable(String taskId) {
@@ -160,9 +160,9 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
 
     for (final game in games) {
       final taskId = game.taskId;
-      
+
       if (!isTaskDownloadable(taskId)) continue;
-      
+
       queueNotifier.enqueue(taskId, TaskType.download, {
         'game': game.toJson(),
         'downloadDir': downloadDir,
@@ -184,13 +184,13 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     final settingsNotifier = _ref.read(settingsProvider.notifier);
     final downloadDir = settingsNotifier.getDownloadDir(game.consoleId);
     final queueNotifier = _ref.read(taskQueueProvider.notifier);
-    
+
     queueNotifier.enqueue(game.taskId, TaskType.download, {
       'game': game.toJson(),
       'downloadDir': downloadDir,
       'group': game.consoleId,
     });
-    
+
     catalogNotifier.deselectGame(game.taskId);
   }
 
@@ -246,10 +246,10 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
   Future<void> _syncWithBackgroundTasks() async {
     try {
       final allTasks = await FileDownloader().allTasks();
-      
+
       final taskStatus = Map<String, TaskStatus>.from(state.taskStatus);
       final taskProgress = Map<String, TaskProgressUpdate>.from(state.taskProgress);
-      
+
       for (final task in allTasks) {
         if (task is DownloadTask) {
           _tasks[task.taskId] = task;
@@ -260,12 +260,12 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
           }
         }
       }
-      
+
       state = state.copyWith(
         taskStatus: taskStatus,
         taskProgress: taskProgress,
       );
-      
+
       _updateDownloadingState();
     } catch (e) {
       debugPrint('Error syncing with background tasks: $e');
@@ -279,7 +279,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     if (!isTaskDownloadable(taskId)) return;
 
     final taskStatus = Map<String, TaskStatus>.from(state.taskStatus);
-    
+
     debugPrint('Executing download task for: $taskId -> $downloadDir/$fileName');
 
     final downloadTask = downloadService.createDownloadTask(

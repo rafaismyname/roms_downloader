@@ -74,13 +74,15 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
     if (state.games.isEmpty) return;
 
     try {
-      final result = await compute(FilteringService.filterAndPaginate, FilterInput(
-        games: state.games,
-        filterText: state.filterText,
-        filter: state.filter,
-        skip: 0,
-        limit: kDefaultCatalogDisplaySize,
-      ));
+      final result = await compute(
+          FilteringService.filterAndPaginate,
+          FilterInput(
+            games: state.games,
+            filterText: state.filterText,
+            filter: state.filter,
+            skip: 0,
+            limit: kDefaultCatalogDisplaySize,
+          ));
 
       state = state.copyWith(
         cachedFilteredGames: result.games,
@@ -99,15 +101,17 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
 
   void loadMoreItems() async {
     if (!state.hasMoreItems) return;
-    
+
     try {
-      final result = await compute(FilteringService.filterAndPaginate, FilterInput(
-        games: state.games,
-        filterText: state.filterText,
-        filter: state.filter,
-        skip: state.paginatedFilteredGames.length,
-        limit: kDefaultCatalogDisplaySize,
-      ));
+      final result = await compute(
+          FilteringService.filterAndPaginate,
+          FilterInput(
+            games: state.games,
+            filterText: state.filterText,
+            filter: state.filter,
+            skip: state.paginatedFilteredGames.length,
+            limit: kDefaultCatalogDisplaySize,
+          ));
 
       state = state.copyWith(
         cachedFilteredGames: [...state.paginatedFilteredGames, ...result.games],
