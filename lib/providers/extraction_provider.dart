@@ -3,8 +3,10 @@ import 'package:path/path.dart' as path;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:roms_downloader/models/extraction_model.dart';
+import 'package:roms_downloader/models/task_queue_model.dart';
 import 'package:roms_downloader/providers/game_state_provider.dart';
 import 'package:roms_downloader/providers/settings_provider.dart';
+import 'package:roms_downloader/providers/task_queue_provider.dart';
 import 'package:roms_downloader/services/directory_service.dart';
 import 'package:roms_downloader/services/extraction_service.dart';
 
@@ -71,7 +73,8 @@ class ExtractionNotifier extends StateNotifier<ExtractionState> {
   void retryExtraction(String taskId) {
     final taskState = state.getTaskState(taskId);
     if (taskState?.status == ExtractionStatus.failed) {
-      extractFile(taskId);
+      final queueNotifier = _ref.read(taskQueueProvider.notifier);
+      queueNotifier.enqueue(taskId, TaskType.extraction, {'taskId': taskId});
     }
   }
 
@@ -101,6 +104,9 @@ class ExtractionNotifier extends StateNotifier<ExtractionState> {
         isExtracting: _hasActiveExtractions(tasks),
       );
     }
+
+    final queueNotifier = _ref.read(taskQueueProvider.notifier);
+    queueNotifier.updateTaskStatus(taskId, TaskQueueStatus.completed);
 
     gameStateManager.updateExtractionState(taskId, ExtractionStatus.completed, 1.0);
 
@@ -140,6 +146,9 @@ class ExtractionNotifier extends StateNotifier<ExtractionState> {
         isExtracting: _hasActiveExtractions(tasks),
       );
     }
+
+    final queueNotifier = _ref.read(taskQueueProvider.notifier);
+    queueNotifier.updateTaskStatus(taskId, TaskQueueStatus.failed, error: error);
 
     try {
       final dir = Directory(extractionDir);

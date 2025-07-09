@@ -4,11 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:background_downloader/background_downloader.dart';
 import 'package:roms_downloader/models/game_model.dart';
 import 'package:roms_downloader/models/download_model.dart';
+import 'package:roms_downloader/models/task_queue_model.dart';
 import 'package:roms_downloader/services/download_service.dart';
 import 'package:roms_downloader/providers/catalog_provider.dart';
 import 'package:roms_downloader/providers/game_state_provider.dart';
 import 'package:roms_downloader/providers/settings_provider.dart';
-import 'package:roms_downloader/providers/extraction_provider.dart';
+import 'package:roms_downloader/providers/task_queue_provider.dart';
 
 final downloadProvider = StateNotifierProvider<DownloadNotifier, DownloadState>((ref) {
   final catalogNotifier = ref.read(catalogProvider.notifier);
@@ -55,12 +56,19 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       debugPrint('Registered background task ${update.task.taskId} with status ${update.status}');
     }
 
+    final queueNotifier = _ref.read(taskQueueProvider.notifier);
     final completedTasks = Set<String>.from(state.completedTasks);
     if (update.status == TaskStatus.complete) {
       completedTasks.add(update.task.taskId);
       catalogNotifier.deselectGame(update.task.taskId);
       debugPrint('Download completed for ${update.task.taskId}');
+      queueNotifier.updateTaskStatus(update.task.taskId, TaskQueueStatus.completed);
+
       _triggerAutoExtraction(update.task.taskId);
+    } else if (update.status == TaskStatus.failed) {
+      queueNotifier.updateTaskStatus(update.task.taskId, TaskQueueStatus.failed);
+    } else if (update.status == TaskStatus.canceled) {
+      queueNotifier.updateTaskStatus(update.task.taskId, TaskQueueStatus.cancelled);
     }
 
     state = state.copyWith(
@@ -127,8 +135,8 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     if (!autoExtract) return;
 
     debugPrint('Auto-extracting for task: $taskId');
-    final extractionNotifier = _ref.read(extractionProvider.notifier);
-    extractionNotifier.extractFile(taskId);
+    final queueNotifier = _ref.read(taskQueueProvider.notifier);
+    Future.microtask(() => queueNotifier.enqueue(taskId, TaskType.extraction, {'taskId': taskId}));
   }
 
   bool isTaskDownloadable(String taskId) {
@@ -148,37 +156,18 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
   Future<void> startDownloads(List<Game> games, String downloadDir, String? group) async {
     if (games.isEmpty) return;
 
-    final taskStatus = Map<String, TaskStatus>.from(state.taskStatus);
+    final queueNotifier = _ref.read(taskQueueProvider.notifier);
 
-    debugPrint('Starting downloads to directory: $downloadDir');
+    for (final game in games) {
+      final taskId = game.taskId;
 
-    try {
-      for (final game in games) {
-        final taskId = game.taskId;
-        final fileName = game.filename;
+      if (!isTaskDownloadable(taskId)) continue;
 
-        if (!isTaskDownloadable(taskId)) continue;
-        debugPrint('Creating download task for: $taskId -> $downloadDir/$fileName');
-
-        final downloadTask = downloadService.createDownloadTask(
-          taskId: taskId,
-          url: game.url,
-          fileName: fileName,
-          directory: downloadDir,
-          group: group ?? 'default',
-        );
-
-        _tasks[taskId] = downloadTask;
-
-        final enqueued = await downloadService.enqueuedTask(downloadTask);
-        if (enqueued) {
-          taskStatus[taskId] = TaskStatus.enqueued;
-        }
-      }
-
-      state = state.copyWith(taskStatus: taskStatus);
-    } catch (e) {
-      debugPrint('Error starting downloads: $e');
+      queueNotifier.enqueue(taskId, TaskType.download, {
+        'game': game.toJson(),
+        'downloadDir': downloadDir,
+        'group': group ?? 'default',
+      });
     }
   }
 
@@ -194,7 +183,14 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
   Future<void> startSingleDownload(Game game) async {
     final settingsNotifier = _ref.read(settingsProvider.notifier);
     final downloadDir = settingsNotifier.getDownloadDir(game.consoleId);
-    await startDownloads([game], downloadDir, game.consoleId);
+    final queueNotifier = _ref.read(taskQueueProvider.notifier);
+
+    queueNotifier.enqueue(game.taskId, TaskType.download, {
+      'game': game.toJson(),
+      'downloadDir': downloadDir,
+      'group': game.consoleId,
+    });
+
     catalogNotifier.deselectGame(game.taskId);
   }
 
@@ -250,10 +246,10 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
   Future<void> _syncWithBackgroundTasks() async {
     try {
       final allTasks = await FileDownloader().allTasks();
-      
+
       final taskStatus = Map<String, TaskStatus>.from(state.taskStatus);
       final taskProgress = Map<String, TaskProgressUpdate>.from(state.taskProgress);
-      
+
       for (final task in allTasks) {
         if (task is DownloadTask) {
           _tasks[task.taskId] = task;
@@ -264,15 +260,42 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
           }
         }
       }
-      
+
       state = state.copyWith(
         taskStatus: taskStatus,
         taskProgress: taskProgress,
       );
-      
+
       _updateDownloadingState();
     } catch (e) {
       debugPrint('Error syncing with background tasks: $e');
+    }
+  }
+
+  Future<void> executeDownload(Game game, String downloadDir, String group) async {
+    final taskId = game.taskId;
+    final fileName = game.filename;
+
+    if (!isTaskDownloadable(taskId)) return;
+
+    final taskStatus = Map<String, TaskStatus>.from(state.taskStatus);
+
+    debugPrint('Executing download task for: $taskId -> $downloadDir/$fileName');
+
+    final downloadTask = downloadService.createDownloadTask(
+      taskId: taskId,
+      url: game.url,
+      fileName: fileName,
+      directory: downloadDir,
+      group: group,
+    );
+
+    _tasks[taskId] = downloadTask;
+
+    final enqueued = await downloadService.enqueuedTask(downloadTask);
+    if (enqueued) {
+      taskStatus[taskId] = TaskStatus.enqueued;
+      state = state.copyWith(taskStatus: taskStatus);
     }
   }
 

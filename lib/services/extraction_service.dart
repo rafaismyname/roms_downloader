@@ -5,6 +5,7 @@ import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:path/path.dart' as path;
 import 'package:archive/archive_io.dart' as virtual_archive;
 import 'package:flutter_archive/flutter_archive.dart';
+import 'dart:async';
 
 class ExtractionService {
   static const String progressDataType = 'extraction_progress';
@@ -14,6 +15,7 @@ class ExtractionService {
   static final Map<String, Function(String taskId, double progress)> _onProgressCallbacks = {};
   static final Map<String, Function(String taskId, String error, String extractionDir)> _onErrorCallbacks = {};
   static final Map<String, Function(String taskId, String extractionDir)> _onCompleteCallbacks = {};
+  static Timer? _serviceStopTimer;
 
   static Future<void> initialize() async {
     if (!Platform.isAndroid) return;
@@ -39,14 +41,18 @@ class ExtractionService {
     _onProgressCallbacks.remove(taskId);
     _onErrorCallbacks.remove(taskId);
     _onCompleteCallbacks.remove(taskId);
-    _stopServiceIfAllDone();
+    _debouncedStopServiceIfAllDone();
   }
 
-  static void _stopServiceIfAllDone() {
+  static void _debouncedStopServiceIfAllDone() {
     if (_activeTasks.isEmpty) {
-      FlutterForegroundTask.stopService();
-      debugPrint('Foreground service stopped');
+      _serviceStopTimer?.cancel();
+      _serviceStopTimer = Timer(const Duration(seconds: 30), () {
+        FlutterForegroundTask.stopService();
+        debugPrint('Foreground service stopped');
+      });
     } else {
+      _serviceStopTimer?.cancel();
       debugPrint('Cannot stop service, active tasks: ${_activeTasks.length}');
     }
   }
@@ -104,14 +110,24 @@ class ExtractionService {
     _onErrorCallbacks[taskId] = onError;
     _onCompleteCallbacks[taskId] = onComplete;
 
+    // Reset the stop timer avoiding closing the background service too early
+    _serviceStopTimer?.cancel();
+
     final fileName = path.basename(filePath);
-    await FlutterForegroundTask.startService(
-      serviceId: _activeTasks.length,
-      notificationTitle: 'Extracting Archive',
-      notificationText: 'Extracting $fileName...',
-      notificationIcon: const NotificationIcon(metaDataName: 'ic_notification'),
-      callback: extractionTaskCallback,
-    );
+
+    // If first task, (re)start foreground service
+    if (_activeTasks.length == 1) {
+      await FlutterForegroundTask.startService(
+        serviceId: 1,
+        notificationTitle: 'Extracting Archive',
+        notificationText: 'Extracting $fileName...',
+        notificationIcon: const NotificationIcon(metaDataName: 'ic_notification'),
+        callback: extractionTaskCallback,
+      );
+    } else {
+      // if not the first task, just update the notification
+      FlutterForegroundTask.updateService(notificationText: 'Extracting $fileName...');
+    }
 
     debugPrint('Sending extraction task to foreground service: $filePath');
 
@@ -199,20 +215,19 @@ class ExtractionTaskHandler extends TaskHandler {
         'taskId': taskId,
         'value': 0.1,
       });
-      try {
-        ZipFile.extractToDirectory(
-          zipFile: File(filePath),
-          destinationDir: Directory(extractionDir),
-          onExtracting: (zipEntry, progress) => ZipFileOperation.includeItem,
-        ).then((_) {
-          FlutterForegroundTask.updateService(notificationText: 'Extraction completed for $taskId');
-          FlutterForegroundTask.sendDataToMain({
-            'type': ExtractionService.completionDataType,
-            'taskId': taskId,
-            'extractionDir': extractionDir,
-          });
+
+      ZipFile.extractToDirectory(
+        zipFile: File(filePath),
+        destinationDir: Directory(extractionDir),
+        onExtracting: (zipEntry, progress) => ZipFileOperation.includeItem,
+      ).then((_) {
+        FlutterForegroundTask.updateService(notificationText: 'Extraction completed for $taskId');
+        FlutterForegroundTask.sendDataToMain({
+          'type': ExtractionService.completionDataType,
+          'taskId': taskId,
+          'extractionDir': extractionDir,
         });
-      } catch (e) {
+      }).catchError((e) {
         debugPrint('Extraction error: $e');
         FlutterForegroundTask.sendDataToMain({
           'type': ExtractionService.errorDataType,
@@ -221,7 +236,7 @@ class ExtractionTaskHandler extends TaskHandler {
           'message': 'Failed to extract: $e',
         });
         FlutterForegroundTask.updateService(notificationText: 'Extraction failed');
-      }
+      });
     }
   }
 }

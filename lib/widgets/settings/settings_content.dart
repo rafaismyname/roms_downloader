@@ -4,6 +4,7 @@ import 'package:roms_downloader/models/settings_model.dart';
 import 'package:roms_downloader/providers/settings_provider.dart';
 import 'package:roms_downloader/widgets/settings/directory_setting.dart';
 import 'package:roms_downloader/widgets/settings/boolean_setting.dart';
+import 'package:roms_downloader/widgets/settings/number_setting.dart';
 import 'package:roms_downloader/widgets/settings/permissions_setting.dart';
 
 class SettingsContent extends StatelessWidget {
@@ -55,6 +56,30 @@ class SettingsContent extends StatelessWidget {
                     console: selectedConsole,
                     settingsNotifier: settingsNotifier,
                   ),
+                  if (selectedConsole == null) ...[
+                    const SizedBox(height: 8),
+                    NumberSetting(
+                      settingKey: AppSettings.maxParallelDownloads,
+                      defaultValue: 5,
+                      title: 'Max Parallel Downloads',
+                      subtitle: 'Maximum number of simultaneous downloads',
+                      icon: Icons.download,
+                      min: 1,
+                      max: 20,
+                      settingsNotifier: settingsNotifier,
+                    ),
+                    const SizedBox(height: 8),
+                    NumberSetting(
+                      settingKey: AppSettings.maxParallelExtractions,
+                      defaultValue: 2,
+                      title: 'Max Parallel Extractions',
+                      subtitle: 'Maximum number of simultaneous extractions',
+                      icon: Icons.archive,
+                      min: 1,
+                      max: 10,
+                      settingsNotifier: settingsNotifier,
+                    ),
+                  ],
                 ],
               ),
             ),
