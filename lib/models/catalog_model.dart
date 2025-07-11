@@ -6,7 +6,8 @@ const int kDefaultCatalogDisplaySize = 20;
 class CatalogState {
   final List<Game> games;
   final String filterText;
-  final bool loading;
+  final bool loading; // loading the catalog
+  final bool loadingMore; // loading more games in the list
   final Set<String> selectedGames;
   final CatalogFilter filter;
   final Set<String> availableRegions;
@@ -20,6 +21,7 @@ class CatalogState {
     this.games = const [],
     this.filterText = '',
     this.loading = false,
+    this.loadingMore = false,
     this.selectedGames = const {},
     this.filter = const CatalogFilter(),
     this.availableRegions = const {},
@@ -36,6 +38,7 @@ class CatalogState {
     List<Game>? games,
     String? filterText,
     bool? loading,
+    bool? loadingMore,
     Set<String>? selectedGames,
     CatalogFilter? filter,
     Set<String>? availableRegions,
@@ -49,6 +52,7 @@ class CatalogState {
       games: games ?? this.games,
       filterText: filterText ?? this.filterText,
       loading: loading ?? this.loading,
+      loadingMore: loadingMore ?? this.loadingMore,
       selectedGames: selectedGames ?? this.selectedGames,
       filter: filter ?? this.filter,
       availableRegions: availableRegions ?? this.availableRegions,

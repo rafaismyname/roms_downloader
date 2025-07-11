@@ -19,6 +19,8 @@ final catalogProvider = StateNotifierProvider<CatalogNotifier, CatalogState>((re
 class CatalogNotifier extends StateNotifier<CatalogState> {
   final CatalogService catalogService;
 
+  bool _loadingMore = false;
+
   CatalogNotifier(this.catalogService) : super(const CatalogState());
 
   Future<void> loadCatalog(Console console) async {
@@ -100,7 +102,10 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
   }
 
   void loadMoreItems() async {
-    if (!state.hasMoreItems) return;
+    if (_loadingMore || !state.hasMoreItems) return;
+
+    _loadingMore = true;
+    state = state.copyWith(loadingMore: true);
 
     try {
       final result = await compute(
@@ -120,6 +125,9 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
       );
     } catch (e) {
       debugPrint('Error loading more items: $e');
+    } finally {
+      _loadingMore = false;
+      state = state.copyWith(loadingMore: false);
     }
   }
 
