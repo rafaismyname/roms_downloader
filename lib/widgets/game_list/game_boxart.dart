@@ -42,6 +42,10 @@ class GameBoxart extends StatelessWidget {
               insetPadding: const EdgeInsets.all(16),
               backgroundColor: Colors.transparent,
               child: InteractiveViewer(
+                clipBehavior: Clip.hardEdge,
+                boundaryMargin: EdgeInsets.zero,
+                minScale: 1.0,
+                maxScale: 4.0,
                 child: CachedNetworkImage(imageUrl: boxart),
               ),
             ),
