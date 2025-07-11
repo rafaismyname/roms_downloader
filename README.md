@@ -38,7 +38,10 @@ I do not own nor recommend those sources. As a matter of fact, the first step in
 - [ ] Improve file detection system (custom rexeg per console)
 - [x] Custom settings per console (dest. dir/unzip rules/default filters/etc.)
 - [x] Permissions control
-- [ ] Game metadata fetcher (cover, images, info, etc)
+- [x] Boxart fetching
+- [ ] Settings for file cache folder
+- [ ] Grid Viewer
+- [ ] Game metadata fetcher (rating, description...)
 - [x] Info/About page
 - [x] Android support
 - [x] Mac support

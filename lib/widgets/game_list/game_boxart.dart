@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:roms_downloader/models/game_model.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class GameBoxart extends StatelessWidget {
   final Game game;
@@ -32,31 +33,28 @@ class GameBoxart extends StatelessWidget {
         ),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(3),
-        child: Image.network(
-          boxart,
+        borderRadius: BorderRadius.circular(1),
+        child: CachedNetworkImage(
+          imageUrl: boxart,
           width: size,
           height: size,
           fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) => _DefaultPlaceholder(size: size),
-          loadingBuilder: (context, child, loadingProgress) {
-            if (loadingProgress == null) return child;
-            return Container(
-              width: size,
-              height: size,
-              color: Theme.of(context).colorScheme.surface,
-              child: Center(
-                child: SizedBox(
-                  width: size * 0.4,
-                  height: size * 0.4,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    value: loadingProgress.expectedTotalBytes != null ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes! : null,
-                  ),
+          errorWidget: (context, url, error) => _DefaultPlaceholder(size: size),
+          progressIndicatorBuilder: (context, url, downloadProgress) => Container(
+            width: size,
+            height: size,
+            color: Theme.of(context).colorScheme.surface,
+            child: Center(
+              child: SizedBox(
+                width: size * 0.4,
+                height: size * 0.4,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  value: downloadProgress.progress,
                 ),
               ),
-            );
-          },
+            ),
+          ),
         ),
       ),
     );
