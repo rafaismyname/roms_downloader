@@ -59,6 +59,12 @@ class TitleMetadataParser {
     'Norway': 'Norway',
     'Denmark': 'Denmark',
     'Portugal': 'Portugal',
+    'Poland': 'Europe',
+    'Greece': 'Europe',
+    'Scandinavia': 'Europe',
+    'United Arab Emirates': 'Asia',
+    'Canada': 'Canada',
+    'Latin America': 'Latin America',
     'Unknown': 'Unknown',
   };
 
@@ -141,9 +147,7 @@ class TitleMetadataParser {
       RegExp(r'\[CR [^\]]+\]'): (match) => distributionTypes.add(DistributionType.pirate),
       RegExp(r'\[m(\d*)\]'): (match) => distributionTypes.add(DistributionType.multiCart),
       RegExp(r'\[S\]'): (match) => categories.add('Save'),
-      RegExp(r'\[SCES-\d+\]'): (match) => categories.add('Sony Code'),
-      RegExp(r'\[SLUS-\d+\]'): (match) => categories.add('Sony Code'),
-      RegExp(r'\[SCUS-\d+\]'): (match) => categories.add('Sony Code'),
+      RegExp(r'\[(?:(?:SCPS|SCPM|SLPS|SLPM|SCUS|SLUS|SCES|SCED|SLES|SLED|PAPX|PBPX)-\d+)\]'): (match) => categories.add('Sony Code'),
       RegExp(r'\[.*-\d+.*\]'): (match) => categories.add('Product Code'),
       RegExp(r'\(M(\d+)\)'): (match) => distributionTypes.add(DistributionType.multiCart),
       RegExp(r'\(Unl\)'): (match) => distributionTypes.add(DistributionType.unlicensed),
@@ -278,6 +282,8 @@ class TitleMetadataParser {
       'Korea': 'Korean',
       'China': 'Chinese',
       'Taiwan': 'Chinese',
+      'Poland': 'Polish',
+      'Latin America': 'Spanish',
     };
 
     final languageToRegion = {

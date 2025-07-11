@@ -12,10 +12,15 @@ class BoxartService {
   Future<List<Game>> mutateGamesWithBoxarts(List<Game> games, Console console) async {
     if (console.boxarts == null) return games;
 
-    final boxarts = await _fetchBoxartUrls(console.boxarts!);
-    if (boxarts.isEmpty) return games;
+    try {
+      final boxarts = await _fetchBoxartUrls(console.boxarts!);
+      if (boxarts.isEmpty) return games;
 
-    return await compute(_process, [games, boxarts]);
+      return await compute(_process, [games, boxarts]);
+    } catch (e) {
+      debugPrint('mutateGamesWithBoxarts error: $e');
+      return games;
+    }
   }
 
   Future<Map<String, String>> _fetchBoxartUrls(String boxartBaseUrl) async {

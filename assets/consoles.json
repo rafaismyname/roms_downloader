@@ -26,7 +26,8 @@
   },
   "xbox": {
     "name": "Xbox",
-    "url": "https://myrient.erista.me/files/Redump/Microsoft%20-%20Xbox/"
+    "url": "https://myrient.erista.me/files/Redump/Microsoft%20-%20Xbox/",
+    "boxarts": "https://thumbnails.libretro.com/Microsoft%20-%20Xbox/Named_Boxarts/"
   },
   "ss": {
     "name": "Sega Saturn",
@@ -85,7 +86,8 @@
   },
   "wiiu": {
     "name": "Nintendo Wii U",
-    "url": "https://myrient.erista.me/files/Redump/Nintendo%20-%20Wii%20U%20-%20WUX/"
+    "url": "https://myrient.erista.me/files/Redump/Nintendo%20-%20Wii%20U%20-%20WUX/",
+    "boxarts": "https://thumbnails.libretro.com/Nintendo%20-%20Wii%20U/Named_Boxarts/"
   },
   "nes": {
     "name": "Nintendo Entertainment System",
