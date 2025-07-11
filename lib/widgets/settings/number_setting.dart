@@ -14,6 +14,7 @@ class NumberSetting extends ConsumerWidget {
   final int max;
   final Console? console;
   final SettingsNotifier settingsNotifier;
+  final bool dropdown;
 
   const NumberSetting({
     super.key,
@@ -26,6 +27,7 @@ class NumberSetting extends ConsumerWidget {
     this.max = 100,
     this.console,
     required this.settingsNotifier,
+    this.dropdown = false,
   });
 
   @override
@@ -33,29 +35,47 @@ class NumberSetting extends ConsumerWidget {
     final currentValue = ref.watch(settingProvider((key: settingKey, consoleId: console?.id))) ?? defaultValue;
 
     return ListTile(
-      contentPadding: EdgeInsets.zero,
       leading: Icon(icon),
       title: Text(title),
       subtitle: subtitle != null ? Text(subtitle!) : null,
-      trailing: SizedBox(
-        width: 80,
-        child: TextFormField(
-          initialValue: currentValue.toString(),
-          textAlign: TextAlign.center,
-          keyboardType: TextInputType.number,
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          decoration: InputDecoration(
-            border: OutlineInputBorder(),
-            contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-          ),
-          onChanged: (value) {
-            final intValue = int.tryParse(value);
-            if (intValue != null && intValue >= min && intValue <= max) {
-              settingsNotifier.setSetting(settingKey, intValue, console?.id);
-            }
-          },
-        ),
-      ),
+      trailing: dropdown
+          ? SizedBox(
+              width: 80,
+              child: DropdownButtonFormField<int>(
+                value: currentValue,
+                isDense: true,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                  contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                ),
+                onChanged: (value) {
+                  if (value != null) {
+                    settingsNotifier.setSetting(settingKey, value, console?.id);
+                  }
+                },
+                items: [for (var i = min; i <= max; i++) DropdownMenuItem(value: i, child: Text(i.toString()))],
+              ),
+            )
+          : SizedBox(
+              width: 80,
+              child: TextFormField(
+                initialValue: currentValue.toString(),
+                textAlign: TextAlign.center,
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                ),
+                onChanged: (value) {
+                  final intValue = int.tryParse(value);
+                  if (intValue != null && intValue >= min && intValue <= max) {
+                    settingsNotifier.setSetting(settingKey, intValue, console?.id);
+                  }
+                },
+              ),
+            ),
     );
   }
 }

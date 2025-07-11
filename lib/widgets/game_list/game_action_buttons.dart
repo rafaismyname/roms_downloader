@@ -90,7 +90,7 @@ class GameActionButtons extends ConsumerWidget {
               message: 'Cancel',
               child: IconButton(
                 icon: Icon(Icons.close, size: buttonSize),
-                onPressed: () => TaskQueueService.cancelDownloadTask(ref, game.taskId),
+                onPressed: () => TaskQueueService.cancelTask(ref, game, gameState),
                 constraints: buttonConstraints,
                 padding: EdgeInsets.zero,
                 visualDensity: VisualDensity.compact,

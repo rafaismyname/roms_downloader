@@ -6,6 +6,7 @@ import 'package:roms_downloader/providers/download_provider.dart';
 import 'package:roms_downloader/providers/extraction_provider.dart';
 import 'package:roms_downloader/providers/settings_provider.dart';
 import 'package:roms_downloader/models/game_model.dart';
+import 'package:roms_downloader/models/game_state_model.dart';
 
 class TaskQueueService {
   static void startDownloads(WidgetRef ref, List<Game> games, String? consoleId) {
@@ -27,9 +28,21 @@ class TaskQueueService {
     queueNotifier.enqueue(taskId, TaskType.extraction, {'taskId': taskId});
   }
 
-  static void cancelDownloadTask(WidgetRef ref, String taskId) {
-    final downloadNotifier = ref.read(downloadProvider.notifier);
-    downloadNotifier.cancelTask(taskId);
+  static void cancelTask(WidgetRef ref, Game game, GameState gameState) {
+    final taskId = game.taskId;
+
+    if (gameState.status == GameStatus.downloading || gameState.status == GameStatus.downloadPaused) {
+      final downloadNotifier = ref.read(downloadProvider.notifier);
+      downloadNotifier.cancelTask(taskId);
+      return;
+    }
+
+    final queueState = ref.read(taskQueueProvider);
+    final hasQueued = queueState.tasks.any((t) => t.id == taskId && t.status == TaskQueueStatus.waiting);
+    if (!hasQueued) return;
+
+    final queueNotifier = ref.read(taskQueueProvider.notifier);
+    queueNotifier.cancelQueuedTask(taskId);
   }
 
   static void pauseDownloadTask(WidgetRef ref, String taskId) {
@@ -63,14 +76,14 @@ class TaskQueueService {
     final game = Game.fromJson(task.params['game']);
     final downloadDir = task.params['downloadDir'] as String;
     final group = task.params['group'] as String;
-    
+
     downloadNotifier.executeDownload(game, downloadDir, group);
   }
 
   static Future<void> _executeExtractionTask(Ref ref, QueuedTask task, TaskQueueNotifier notifier) async {
     final extractionNotifier = ref.read(extractionProvider.notifier);
     final taskId = task.params['taskId'] as String;
-    
+
     extractionNotifier.extractFile(taskId);
   }
 }

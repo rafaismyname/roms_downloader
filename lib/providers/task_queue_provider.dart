@@ -121,6 +121,20 @@ class TaskQueueNotifier extends StateNotifier<TaskQueueState> {
     }
   }
 
+  void cancelQueuedTask(String taskId) {
+    final remaining = state.tasks.where((t) => !(t.id == taskId && t.status == TaskQueueStatus.waiting)).toList();
+    final runningCounts = Map<TaskType, int>.from(state.runningCounts);
+
+    state = state.copyWith(tasks: remaining, runningCounts: runningCounts);
+
+    final gameStateManager = _ref.read(gameStateManagerProvider.notifier);
+    gameStateManager.resolveState(taskId);
+
+    if (_hasPendingTasks()) {
+      _startTimerIfNeeded();
+    }
+  }
+
   bool _hasPendingTasks() {
     return state.tasks.any((task) => task.status == TaskQueueStatus.waiting || task.status == TaskQueueStatus.running);
   }

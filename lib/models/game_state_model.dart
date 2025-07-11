@@ -103,7 +103,7 @@ class GameState {
       case GameStatus.ready:
         return 'Ready';
       case GameStatus.downloadQueued:
-        return 'Queued';
+        return 'Dl. Queued';
       case GameStatus.downloading:
         return 'Downloading';
       case GameStatus.downloadPaused:
@@ -111,7 +111,7 @@ class GameState {
       case GameStatus.downloaded:
         return 'Downloaded';
       case GameStatus.extractionQueued:
-        return 'Extracting...';
+        return 'Ex. Queued';
       case GameStatus.extracting:
         return 'Extracting';
       case GameStatus.extracted:
