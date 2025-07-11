@@ -72,7 +72,7 @@ class _GameRowState extends ConsumerState<GameRow> {
               ),
               GameBoxart(
                 game: widget.game,
-                size: 32,
+                size: 42,
               ),
               const SizedBox(width: 8),
               Expanded(

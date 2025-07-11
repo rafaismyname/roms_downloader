@@ -62,83 +62,90 @@ class BoxartService {
     final boxarts = await _fetchBoxartUrls(console.boxarts!);
     if (boxarts.isEmpty) return games;
 
-    return games.map((game) {
-      final gameNameWithoutExt = path.basenameWithoutExtension(game.filename);
-      final normalizedGameName = _normalizeGameName(gameNameWithoutExt);
-      
-      String? boxartUrl = boxarts[normalizedGameName];
-      
-      boxartUrl ??= _findBestMatch(normalizedGameName, boxarts);
-      
-      if (boxartUrl != null) {
-        final details = GameDetails(
-          gameId: game.taskId,
-          boxart: boxartUrl,
-        );
-        return Game(
-          title: game.title,
-          url: game.url,
-          size: game.size,
-          consoleId: game.consoleId,
-          metadata: game.metadata,
-          details: details,
-        );
-      }
-      
-      return game;
-    }).toList();
+    return await compute(_enrichGamesInIsolate, [games, boxarts]);
   }
+}
 
-  String _normalizeGameName(String name) {
-    return name
-        .toLowerCase()
-        .replaceAll(RegExp(r'[^\w\s]'), '')
-        .replaceAll(RegExp(r'\s+'), ' ')
-        .trim();
-  }
+List<Game> _enrichGamesInIsolate(List<dynamic> data) {
+  final games = data[0] as List<Game>;
+  final boxarts = data[1] as Map<String, String>;
+  
+  return games.map((game) {
+    final gameNameWithoutExt = path.basenameWithoutExtension(game.filename);
+    final normalizedGameName = _normalizeGameName(gameNameWithoutExt);
+    
+    String? boxartUrl = boxarts[normalizedGameName];
+    
+    boxartUrl ??= _findBestMatch(normalizedGameName, boxarts);
+    
+    if (boxartUrl != null) {
+      final details = GameDetails(
+        gameId: game.taskId,
+        boxart: boxartUrl,
+      );
+      return Game(
+        title: game.title,
+        url: game.url,
+        size: game.size,
+        consoleId: game.consoleId,
+        metadata: game.metadata,
+        details: details,
+      );
+    }
+    
+    return game;
+  }).toList();
+}
 
-  String? _findBestMatch(String normalizedGameName, Map<String, String> boxarts) {
-    final gameTokens = normalizedGameName.split(' ');
-    final mainTitle = gameTokens.isNotEmpty ? gameTokens.first : '';
-    
-    String? bestMatch;
-    int highestScore = 0;
-    
-    for (final boxartName in boxarts.keys) {
-      final score = _calculateSimilarity(normalizedGameName, boxartName, mainTitle);
-      if (score > highestScore && score > 2) {
-        highestScore = score;
-        bestMatch = boxarts[boxartName];
+String _normalizeGameName(String name) {
+  return name
+      .toLowerCase()
+      .replaceAll(RegExp(r'[^\w\s]'), '')
+      .replaceAll(RegExp(r'\s+'), ' ')
+      .trim();
+}
+
+String? _findBestMatch(String normalizedGameName, Map<String, String> boxarts) {
+  final gameTokens = normalizedGameName.split(' ');
+  final mainTitle = gameTokens.isNotEmpty ? gameTokens.first : '';
+  
+  String? bestMatch;
+  int highestScore = 0;
+  
+  for (final boxartName in boxarts.keys) {
+    final score = _calculateSimilarity(normalizedGameName, boxartName, mainTitle);
+    if (score > highestScore && score > 2) {
+      highestScore = score;
+      bestMatch = boxarts[boxartName];
+    }
+  }
+  
+  return bestMatch;
+}
+
+int _calculateSimilarity(String gameName, String boxartName, String mainTitle) {
+  final gameTokens = gameName.split(' ');
+  final boxartTokens = boxartName.split(' ');
+  
+  int score = 0;
+  
+  if (boxartName.contains(mainTitle)) {
+    score += 3;
+  }
+  
+  for (final gameToken in gameTokens) {
+    if (gameToken.length > 2) {
+      if (boxartTokens.any((token) => token.contains(gameToken))) {
+        score += 2;
+      } else if (boxartName.contains(gameToken)) {
+        score += 1;
       }
     }
-    
-    return bestMatch;
   }
-
-  int _calculateSimilarity(String gameName, String boxartName, String mainTitle) {
-    final gameTokens = gameName.split(' ');
-    final boxartTokens = boxartName.split(' ');
-    
-    int score = 0;
-    
-    if (boxartName.contains(mainTitle)) {
-      score += 3;
-    }
-    
-    for (final gameToken in gameTokens) {
-      if (gameToken.length > 2) {
-        if (boxartTokens.any((token) => token.contains(gameToken))) {
-          score += 2;
-        } else if (boxartName.contains(gameToken)) {
-          score += 1;
-        }
-      }
-    }
-    
-    if (gameTokens.length == boxartTokens.length) {
-      score += 1;
-    }
-    
-    return score;
+  
+  if (gameTokens.length == boxartTokens.length) {
+    score += 1;
   }
+  
+  return score;
 }
