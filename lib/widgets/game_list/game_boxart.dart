@@ -23,6 +23,7 @@ class GameBoxart extends StatelessWidget {
     }
 
     return Container(
+      key: ValueKey('boxart_${game.taskId}'),
       width: size,
       height: size,
       decoration: BoxDecoration(
@@ -32,25 +33,40 @@ class GameBoxart extends StatelessWidget {
           width: 1,
         ),
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(1),
-        child: CachedNetworkImage(
-          imageUrl: boxart,
-          width: size,
-          height: size,
-          fit: BoxFit.cover,
-          errorWidget: (context, url, error) => _DefaultPlaceholder(size: size),
-          progressIndicatorBuilder: (context, url, downloadProgress) => Container(
+      child: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: () {
+          showDialog(
+            context: context,
+            builder: (_) => Dialog(
+              insetPadding: const EdgeInsets.all(16),
+              backgroundColor: Colors.transparent,
+              child: InteractiveViewer(
+                child: CachedNetworkImage(imageUrl: boxart),
+              ),
+            ),
+          );
+        },
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(1),
+          child: CachedNetworkImage(
+            imageUrl: boxart,
             width: size,
             height: size,
-            color: Theme.of(context).colorScheme.surface,
-            child: Center(
-              child: SizedBox(
-                width: size * 0.4,
-                height: size * 0.4,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  value: downloadProgress.progress,
+            fit: BoxFit.cover,
+            errorWidget: (context, url, error) => _DefaultPlaceholder(size: size),
+            progressIndicatorBuilder: (context, url, downloadProgress) => Container(
+              width: size,
+              height: size,
+              color: Theme.of(context).colorScheme.surface,
+              child: Center(
+                child: SizedBox(
+                  width: size * 0.4,
+                  height: size * 0.4,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    value: downloadProgress.progress,
+                  ),
                 ),
               ),
             ),

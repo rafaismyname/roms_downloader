@@ -35,7 +35,7 @@ I do not own nor recommend those sources. As a matter of fact, the first step in
 - [x] Filters (like country/language, type, extension, etc.)
 - [x] Allow custom consoles (via JSON)
 - [x] Allow navigating other consoles and search while download/extraction is in progress
-- [ ] Improve file detection system (custom rexeg per console)
+- [ ] Improve file detection system (custom rexeg/extensions per console)
 - [x] Custom settings per console (dest. dir/unzip rules/default filters/etc.)
 - [x] Permissions control
 - [x] Boxart fetching
