@@ -7,9 +7,11 @@ import 'package:path_provider/path_provider.dart';
 import 'package:roms_downloader/models/console_model.dart';
 import 'package:roms_downloader/models/game_model.dart';
 import 'package:roms_downloader/utils/title_metadata_parser.dart';
+import 'package:roms_downloader/services/boxart_service.dart';
 
 class CatalogService {
   static final Map<String, Map<String, Console>> _consolesCache = {};
+  final BoxartService _boxartService = BoxartService();
 
   Future<Map<String, Console>> getConsoles([String consolesFilePath = 'consoles.json']) async {
     if (_consolesCache.containsKey(consolesFilePath) && _consolesCache[consolesFilePath]!.isNotEmpty) {
@@ -60,6 +62,12 @@ class CatalogService {
         final List<dynamic> jsonList = jsonDecode(jsonStr);
         final cachedResult = jsonList.map((json) => Game.fromJson(json)).toList();
         if (cachedResult.isNotEmpty && cachedResult.first.metadata != null) {
+          final hasBoxarts = cachedResult.any((game) => game.details?.boxart != null);
+          if (!hasBoxarts && console.boxarts != null) {
+            final enrichedResult = await _boxartService.enrichGamesWithBoxarts(cachedResult, console);
+            await cacheFile.writeAsString(jsonEncode(enrichedResult.map((g) => g.toJson()).toList()));
+            return enrichedResult;
+          }
           return cachedResult;
         }
       } catch (e) {
@@ -88,6 +96,7 @@ class CatalogService {
 
       final html = await response.transform(utf8.decoder).join();
       catalog = _parseHtml(html, console);
+      catalog = await _boxartService.enrichGamesWithBoxarts(catalog, console);
 
       final cacheFile = await _getCacheFile(console.cacheFile);
       await cacheFile.writeAsString(jsonEncode(catalog.map((g) => g.toJson()).toList()));

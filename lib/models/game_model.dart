@@ -1,4 +1,5 @@
 import 'package:roms_downloader/models/game_metadata_model.dart';
+import 'package:roms_downloader/models/game_details_model.dart';
 
 class Game {
   final String title;
@@ -6,6 +7,7 @@ class Game {
   final int size;
   final String consoleId;
   final GameMetadata? metadata;
+  final GameDetails? details;
 
   const Game({
     required this.title,
@@ -13,6 +15,7 @@ class Game {
     required this.size,
     required this.consoleId,
     this.metadata,
+    this.details,
   });
 
   factory Game.fromJson(Map<String, dynamic> json) {
@@ -22,6 +25,7 @@ class Game {
       size: json['size'],
       consoleId: json['consoleId'],
       metadata: json['metadata'] != null ? GameMetadata.fromJson(json['metadata']) : null,
+      details: json['details'] != null ? GameDetails.fromJson(json['details']) : null,
     );
   }
 
@@ -32,6 +36,7 @@ class Game {
       'size': size,
       'consoleId': consoleId,
       'metadata': metadata?.toJson(),
+      'details': details?.toJson(),
     };
   }
 
@@ -47,4 +52,6 @@ class Game {
   String get region => metadata?.regions.firstOrNull ?? '';
 
   String get language => metadata?.languages.firstOrNull ?? '';
+
+  String? get boxart => details?.boxart;
 }

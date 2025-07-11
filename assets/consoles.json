@@ -2,11 +2,13 @@
   "ps1": {
     "name": "PlayStation 1",
     "url": "https://myrient.erista.me/files/Redump/Sony%20-%20PlayStation/",
-    "regex": "<tr><td class=\"link\"><a href=\"(?<href>[^\"]+)\" title=\"(?<title>[^\"]+)\">(?<text>[^<]+)</a></td><td class=\"size\">(?<size>[^<]+)</td><td class=\"date\">[^<]*</td></tr>"
+    "regex": "<tr><td class=\"link\"><a href=\"(?<href>[^\"]+)\" title=\"(?<title>[^\"]+)\">(?<text>[^<]+)</a></td><td class=\"size\">(?<size>[^<]+)</td><td class=\"date\">[^<]*</td></tr>",
+    "boxarts": "https://thumbnails.libretro.com/Sony%20-%20PlayStation/Named_Boxarts/"
   },
   "ps2": {
     "name": "PlayStation 2",
-    "url": "https://myrient.erista.me/files/Redump/Sony%20-%20PlayStation%202/"
+    "url": "https://myrient.erista.me/files/Redump/Sony%20-%20PlayStation%202/",
+    "boxarts": "https://thumbnails.libretro.com/Sony%20-%20PlayStation%202/Named_Boxarts/"
   },
   "ps3": {
     "name": "PlayStation 3",
@@ -14,11 +16,13 @@
   },
   "psp": {
     "name": "PlayStation Portable",
-    "url": "https://myrient.erista.me/files/Redump/Sony%20-%20PlayStation%20Portable/"
+    "url": "https://myrient.erista.me/files/Redump/Sony%20-%20PlayStation%20Portable/",
+    "boxarts": "https://thumbnails.libretro.com/Sony%20-%20PlayStation%20Portable/Named_Boxarts/"
   },
   "dreamcast": {
     "name": "Dreamcast",
-    "url": "https://myrient.erista.me/files/Redump/Sega%20-%20Dreamcast/"
+    "url": "https://myrient.erista.me/files/Redump/Sega%20-%20Dreamcast/",
+    "boxarts": "https://thumbnails.libretro.com/Sega%20-%20Dreamcast/Named_Boxarts/"
   },
   "xbox": {
     "name": "Xbox",
@@ -26,47 +30,58 @@
   },
   "ss": {
     "name": "Sega Saturn",
-    "url": "https://myrient.erista.me/files/Redump/Sega%20-%20Saturn/"
+    "url": "https://myrient.erista.me/files/Redump/Sega%20-%20Saturn/",
+    "boxarts": "https://thumbnails.libretro.com/Sega%20-%20Saturn/Named_Boxarts/"
   },
   "sg": {
     "name": "Sega Genesis",
-    "url": "https://myrient.erista.me/files/No-Intro/Sega%20-%20Mega%20Drive%20-%20Genesis/"
+    "url": "https://myrient.erista.me/files/No-Intro/Sega%20-%20Mega%20Drive%20-%20Genesis/",
+    "boxarts": "https://thumbnails.libretro.com/Sega%20-%20Mega%20Drive%20-%20Genesis/Named_Boxarts/"
   },
   "gg": {
     "name": "Game Gear",
-    "url": "https://myrient.erista.me/files/No-Intro/Sega%20-%20Game%20Gear/"
+    "url": "https://myrient.erista.me/files/No-Intro/Sega%20-%20Game%20Gear/",
+    "boxarts": "https://thumbnails.libretro.com/Sega%20-%20Game%20Gear/Named_Boxarts/"
   },
   "gb": {
     "name": "Game Boy",
-    "url": "https://myrient.erista.me/files/No-Intro/Nintendo%20-%20Game%20Boy/"
+    "url": "https://myrient.erista.me/files/No-Intro/Nintendo%20-%20Game%20Boy/",
+    "boxarts": "https://thumbnails.libretro.com/Nintendo%20-%20Game%20Boy/Named_Boxarts/"
   },
   "gbc": {
     "name": "Game Boy Color",
-    "url": "https://myrient.erista.me/files/No-Intro/Nintendo%20-%20Game%20Boy%20Color/"
+    "url": "https://myrient.erista.me/files/No-Intro/Nintendo%20-%20Game%20Boy%20Color/",
+    "boxarts": "https://thumbnails.libretro.com/Nintendo%20-%20Game%20Boy%20Color/Named_Boxarts/"
   },
   "gba": {
     "name": "Game Boy Advance",
-    "url": "https://myrient.erista.me/files/No-Intro/Nintendo%20-%20Game%20Boy%20Advance/"
+    "url": "https://myrient.erista.me/files/No-Intro/Nintendo%20-%20Game%20Boy%20Advance/",
+    "boxarts": "https://thumbnails.libretro.com/Nintendo%20-%20Game%20Boy%20Advance/Named_Boxarts/"
   },
   "n64": {
     "name": "Nintendo 64",
-    "url": "https://myrient.erista.me/files/No-Intro/Nintendo%20-%20Nintendo%2064%20%28BigEndian%29/"
+    "url": "https://myrient.erista.me/files/No-Intro/Nintendo%20-%20Nintendo%2064%20%28BigEndian%29/",
+    "boxarts": "https://thumbnails.libretro.com/Nintendo%20-%20Nintendo%2064/Named_Boxarts/"
   },
   "nds": {
     "name": "Nintendo DS",
-    "url": "https://myrient.erista.me/files/No-Intro/Nintendo%20-%20Nintendo%20DS%20%28Decrypted%29/"
+    "url": "https://myrient.erista.me/files/No-Intro/Nintendo%20-%20Nintendo%20DS%20%28Decrypted%29/",
+    "boxarts": "https://thumbnails.libretro.com/Nintendo%20-%20Nintendo%20DS/Named_Boxarts/"
   },
   "n3ds": {
     "name": "Nintendo 3DS",
-    "url": "https://myrient.erista.me/files/No-Intro/Nintendo%20-%20Nintendo%203DS%20%28Decrypted%29/"
+    "url": "https://myrient.erista.me/files/No-Intro/Nintendo%20-%20Nintendo%203DS%20%28Decrypted%29/",
+    "boxarts": "https://thumbnails.libretro.com/Nintendo%20-%20Nintendo%203DS/Named_Boxarts/"
   },
   "ngc": {
     "name": "Nintendo Game Cube",
-    "url": "https://myrient.erista.me/files/Redump/Nintendo%20-%20GameCube%20-%20NKit%20RVZ%20%5Bzstd-19-128k%5D/"
+    "url": "https://myrient.erista.me/files/Redump/Nintendo%20-%20GameCube%20-%20NKit%20RVZ%20%5Bzstd-19-128k%5D/",
+    "boxarts": "https://thumbnails.libretro.com/Nintendo%20-%20GameCube/Named_Boxarts/"
   },
   "wii": {
     "name": "Nintendo Wii",
-    "url": "https://myrient.erista.me/files/Redump/Nintendo%20-%20Wii%20-%20NKit%20RVZ%20%5Bzstd-19-128k%5D/"
+    "url": "https://myrient.erista.me/files/Redump/Nintendo%20-%20Wii%20-%20NKit%20RVZ%20%5Bzstd-19-128k%5D/",
+    "boxarts": "https://thumbnails.libretro.com/Nintendo%20-%20Wii/Named_Boxarts/"
   },
   "wiiu": {
     "name": "Nintendo Wii U",
@@ -74,10 +89,12 @@
   },
   "nes": {
     "name": "Nintendo Entertainment System",
-    "url": "https://myrient.erista.me/files/No-Intro/Nintendo%20-%20Nintendo%20Entertainment%20System%20%28Headered%29/"
+    "url": "https://myrient.erista.me/files/No-Intro/Nintendo%20-%20Nintendo%20Entertainment%20System%20%28Headered%29/",
+    "boxarts": "https://thumbnails.libretro.com/Nintendo%20-%20Nintendo%20Entertainment%20System/Named_Boxarts/"
   },
   "snes": {
     "name": "Super Nintendo",
-    "url": "https://myrient.erista.me/files/No-Intro/Nintendo%20-%20Super%20Nintendo%20Entertainment%20System/"
+    "url": "https://myrient.erista.me/files/No-Intro/Nintendo%20-%20Super%20Nintendo%20Entertainment%20System/",
+    "boxarts": "https://thumbnails.libretro.com/Nintendo%20-%20Super%20Nintendo%20Entertainment%20System/Named_Boxarts/"
   }
 }

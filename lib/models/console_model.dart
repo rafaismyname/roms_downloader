@@ -3,8 +3,9 @@ class Console {
   final String name;
   final String url;
   final String? regex;
+  final String? boxarts;
 
-  const Console({required this.id, required this.name, required this.url, this.regex});
+  const Console({required this.id, required this.name, required this.url, this.regex, this.boxarts});
 
   factory Console.fromJson(Map<String, dynamic> json) {
     return Console(
@@ -12,6 +13,7 @@ class Console {
       name: json['name'],
       url: json['url'],
       regex: json['regex'],
+      boxarts: json['boxarts'],
     );
   }
 
@@ -21,6 +23,7 @@ class Console {
       'name': name,
       'url': url,
       'regex': regex,
+      'boxarts': boxarts,
     };
   }
 
