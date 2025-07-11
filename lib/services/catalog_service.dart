@@ -64,7 +64,7 @@ class CatalogService {
         if (cachedResult.isNotEmpty && cachedResult.first.metadata != null) {
           final hasBoxarts = cachedResult.any((game) => game.details?.boxart != null);
           if (!hasBoxarts && console.boxarts != null) {
-            final enrichedResult = await _boxartService.enrichGamesWithBoxarts(cachedResult, console);
+            final enrichedResult = await _boxartService.mutateGamesWithBoxarts(cachedResult, console);
             await cacheFile.writeAsString(jsonEncode(enrichedResult.map((g) => g.toJson()).toList()));
             return enrichedResult;
           }
@@ -96,7 +96,7 @@ class CatalogService {
 
       final html = await response.transform(utf8.decoder).join();
       catalog = _parseHtml(html, console);
-      catalog = await _boxartService.enrichGamesWithBoxarts(catalog, console);
+      catalog = await _boxartService.mutateGamesWithBoxarts(catalog, console);
 
       final cacheFile = await _getCacheFile(console.cacheFile);
       await cacheFile.writeAsString(jsonEncode(catalog.map((g) => g.toJson()).toList()));

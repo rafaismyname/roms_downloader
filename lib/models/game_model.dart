@@ -18,6 +18,24 @@ class Game {
     this.details,
   });
 
+  Game copyWith({
+    String? title,
+    String? url,
+    int? size,
+    String? consoleId,
+    GameMetadata? metadata,
+    GameDetails? details,
+  }) {
+    return Game(
+      title: title ?? this.title,
+      url: url ?? this.url,
+      size: size ?? this.size,
+      consoleId: consoleId ?? this.consoleId,
+      metadata: metadata ?? this.metadata,
+      details: details ?? this.details,
+    );
+  }
+
   factory Game.fromJson(Map<String, dynamic> json) {
     return Game(
       title: json['title'],

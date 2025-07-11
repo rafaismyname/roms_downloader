@@ -9,6 +9,15 @@ import 'package:roms_downloader/models/game_details_model.dart';
 class BoxartService {
   static final Map<String, Map<String, String>> _boxartCache = {};
 
+  Future<List<Game>> mutateGamesWithBoxarts(List<Game> games, Console console) async {
+    if (console.boxarts == null) return games;
+
+    final boxarts = await _fetchBoxartUrls(console.boxarts!);
+    if (boxarts.isEmpty) return games;
+
+    return await compute(_process, [games, boxarts]);
+  }
+
   Future<Map<String, String>> _fetchBoxartUrls(String boxartBaseUrl) async {
     if (_boxartCache.containsKey(boxartBaseUrl)) {
       return _boxartCache[boxartBaseUrl]!;
@@ -48,91 +57,91 @@ class BoxartService {
       final filename = match.group(1)!;
       final decodedFilename = Uri.decodeComponent(filename);
       final nameWithoutExt = path.basenameWithoutExtension(decodedFilename);
-      final normalizedName = _normalizeGameName(nameWithoutExt);
+      final normalizedName = _normalizeName(nameWithoutExt);
       final fullUrl = baseUrl.endsWith('/') ? '$baseUrl$filename' : '$baseUrl/$filename';
       boxartMap[normalizedName] = fullUrl;
     }
 
     return boxartMap;
   }
-
-  Future<List<Game>> enrichGamesWithBoxarts(List<Game> games, Console console) async {
-    if (console.boxarts == null) return games;
-
-    final boxarts = await _fetchBoxartUrls(console.boxarts!);
-    if (boxarts.isEmpty) return games;
-
-    return await compute(_enrichGamesInIsolate, [games, boxarts]);
-  }
 }
 
-List<Game> _enrichGamesInIsolate(List<dynamic> data) {
+List<Game> _process(List<dynamic> data) {
   final games = data[0] as List<Game>;
   final boxarts = data[1] as Map<String, String>;
-  
+
+  // Build an index of tokens -> list of boxart keys to narrow down the search space
+  final Map<String, List<String>> tokenIndex = _buildNameTokenIndex(boxarts.keys);
+
   return games.map((game) {
     final gameNameWithoutExt = path.basenameWithoutExtension(game.filename);
-    final normalizedGameName = _normalizeGameName(gameNameWithoutExt);
-    
+    final normalizedGameName = _normalizeName(gameNameWithoutExt);
+
+    // 1. Fast exact match by full normalized name
     String? boxartUrl = boxarts[normalizedGameName];
-    
-    boxartUrl ??= _findBestMatch(normalizedGameName, boxarts);
-    
-    if (boxartUrl != null) {
-      final details = GameDetails(
-        gameId: game.taskId,
-        boxart: boxartUrl,
-      );
-      return Game(
-        title: game.title,
-        url: game.url,
-        size: game.size,
-        consoleId: game.consoleId,
-        metadata: game.metadata,
-        details: details,
-      );
+
+    // 2. If no exact match, attempt a token-based fuzzy lookup using the index
+    if (boxartUrl == null) {
+      final gameTokens = normalizedGameName.split(' ').where((t) => t.length > 2).toList();
+      final candidateNames = <String>{};
+
+      for (final token in gameTokens) {
+        final names = tokenIndex[token];
+        if (names != null) candidateNames.addAll(names);
+      }
+
+      final Iterable<String> searchSpace = candidateNames.isNotEmpty ? candidateNames : boxarts.keys;
+      final mainTitle = gameTokens.isNotEmpty ? gameTokens.first : '';
+
+      String? bestMatchName;
+      int highestScore = 0;
+      for (final candidate in searchSpace) {
+        final score = _calculateMatchScore(normalizedGameName, candidate, mainTitle);
+        if (score > highestScore && score > 2) {
+          highestScore = score;
+          bestMatchName = candidate;
+        }
+      }
+      if (bestMatchName != null) {
+        boxartUrl = boxarts[bestMatchName];
+      }
     }
-    
-    return game;
+
+    if (boxartUrl != null) {
+      return game.copyWith(details: GameDetails(boxart: boxartUrl));
+    }
+
+    return game; // No changes
   }).toList();
 }
 
-String _normalizeGameName(String name) {
-  return name
-      .toLowerCase()
-      .replaceAll(RegExp(r'[^\w\s]'), '')
-      .replaceAll(RegExp(r'\s+'), ' ')
-      .trim();
-}
-
-String? _findBestMatch(String normalizedGameName, Map<String, String> boxarts) {
-  final gameTokens = normalizedGameName.split(' ');
-  final mainTitle = gameTokens.isNotEmpty ? gameTokens.first : '';
-  
-  String? bestMatch;
-  int highestScore = 0;
-  
-  for (final boxartName in boxarts.keys) {
-    final score = _calculateSimilarity(normalizedGameName, boxartName, mainTitle);
-    if (score > highestScore && score > 2) {
-      highestScore = score;
-      bestMatch = boxarts[boxartName];
+// Build a reverse index of token -> list of boxart names that contain that token.
+// This allows us to restrict fuzzy search to a much smaller candidate set.
+Map<String, List<String>> _buildNameTokenIndex(Iterable<String> boxartNames) {
+  final Map<String, List<String>> index = {};
+  for (final name in boxartNames) {
+    for (final token in name.split(' ')) {
+      if (token.length <= 2) continue; // Skip very short tokens – they are noisy
+      index.putIfAbsent(token, () => []).add(name);
     }
   }
-  
-  return bestMatch;
+  return index;
 }
 
-int _calculateSimilarity(String gameName, String boxartName, String mainTitle) {
+String _normalizeName(String name) {
+  return name.toLowerCase().replaceAll(RegExp(r'[^\w\s]'), '').replaceAll(RegExp(r'\s+'), ' ').trim();
+}
+
+int _calculateMatchScore(String gameName, String boxartName, String mainTitle) {
   final gameTokens = gameName.split(' ');
   final boxartTokens = boxartName.split(' ');
-  
+
   int score = 0;
-  
+
   if (boxartName.contains(mainTitle)) {
     score += 3;
   }
-  
+
   for (final gameToken in gameTokens) {
     if (gameToken.length > 2) {
       if (boxartTokens.any((token) => token.contains(gameToken))) {
@@ -142,10 +151,10 @@ int _calculateSimilarity(String gameName, String boxartName, String mainTitle) {
       }
     }
   }
-  
+
   if (gameTokens.length == boxartTokens.length) {
     score += 1;
   }
-  
+
   return score;
 }
