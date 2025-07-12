@@ -50,10 +50,12 @@ class _TaskPanelModalState extends ConsumerState<TaskPanelModal> with SingleTick
     final gameStateManager = ref.watch(gameStateManagerProvider);
     final taskQueueState = ref.watch(taskQueueProvider);
 
-    final downloadingGames =
-        gameStateManager.values.where((state) => state.status == GameStatus.downloading || state.status == GameStatus.downloadPaused).toList();
+    final downloadingGames = gameStateManager.values
+        .where((state) => state.status == GameStatus.downloading || state.status == GameStatus.downloadPaused || state.status == GameStatus.downloadQueued)
+        .toList();
 
-    final extractingGames = gameStateManager.values.where((state) => state.status == GameStatus.extracting).toList();
+    final extractingGames =
+        gameStateManager.values.where((state) => state.status == GameStatus.extracting || state.status == GameStatus.extractionQueued).toList();
 
     final queuedGames =
         gameStateManager.values.where((state) => state.status == GameStatus.downloadQueued || state.status == GameStatus.extractionQueued).toList();
@@ -105,17 +107,20 @@ class _TaskPanelModalState extends ConsumerState<TaskPanelModal> with SingleTick
           ),
           Container(
             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _buildTabButton(0, 'Downloads', Icons.download, downloadingGames.length),
-                SizedBox(width: 12),
-                _buildTabButton(1, 'Extractions', Icons.archive, extractingGames.length),
-                SizedBox(width: 12),
-                _buildTabButton(2, 'Queue', Icons.queue, queuedGames.length),
-                SizedBox(width: 12),
-                _buildTabButton(3, 'Completed', Icons.history, completedTasks.length),
-              ],
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildTabButton(0, 'Downloads', Icons.download, downloadingGames.length),
+                  SizedBox(width: 12),
+                  _buildTabButton(1, 'Extractions', Icons.archive, extractingGames.length),
+                  SizedBox(width: 12),
+                  _buildTabButton(2, 'Queue', Icons.queue, queuedGames.length),
+                  SizedBox(width: 12),
+                  _buildTabButton(3, 'Completed', Icons.history, completedTasks.length),
+                ],
+              ),
             ),
           ),
           Expanded(
