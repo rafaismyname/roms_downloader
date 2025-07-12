@@ -24,10 +24,9 @@ class TaskListView extends StatelessWidget {
       );
     }
 
-    return ListView.separated(
-      padding: EdgeInsets.all(16),
+    return ListView.builder(
+      padding: EdgeInsets.symmetric(vertical: 8),
       itemCount: games.length,
-      separatorBuilder: (context, index) => SizedBox(height: 8),
       itemBuilder: (context, index) {
         final gameState = games[index];
         return TaskGameRow(gameState: gameState);
