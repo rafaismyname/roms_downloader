@@ -5,7 +5,7 @@ import 'package:path/path.dart' as path;
 import 'package:roms_downloader/models/console_model.dart';
 import 'package:roms_downloader/models/game_model.dart';
 import 'package:roms_downloader/models/game_details_model.dart';
-import 'package:roms_downloader/utils/name_matcher.dart';
+import 'package:roms_downloader/utils/title_match.dart';
 
 class BoxartService {
   static final Map<String, Map<String, String>> _boxartCache = {};
@@ -63,7 +63,7 @@ class BoxartService {
       final filename = match.group(1)!;
       final decodedFilename = Uri.decodeComponent(filename);
       final nameWithoutExt = path.basenameWithoutExtension(decodedFilename);
-      final normalizedName = NameMatcher.normalizeName(nameWithoutExt);
+      final normalizedName = normalizeTitle(nameWithoutExt);
       final fullUrl = baseUrl.endsWith('/') ? '$baseUrl$filename' : '$baseUrl/$filename';
       boxartMap[normalizedName] = fullUrl;
     }
@@ -76,12 +76,12 @@ List<Game> _process(List<dynamic> data) {
   final games = data[0] as List<Game>;
   final boxarts = data[1] as Map<String, String>;
 
-  final tokenIndex = NameMatcher.buildTokenIndex(boxarts.keys);
+  final tokenIndex = buildTokenIndex(boxarts.keys);
 
   return games.map((game) {
     final gameNameWithoutExt = path.basenameWithoutExtension(game.filename);
 
-    final boxartUrl = NameMatcher.match(nameToMatch: gameNameWithoutExt, candidates: boxarts, tokenIndex: tokenIndex);
+    final boxartUrl = matchTitle(titleToMatch: gameNameWithoutExt, candidates: boxarts, tokenIndex: tokenIndex);
 
     if (boxartUrl != null) {
       return game.copyWith(details: GameDetails(boxart: boxartUrl));
