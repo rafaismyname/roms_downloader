@@ -44,6 +44,21 @@ class QueuedTask {
       error: error ?? this.error,
     );
   }
+
+  String get statusText {
+    switch (status) {
+      case TaskQueueStatus.waiting:
+        return 'Waiting';
+      case TaskQueueStatus.running:
+        return 'Running';
+      case TaskQueueStatus.completed:
+        return 'Completed';
+      case TaskQueueStatus.failed:
+        return 'Failed';
+      case TaskQueueStatus.cancelled:
+        return 'Cancelled';
+    }
+  }
 }
 
 class TaskQueueState {
