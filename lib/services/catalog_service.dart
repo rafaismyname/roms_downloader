@@ -174,4 +174,26 @@ class CatalogService {
     final cachedFilePath = '${dir.path}/$cacheFile';
     return File(cachedFilePath);
   }
+
+  Future<void> clearCatalogCache([String? consoleId]) async {
+    try {
+      final consoles = await getConsoles();
+      if (consoleId != null) {
+        if (consoles.containsKey(consoleId)) {
+          final console = consoles[consoleId]!;
+          final cacheFile = await _getCacheFile(console.cacheFile);
+          if (await cacheFile.exists()) {
+            await cacheFile.delete();
+          }
+        }
+      } else {
+        final consoles = await getConsoles();
+        for (final consoleId in consoles.keys) {
+          await clearCatalogCache(consoleId);
+        }
+      }
+    } catch (e) {
+      debugPrint('Error clearing catalog cache: $e');
+    }
+  }
 }

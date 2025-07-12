@@ -27,18 +27,16 @@ class PermissionService {
     if (!Platform.isAndroid) return true;
 
     try {
+      final statuses = await requiredPermissions.request();
       final permanentlyDeniedPermissions = <Permission>[];
       bool allGranted = true;
 
       for (final permission in requiredPermissions) {
-        final status = await permission.status;
+        final status = statuses[permission]!;
         debugPrint('Permission $permission status: $status');
         if (!status.isGranted) {
           allGranted = false;
-          debugPrint('Requesting permission: $permission');
-          final result = await permission.request();
-          debugPrint('Permission $permission result: $result');
-          if (!result.isGranted && result.isPermanentlyDenied) {
+          if (status.isPermanentlyDenied) {
             permanentlyDeniedPermissions.add(permission);
           }
         }

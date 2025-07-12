@@ -24,7 +24,7 @@ class DirectoryService {
     }
 
     if (Platform.isAndroid) {
-      if (await Permission.storage.request().isGranted) {
+      if (await Permission.storage.status.isGranted) {
         final externalDir = await getExternalStorageDirectory();
         if (externalDir != null) {
           return externalDir.path;
@@ -43,19 +43,6 @@ class DirectoryService {
 
   Future<String?> selectDownloadDirectory() async {
     try {
-      if (Platform.isAndroid) {
-        if (await Permission.manageExternalStorage.isDenied) {
-          final status = await Permission.manageExternalStorage.request();
-          if (!status.isGranted) {
-            final storageStatus = await Permission.storage.request();
-            if (!storageStatus.isGranted) {
-              debugPrint('Storage permission denied');
-              return null;
-            }
-          }
-        }
-      }
-
       final selectedDirectory = await FilePicker.platform.getDirectoryPath();
       if (selectedDirectory == null) {
         return null;

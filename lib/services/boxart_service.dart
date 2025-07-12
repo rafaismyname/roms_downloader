@@ -80,7 +80,6 @@ List<Game> _process(List<dynamic> data) {
 
   return games.map((game) {
     final gameNameWithoutExt = path.basenameWithoutExtension(game.filename);
-
     final boxartUrl = matchTitle(titleToMatch: gameNameWithoutExt, candidates: boxarts, tokenIndex: tokenIndex);
 
     if (boxartUrl != null) {

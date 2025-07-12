@@ -241,4 +241,34 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
   void defaultFilters() async {
     updateFilter(const CatalogFilter());
   }
+
+  Future<void> clearCatalogCache([String? consoleId]) async {
+    await catalogService.clearCatalogCache(consoleId);
+  }
+
+  Future<void> refreshCatalog() async {
+    if (state.games.isEmpty) return;
+    
+    final currentConsole = await _getCurrentConsole();
+    if (currentConsole != null) {
+      state = state.copyWith(
+        games: [],
+        cachedFilteredGames: [],
+        cachedTotalCount: 0,
+        cachedHasMore: false,
+        selectedGames: {},
+        availableRegions: {},
+        availableLanguages: {},
+        availableCategories: {},
+      );
+      await loadCatalog(currentConsole);
+    }
+  }
+
+  Future<Console?> _getCurrentConsole() async {
+    if (state.games.isEmpty) return null;
+    final consoleId = state.games.first.consoleId;
+    final consoles = await catalogService.getConsoles();
+    return consoles[consoleId];
+  }
 }

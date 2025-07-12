@@ -168,8 +168,10 @@ jobs:
         with:
           name: windows-zip-${{ matrix.arch }}
           path: "ROMs_Downloader_Windows_${{ matrix.arch }}.zip"
-
+  
+  # Linux build - Disabled until tested
   build-linux:
+    if: false
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -271,8 +273,10 @@ jobs:
         with:
           name: linux-appimage-${{ matrix.arch }}
           path: "ROMs_Downloader_Linux_${{ matrix.arch }}.AppImage"
-
+  
+  # Handheld Linux build - Disabled until tested
   build-handheld-linux:
+    if: false
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -548,7 +552,8 @@ jobs:
           path: "ROMs_Downloader_Handheld_Linux_${{ matrix.arch }}.zip"
 
   generate-download-links:
-    needs: [build-android, build-macos, build-linux, build-handheld-linux, build-windows]
+    # needs: [build-android, build-macos, build-windows, build-linux, build-handheld-linux]
+    needs: [build-android, build-macos, build-windows]
     runs-on: ubuntu-latest
     steps:
       - name: Download all artifacts
@@ -596,39 +601,42 @@ jobs:
             fi
           done
           
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## 🐧 Linux" >> $GITHUB_STEP_SUMMARY
-          echo "| Architecture | AppImage | Handheld Package | Size |" >> $GITHUB_STEP_SUMMARY
-          echo "|--------------|----------|------------------|------|" >> $GITHUB_STEP_SUMMARY
-          
-          for arch in x64 arm64; do
-            appimage_link=""
-            handheld_link=""
-            size_info=""
+          # Only generate Linux download links if the artifacts exist
+          if ls ./artifacts/linux-appimage-* 1>/dev/null 2>&1 || ls ./artifacts/handheld-linux-* 1>/dev/null 2>&1; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "## 🐧 Linux" >> $GITHUB_STEP_SUMMARY
+            echo "| Architecture | AppImage | Handheld Package | Size |" >> $GITHUB_STEP_SUMMARY
+            echo "|--------------|----------|------------------|------|" >> $GITHUB_STEP_SUMMARY
             
-            # Check for AppImage
-            if [ -f "./artifacts/linux-appimage-${arch}/ROMs_Downloader_Linux_${arch}.AppImage" ]; then
-              appimage_size=$(du -h "./artifacts/linux-appimage-${arch}/ROMs_Downloader_Linux_${arch}.AppImage" | cut -f1)
-              appimage_link="[Download AppImage](https://nightly.link/${{ github.repository }}/actions/runs/${{ github.run_id }}/linux-appimage-${arch}.zip)"
-              size_info="AppImage: ${appimage_size}"
-            fi
-            
-            # Check for Handheld package
-            if [ -f "./artifacts/handheld-linux-${arch}/ROMs_Downloader_Handheld_Linux_${arch}.zip" ]; then
-              handheld_size=$(du -h "./artifacts/handheld-linux-${arch}/ROMs_Downloader_Handheld_Linux_${arch}.zip" | cut -f1)
-              handheld_link="[📱 Handheld Package](https://nightly.link/${{ github.repository }}/actions/runs/${{ github.run_id }}/handheld-linux-${arch}.zip)"
-              if [ -n "$size_info" ]; then
-                size_info="${size_info}<br/>Handheld: ${handheld_size}"
-              else
-                size_info="Handheld: ${handheld_size}"
+            for arch in x64 arm64; do
+              appimage_link=""
+              handheld_link=""
+              size_info=""
+              
+              # Check for AppImage
+              if [ -f "./artifacts/linux-appimage-${arch}/ROMs_Downloader_Linux_${arch}.AppImage" ]; then
+                appimage_size=$(du -h "./artifacts/linux-appimage-${arch}/ROMs_Downloader_Linux_${arch}.AppImage" | cut -f1)
+                appimage_link="[Download AppImage](https://nightly.link/${{ github.repository }}/actions/runs/${{ github.run_id }}/linux-appimage-${arch}.zip)"
+                size_info="AppImage: ${appimage_size}"
               fi
-            fi
-            
-            # Only show row if we have at least one package
-            if [ -n "$appimage_link" ] || [ -n "$handheld_link" ]; then
-              echo "| ${arch} | ${appimage_link:-N/A} | ${handheld_link:-N/A} | ${size_info} |" >> $GITHUB_STEP_SUMMARY
-            fi
-          done
+              
+              # Check for Handheld package
+              if [ -f "./artifacts/handheld-linux-${arch}/ROMs_Downloader_Handheld_Linux_${arch}.zip" ]; then
+                handheld_size=$(du -h "./artifacts/handheld-linux-${arch}/ROMs_Downloader_Handheld_Linux_${arch}.zip" | cut -f1)
+                handheld_link="[📱 Handheld Package](https://nightly.link/${{ github.repository }}/actions/runs/${{ github.run_id }}/handheld-linux-${arch}.zip)"
+                if [ -n "$size_info" ]; then
+                  size_info="${size_info}<br/>Handheld: ${handheld_size}"
+                else
+                  size_info="Handheld: ${handheld_size}"
+                fi
+              fi
+              
+              # Only show row if at least one package exists
+              if [ -n "$appimage_link" ] || [ -n "$handheld_link" ]; then
+                echo "| ${arch} | ${appimage_link:-N/A} | ${handheld_link:-N/A} | ${size_info} |" >> $GITHUB_STEP_SUMMARY
+              fi
+            done
+          fi
           
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## 🪟 Windows" >> $GITHUB_STEP_SUMMARY

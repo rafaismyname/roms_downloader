@@ -6,6 +6,7 @@ import 'package:roms_downloader/widgets/settings/directory_setting.dart';
 import 'package:roms_downloader/widgets/settings/boolean_setting.dart';
 import 'package:roms_downloader/widgets/settings/number_setting.dart';
 import 'package:roms_downloader/widgets/settings/permissions_setting.dart';
+import 'package:roms_downloader/widgets/settings/tools_setting.dart';
 
 class SettingsContent extends StatelessWidget {
   final Console? selectedConsole;
@@ -86,10 +87,33 @@ class SettingsContent extends StatelessWidget {
               ),
             ),
           ),
-          if (selectedConsole == null) ...[
+           if (selectedConsole == null) ...[
             const SizedBox(height: 8),
             const PermissionsSetting(),
           ],
+          const SizedBox(height: 8),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.build),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Tools',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  ToolsSetting(console: selectedConsole),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );

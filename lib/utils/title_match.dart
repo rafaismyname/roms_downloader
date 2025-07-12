@@ -8,10 +8,9 @@ Map<String, List<String>> buildTokenIndex(Iterable<String> names) {
   final Map<String, List<String>> index = {};
   for (final name in names) {
     for (final token in name.split(' ')) {
-      if (!(RegExp(r'^\d+$').hasMatch(token) || token.length > 2 || RegExp(r'^[a-z]+\d+$').hasMatch(token))) {
-        continue;
+      if (token.length > 1) {
+        index.putIfAbsent(token, () => []).add(name);
       }
-      index.putIfAbsent(token, () => []).add(name);
     }
   }
   return index;
@@ -28,11 +27,10 @@ String? matchTitle({
     return candidates[normalizedTitle];
   }
 
-  final numericRegExp = RegExp(r'^\d{2,}$');
+  final numericRegExp = RegExp(r'^\d+$');
   final mixedTokenRegExp = RegExp(r'^[a-z]+\d+$');
   final titleTokens = normalizedTitle.split(' ').where((token) {
-    if (token.isEmpty) return false;
-    return numericRegExp.hasMatch(token) || token.length > 2 || mixedTokenRegExp.hasMatch(token);
+    return token.length > 1;
   }).toList();
 
   final numericTokens = titleTokens.where((t) => numericRegExp.hasMatch(t)).toList();
@@ -79,22 +77,14 @@ String? matchTitle({
   if (candidateNames.isNotEmpty) {
     final Set<String> meaningfulGameTokens = {
       for (final t in titleTokens)
-        if (!numericRegExp.hasMatch(t) && t.length > 2) t
+        if (!numericRegExp.hasMatch(t) && t.length > 1) t
     };
 
     if (meaningfulGameTokens.isNotEmpty) {
       candidateNames = candidateNames.where((name) {
-        final tokens = name.split(' ').where((tok) => tok.length > 2 && !numericRegExp.hasMatch(tok)).toSet();
+        final tokens = name.split(' ').where((tok) => tok.length > 1 && !numericRegExp.hasMatch(tok)).toSet();
         final int common = tokens.intersection(meaningfulGameTokens).length;
-        if (meaningfulGameTokens.length <= 4) {
-          // For shorter titles, require all tokens to appear.
-          return common == meaningfulGameTokens.length;
-        }
-        // For longer titles, allow at most one missing.
-        if (common < meaningfulGameTokens.length - 1) return false;
-        // Ensure candidate doesn't introduce many unrelated tokens.
-        if (tokens.length > meaningfulGameTokens.length + 2) return false;
-        return true;
+        return common >= meaningfulGameTokens.length * 0.7;
       }).toSet();
     }
   }
@@ -102,18 +92,10 @@ String? matchTitle({
   if (candidateNames.isEmpty) return null;
 
   final Iterable<String> searchSpace = candidateNames;
-  final Set<String> nonNumericTokens = {
-    for (final t in titleTokens)
-      if (!numericRegExp.hasMatch(t)) t
-  };
 
   String? bestMatchName;
   int highestScore = 0;
   for (final candidate in searchSpace) {
-    if (nonNumericTokens.isNotEmpty && !nonNumericTokens.any((t) => candidate.contains(t))) {
-      continue;
-    }
-
     final score = tokenSetRatio(normalizedTitle, candidate).toInt();
     if (score > highestScore && score >= 90) {
       highestScore = score;
