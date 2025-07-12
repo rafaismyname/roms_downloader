@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:roms_downloader/models/game_model.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:photo_view/photo_view.dart';
 
 class GameBoxart extends StatelessWidget {
   final Game game;
@@ -39,14 +40,14 @@ class GameBoxart extends StatelessWidget {
           showDialog(
             context: context,
             builder: (_) => Dialog(
-              insetPadding: const EdgeInsets.all(16),
+              insetPadding: EdgeInsets.zero,
               backgroundColor: Colors.transparent,
-              child: InteractiveViewer(
-                clipBehavior: Clip.hardEdge,
-                boundaryMargin: EdgeInsets.zero,
-                minScale: 1.0,
-                maxScale: 4.0,
-                child: CachedNetworkImage(imageUrl: boxart),
+              child: PhotoView(
+                imageProvider: CachedNetworkImageProvider(boxart),
+                backgroundDecoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.4)),
+                minScale: PhotoViewComputedScale.contained,
+                maxScale: PhotoViewComputedScale.covered * 3.0,
+                onTapUp: (context, details, controllerValue) => Navigator.of(context).pop(),
               ),
             ),
           );

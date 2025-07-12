@@ -33,7 +33,6 @@ class PermissionService {
 
       for (final permission in requiredPermissions) {
         final status = statuses[permission]!;
-        debugPrint('Permission $permission status: $status');
         if (!status.isGranted) {
           allGranted = false;
           if (status.isPermanentlyDenied) {
