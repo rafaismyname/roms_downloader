@@ -9,6 +9,7 @@ import 'package:roms_downloader/widgets/game_list/game_title.dart';
 import 'package:roms_downloader/widgets/game_list/game_tags.dart';
 import 'package:roms_downloader/widgets/game_list/game_action_buttons.dart';
 import 'package:roms_downloader/widgets/game_list/game_progress_bar.dart';
+import 'package:roms_downloader/widgets/game_list/game_boxart.dart';
 
 class GameRow extends ConsumerStatefulWidget {
   final Game game;
@@ -69,6 +70,11 @@ class _GameRowState extends ConsumerState<GameRow> {
                   onChanged: gameState.isInteractable ? (_) => catalogNotifier.toggleGameSelection(gameId) : null,
                 ),
               ),
+              GameBoxart(
+                game: widget.game,
+                size: widget.isNarrow ? 40 : 60,
+              ),
+              const SizedBox(width: 8),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

@@ -27,7 +27,7 @@ class _GameListState extends ConsumerState<GameList> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+    if (_scrollController.position.extentAfter < 500) {
       _catalogNotifier ??= ref.read(catalogProvider.notifier);
       _catalogNotifier?.loadMoreItems();
     }
@@ -37,7 +37,9 @@ class _GameListState extends ConsumerState<GameList> {
   Widget build(BuildContext context) {
     final catalogState = ref.watch(catalogProvider);
     final games = catalogState.paginatedFilteredGames;
+    final loadingMore = catalogState.loadingMore;
 
+    final screenHeight = MediaQuery.of(context).size.height;
     final isPortrait = MediaQuery.of(context).orientation == Orientation.portrait;
     final screenWidth = MediaQuery.of(context).size.width;
     final isNarrow = isPortrait || screenWidth < 600;
@@ -118,10 +120,25 @@ class _GameListState extends ConsumerState<GameList> {
         Expanded(
           child: ListView.builder(
             controller: _scrollController,
-            itemCount: games.length,
+            itemCount: games.length + (loadingMore ? 1 : 0),
+            cacheExtent: screenHeight * 1.5,
             itemBuilder: (context, index) {
+              if (index >= games.length) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child: Center(
+                    child: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  ),
+                );
+              }
+
               final game = games[index];
               return GameRow(
+                key: ValueKey(game.taskId),
                 game: game,
                 isNarrow: isNarrow,
                 sizeColumnWidth: sizeColumnWidth,
