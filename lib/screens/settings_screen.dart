@@ -7,9 +7,9 @@ import 'package:roms_downloader/widgets/settings/settings_tab_selector.dart';
 import 'package:roms_downloader/widgets/settings/settings_content.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
-  final String? initialConsoleId;
+  final String? consoleId;
 
-  const SettingsScreen({super.key, this.initialConsoleId});
+  const SettingsScreen({super.key, this.consoleId});
 
   @override
   ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
@@ -22,7 +22,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   void initState() {
     super.initState();
-    showGeneral = widget.initialConsoleId == null;
+    showGeneral = widget.consoleId == null;
   }
 
   @override
@@ -31,8 +31,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     ref.watch(settingsProvider);
     final settingsNotifier = ref.read(settingsProvider.notifier);
 
-    if (widget.initialConsoleId != null && selectedConsole == null && appState.consoles.isNotEmpty) {
-      selectedConsole = appState.consoles[widget.initialConsoleId] ?? appState.consoles.values.first;
+    if (widget.consoleId != null && selectedConsole == null && appState.consoles.isNotEmpty) {
+      selectedConsole = appState.consoles[widget.consoleId] ?? appState.consoles.values.first;
     }
 
     return Scaffold(
