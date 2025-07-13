@@ -54,7 +54,7 @@ class ExtractionNotifier extends StateNotifier<ExtractionState> {
     gameStateManager.updateExtractionState(taskId, ExtractionStatus.extracting, 0.0);
 
     // Check for sufficient disk space before extraction
-    final freeSpace = await DirectoryService.getFreeSpace(downloadDir, true);
+    final freeSpace = await DirectoryService.getFreeSpace(downloadDir);
     if (freeSpace < game.size) {
       debugPrint('Insufficient disk space for extraction: available $freeSpace bytes, need ${game.size} bytes');
       return Future.delayed(const Duration(milliseconds: 100), () => _updateError(taskId, 'Insufficient disk space', extractionDir));

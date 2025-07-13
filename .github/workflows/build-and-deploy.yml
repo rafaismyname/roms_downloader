@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 env:
-  FLUTTER_VERSION: "3.32.5"
+  FLUTTER_VERSION: "3.32.6"
   FLUTTER_CHANNEL: "stable"
   PROPERTIES_PATH: "./android/key.properties"
 
@@ -72,9 +72,10 @@ jobs:
         with:
           name: android-apk-universal
           path: build/app/outputs/flutter-apk/app-release.apk
-
+      
+      # Change the if condition to same above to re-enable AAB upload
       - name: Upload Android App Bundle
-        if: matrix.arch == 'arm64-v8a'
+        if: false
         uses: actions/upload-artifact@v4
         with:
           name: android-aab
@@ -657,13 +658,3 @@ jobs:
           echo "- **Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Build Date:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
           echo "- **Workflow Run:** [#${{ github.run_number }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
-
-      - name: List all artifacts with direct links
-        run: |
-          echo "🔗 Direct Download Links:" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          find ./artifacts -type f \( -name "*.apk" -o -name "*.aab" -o -name "*.dmg" -o -name "*.AppImage" -o -name "*.zip" -o -name "*.tar.gz" \) -exec basename {} \; | sort >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "All artifacts are available in the [Artifacts section](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) of this workflow run." >> $GITHUB_STEP_SUMMARY

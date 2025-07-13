@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:roms_downloader/models/game_state_model.dart';
-import 'package:roms_downloader/models/task_queue_model.dart';
 import 'package:roms_downloader/providers/game_state_provider.dart';
-import 'package:roms_downloader/providers/task_queue_provider.dart';
 import 'package:roms_downloader/widgets/footer/task_list_view.dart';
-import 'package:roms_downloader/widgets/footer/task_queue_view.dart';
 
 class TaskPanelModal extends ConsumerStatefulWidget {
   const TaskPanelModal({super.key});
@@ -17,7 +14,7 @@ class TaskPanelModal extends ConsumerStatefulWidget {
       backgroundColor: Colors.transparent,
       constraints: BoxConstraints(
         minWidth: MediaQuery.of(context).size.width * 0.9,
-        minHeight: MediaQuery.of(context).size.height * 0.8,
+        maxHeight: MediaQuery.of(context).size.height * 0.9,
       ),
       builder: (context) => const TaskPanelModal(),
     );
@@ -48,7 +45,6 @@ class _TaskPanelModalState extends ConsumerState<TaskPanelModal> with SingleTick
   @override
   Widget build(BuildContext context) {
     final gameStateManager = ref.watch(gameStateManagerProvider);
-    final taskQueueState = ref.watch(taskQueueProvider);
 
     final downloadingGames = gameStateManager.values
         .where((state) => state.status == GameStatus.downloading || state.status == GameStatus.downloadPaused || state.status == GameStatus.downloadQueued)
@@ -60,12 +56,15 @@ class _TaskPanelModalState extends ConsumerState<TaskPanelModal> with SingleTick
     final queuedGames =
         gameStateManager.values.where((state) => state.status == GameStatus.downloadQueued || state.status == GameStatus.extractionQueued).toList();
 
-    final completedTasks = taskQueueState.tasks
-        .where((task) => task.status == TaskQueueStatus.completed || task.status == TaskQueueStatus.failed || task.status == TaskQueueStatus.cancelled)
+    final completedGames = gameStateManager.values
+        .where((state) =>
+            state.status == GameStatus.downloaded ||
+            state.status == GameStatus.extracted ||
+            state.status == GameStatus.downloadFailed ||
+            state.status == GameStatus.extractionFailed)
         .toList();
 
     return Container(
-      height: MediaQuery.of(context).size.height * 0.8,
       decoration: BoxDecoration(
         color: Theme.of(context).scaffoldBackgroundColor,
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
@@ -73,7 +72,7 @@ class _TaskPanelModalState extends ConsumerState<TaskPanelModal> with SingleTick
       child: Column(
         children: [
           Container(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             decoration: BoxDecoration(
               border: Border(
                 bottom: BorderSide(
@@ -113,12 +112,12 @@ class _TaskPanelModalState extends ConsumerState<TaskPanelModal> with SingleTick
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   _buildTabButton(0, 'Downloads', Icons.download, downloadingGames.length),
-                  SizedBox(width: 12),
+                  SizedBox(width: 6),
                   _buildTabButton(1, 'Extractions', Icons.archive, extractingGames.length),
-                  SizedBox(width: 12),
+                  SizedBox(width: 6),
                   _buildTabButton(2, 'Queue', Icons.queue, queuedGames.length),
-                  SizedBox(width: 12),
-                  _buildTabButton(3, 'Completed', Icons.history, completedTasks.length),
+                  SizedBox(width: 6),
+                  _buildTabButton(3, 'Completed', Icons.history, completedGames.length),
                 ],
               ),
             ),
@@ -142,8 +141,8 @@ class _TaskPanelModalState extends ConsumerState<TaskPanelModal> with SingleTick
                   emptyMessage: 'No queued tasks',
                   emptyIcon: Icons.queue_outlined,
                 ),
-                TaskQueueView(
-                  tasks: completedTasks,
+                TaskListView(
+                  games: completedGames,
                   emptyMessage: 'No completed tasks',
                   emptyIcon: Icons.history_outlined,
                 ),
@@ -161,7 +160,7 @@ class _TaskPanelModalState extends ConsumerState<TaskPanelModal> with SingleTick
       onTap: () => _tabController.animateTo(index),
       child: AnimatedContainer(
         duration: Duration(milliseconds: 150),
-        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
           color: isSelected ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3) : Colors.transparent,
           borderRadius: BorderRadius.circular(16),

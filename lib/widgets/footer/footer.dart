@@ -17,6 +17,10 @@ class Footer extends ConsumerWidget {
     final gameStateManager = ref.watch(gameStateManagerProvider);
     final settingsNotifier = ref.read(settingsProvider.notifier);
 
+    final isPortrait = MediaQuery.of(context).orientation == Orientation.portrait;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isNarrow = isPortrait || screenWidth < 600;
+
     final activeGames = gameStateManager.values.where((gameState) => gameState.isActive).toList();
 
     final downloadingGames = activeGames.where((state) => state.status == GameStatus.downloading || state.status == GameStatus.downloadPaused).length;
@@ -28,8 +32,10 @@ class Footer extends ConsumerWidget {
 
     final selectedConsole = appState.selectedConsole;
     final downloadDir = settingsNotifier.getDownloadDir(selectedConsole?.id);
-    final shouldTruncate = downloadDir.length > 60;
-    final truncatedDownloadDir = shouldTruncate ? '${downloadDir.substring(0, 30)}...${downloadDir.substring(downloadDir.length - 30)}' : downloadDir;
+    final shouldTruncate = downloadDir.length > (60 + (isNarrow ? 0 : 20));
+    final truncateSize = isNarrow ? 10 : 30;
+    final truncatedDownloadDir =
+        shouldTruncate ? '${downloadDir.substring(0, truncateSize)}...${downloadDir.substring(downloadDir.length - truncateSize)}' : downloadDir;
 
     return Stack(
       children: [
@@ -83,7 +89,7 @@ class Footer extends ConsumerWidget {
                               ],
                             )
                           : Text(
-                              appState.loading ? "Loading catalog..." : "${catalogState.filteredGamesCount} games available",
+                              appState.loading ? "Loading catalog..." : "${catalogState.filteredGamesCount} games",
                               style: TextStyle(
                                 fontSize: 12,
                                 color: Theme.of(context).colorScheme.onSurfaceVariant,

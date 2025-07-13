@@ -119,8 +119,7 @@ class DirectoryService {
     return extensions.contains(path.extension(filePath).toLowerCase()) || extensions.contains(path.extension(filePath, 2).toLowerCase());
   }
 
-  static Future<int> getFreeSpace(String dirPath, [bool fail = false]) async {
-    if (fail) return 0;
+  static Future<int> getFreeSpace(String dirPath) async {
     if (Platform.isMacOS) {
       try {
         final result = await Process.run('df', ['-k', dirPath]);
