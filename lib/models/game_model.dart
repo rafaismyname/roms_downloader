@@ -58,10 +58,7 @@ class Game {
     };
   }
 
-  String get filename {
-    final uri = Uri.parse(url);
-    return uri.pathSegments.last;
-  }
+  String get filename => Uri.parse(url).pathSegments.last;
 
   String get taskId => '$consoleId/$filename';
 

@@ -4,6 +4,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:disk_space_2/disk_space_2.dart';
 import 'package:path/path.dart' as path;
 
 typedef FileCheckData = ({String filename, String downloadDir});
@@ -116,5 +117,29 @@ class DirectoryService {
       extensions.addAll({'.tar', '.gz', '.tar.gz', '.tgz', '.bz2', '.tar.bz2', '.tbz', '.xz', '.tar.xz', '.txz'});
     }
     return extensions.contains(path.extension(filePath).toLowerCase()) || extensions.contains(path.extension(filePath, 2).toLowerCase());
+  }
+
+  static Future<int> getFreeSpace(String dirPath, [bool fail = false]) async {
+    if (fail) return 0;
+    if (Platform.isMacOS) {
+      try {
+        final result = await Process.run('df', ['-k', dirPath]);
+        if (result.exitCode != 0) return 0;
+        final output = result.stdout.toString().trim();
+        final lines = output.split('\n');
+        if (lines.length < 2) return 0;
+        final parts = lines[1].split(RegExp(r"\s+"));
+        if (parts.length < 4) return 0;
+        final availKb = int.tryParse(parts[3]) ?? 0;
+        return availKb * 1024;
+      } catch (_) {
+        return 0;
+      }
+    }
+
+    double? freeDiskSpaceForPath = await DiskSpace.getFreeDiskSpaceForPath(dirPath);
+    int freeInMb = freeDiskSpaceForPath?.toInt() ?? 0;
+    int freeInBytes = freeInMb * 1024 * 1024;
+    return freeInBytes;
   }
 }
