@@ -62,15 +62,15 @@ class Controls extends ConsumerWidget {
                 Expanded(
                   flex: 1,
                   child: IconButton(
+                    padding: EdgeInsets.zero,
+                    alignment: Alignment.center,
                     icon: const Icon(Icons.settings),
                     onPressed: isSettingsInteractive
                         ? () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => SettingsScreen(
-                                  initialConsoleId: selectedConsole?.id,
-                                ),
+                                builder: (context) => SettingsScreen(consoleId: selectedConsole?.id),
                               ),
                             );
                           }

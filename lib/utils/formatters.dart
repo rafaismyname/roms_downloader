@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:roms_downloader/models/game_state_model.dart';
+import 'package:roms_downloader/models/task_queue_model.dart';
 
 String formatBytes(int bytes, {int decimals = 1}) {
   if (bytes <= 0) return '0 B';
@@ -36,6 +37,21 @@ String formatTimeRemaining(Duration duration) {
   }
 }
 
+String formatTaskTime(QueuedTask task) {
+  final now = DateTime.now();
+  final duration = task.completedAt != null
+      ? task.completedAt!.difference(task.createdAt)
+      : now.difference(task.createdAt);
+
+  if (duration.inHours > 0) {
+    return '${duration.inHours}h ${duration.inMinutes.remainder(60)}m';
+  } else if (duration.inMinutes > 0) {
+    return '${duration.inMinutes}m';
+  } else {
+    return '${duration.inSeconds}s';
+  }
+}
+
 Color getStatusColor(BuildContext context, GameStatus status) {
   switch (status) {
     case GameStatus.init:
@@ -63,5 +79,20 @@ Color getStatusColor(BuildContext context, GameStatus status) {
       return Theme.of(context).colorScheme.error;
     case GameStatus.processing:
       return Theme.of(context).colorScheme.secondary;
+  }
+}
+
+Color getTaskStatusColor(BuildContext context, TaskQueueStatus status) {
+  switch (status) {
+    case TaskQueueStatus.waiting:
+      return Theme.of(context).colorScheme.secondary;
+    case TaskQueueStatus.running:
+      return Theme.of(context).colorScheme.primary;
+    case TaskQueueStatus.completed:
+      return Theme.of(context).colorScheme.tertiary;
+    case TaskQueueStatus.failed:
+      return Theme.of(context).colorScheme.error;
+    case TaskQueueStatus.cancelled:
+      return Theme.of(context).colorScheme.onSurfaceVariant;
   }
 }

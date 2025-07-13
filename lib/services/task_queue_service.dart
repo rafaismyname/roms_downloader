@@ -31,14 +31,14 @@ class TaskQueueService {
   static void cancelTask(WidgetRef ref, Game game, GameState gameState) {
     final taskId = game.taskId;
 
-    if (gameState.status == GameStatus.downloading || gameState.status == GameStatus.downloadPaused) {
+    if (gameState.status == GameStatus.downloading || gameState.status == GameStatus.downloadPaused || gameState.status == GameStatus.downloadFailed) {
       final downloadNotifier = ref.read(downloadProvider.notifier);
       downloadNotifier.cancelTask(taskId);
       return;
     }
 
     final queueState = ref.read(taskQueueProvider);
-    final hasQueued = queueState.tasks.any((t) => t.id == taskId && t.status == TaskQueueStatus.waiting);
+    final hasQueued = queueState.tasks.any((t) => t.id == taskId && (t.status == TaskQueueStatus.waiting || t.status == TaskQueueStatus.failed));
     if (!hasQueued) return;
 
     final queueNotifier = ref.read(taskQueueProvider.notifier);

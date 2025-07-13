@@ -128,10 +128,11 @@ class GameState {
   }
 
   bool get isActive {
-    return status == GameStatus.downloading ||
-        status == GameStatus.extracting ||
-        status == GameStatus.downloadQueued ||
+    return status == GameStatus.downloadQueued ||
+        status == GameStatus.downloading ||
+        status == GameStatus.downloadPaused ||
         status == GameStatus.extractionQueued ||
+        status == GameStatus.extracting ||
         status == GameStatus.processing;
   }
 

@@ -21,7 +21,7 @@ class ExtractionNotifier extends StateNotifier<ExtractionState> {
 
   ExtractionNotifier(this._ref, this.gameStateManager) : super(const ExtractionState());
 
-  void extractFile(String taskId) {
+  Future<void> extractFile(String taskId) async {
     final gameState = gameStateManager.state[taskId];
     if (gameState == null) {
       debugPrint('Game state not found for taskId: $taskId');
@@ -52,6 +52,13 @@ class ExtractionNotifier extends StateNotifier<ExtractionState> {
     );
 
     gameStateManager.updateExtractionState(taskId, ExtractionStatus.extracting, 0.0);
+
+    // Check for sufficient disk space before extraction
+    final freeSpace = await DirectoryService.getFreeSpace(downloadDir);
+    if (freeSpace < game.size) {
+      debugPrint('Insufficient disk space for extraction: available $freeSpace bytes, need ${game.size} bytes');
+      return Future.delayed(const Duration(milliseconds: 100), () => _updateError(taskId, 'Insufficient disk space', extractionDir));
+    }
 
     debugPrint('Starting extraction for: $filePath');
 

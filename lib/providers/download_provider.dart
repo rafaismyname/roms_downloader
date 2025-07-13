@@ -9,6 +9,7 @@ import 'package:roms_downloader/services/download_service.dart';
 import 'package:roms_downloader/providers/catalog_provider.dart';
 import 'package:roms_downloader/providers/game_state_provider.dart';
 import 'package:roms_downloader/providers/settings_provider.dart';
+import 'package:roms_downloader/services/directory_service.dart';
 import 'package:roms_downloader/providers/task_queue_provider.dart';
 
 final downloadProvider = StateNotifierProvider<DownloadNotifier, DownloadState>((ref) {
@@ -47,7 +48,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     await _syncWithBackgroundTasks();
   }
 
-  void _handleStatusUpdate(TaskStatusUpdate update) {
+  void _handleStatusUpdate(TaskStatusUpdate update, [String? error]) {
     final taskStatus = Map<String, TaskStatus>.from(state.taskStatus);
     taskStatus[update.task.taskId] = update.status;
 
@@ -66,7 +67,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
 
       _triggerAutoExtraction(update.task.taskId);
     } else if (update.status == TaskStatus.failed) {
-      queueNotifier.updateTaskStatus(update.task.taskId, TaskQueueStatus.failed);
+      queueNotifier.updateTaskStatus(update.task.taskId, TaskQueueStatus.failed, error: error);
     } else if (update.status == TaskStatus.canceled) {
       queueNotifier.updateTaskStatus(update.task.taskId, TaskQueueStatus.cancelled);
     }
@@ -278,7 +279,15 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
 
     if (!isTaskDownloadable(taskId)) return;
 
-    final taskStatus = Map<String, TaskStatus>.from(state.taskStatus);
+    // Check for sufficient disk space before downloading
+    final freeSpace = await DirectoryService.getFreeSpace(downloadDir);
+    if (freeSpace < game.size) {
+      debugPrint('Insufficient disk space for download: available $freeSpace bytes, need ${game.size} bytes');
+      return _handleStatusUpdate(
+        TaskStatusUpdate(DownloadTask(taskId: taskId, url: game.url), TaskStatus.failed),
+        'Insufficient disk space',
+      );
+    }
 
     debugPrint('Executing download task for: $taskId -> $downloadDir/$fileName');
 
@@ -294,6 +303,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
 
     final enqueued = await downloadService.enqueuedTask(downloadTask);
     if (enqueued) {
+      final taskStatus = Map<String, TaskStatus>.from(state.taskStatus);
       taskStatus[taskId] = TaskStatus.enqueued;
       state = state.copyWith(taskStatus: taskStatus);
     }

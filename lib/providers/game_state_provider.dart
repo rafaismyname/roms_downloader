@@ -73,7 +73,7 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
         status: GameStatus.downloadFailed,
         isInteractable: true,
         showProgressBar: false,
-        availableActions: {GameAction.retryDownload},
+        availableActions: {GameAction.retryDownload, GameAction.cancel},
       );
     }
 
@@ -103,7 +103,7 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
         status: GameStatus.extractionFailed,
         isInteractable: true,
         showProgressBar: false,
-        availableActions: {GameAction.retryExtraction},
+        availableActions: {GameAction.retryExtraction, GameAction.cancel},
       );
     }
 
@@ -224,8 +224,8 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
         GameStatus.ready => {GameAction.download},
         GameStatus.downloaded => _canExtract(game) ? {GameAction.extract} : const {},
         GameStatus.extracted => const {},
-        GameStatus.downloadFailed => {GameAction.retryDownload},
-        GameStatus.extractionFailed => {GameAction.retryExtraction},
+        GameStatus.downloadFailed => {GameAction.retryDownload, GameAction.cancel},
+        GameStatus.extractionFailed => {GameAction.retryExtraction, GameAction.cancel},
         GameStatus.downloadPaused => {GameAction.resume, GameAction.cancel},
         GameStatus.downloading => {GameAction.pause, GameAction.cancel},
         _ => {GameAction.loading},
