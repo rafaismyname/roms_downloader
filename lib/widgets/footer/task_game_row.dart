@@ -84,7 +84,7 @@ class TaskGameRow extends ConsumerWidget {
                           color: getStatusColor(context, gameState.status),
                         ),
                       ),
-                      if (gameState.currentProgress > 0) ...[
+                      if (gameState.currentProgress > 0 && (gameState.status == GameStatus.downloading || gameState.status == GameStatus.downloadPaused)) ...[
                         SizedBox(height: 8),
                         Container(
                           decoration: BoxDecoration(

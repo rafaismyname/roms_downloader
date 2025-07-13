@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:roms_downloader/models/game_state_model.dart';
-import 'package:roms_downloader/widgets/footer/task_game_row.dart';
-import 'package:roms_downloader/widgets/footer/task_empty_state.dart';
+import 'package:roms_downloader/widgets/game_list/game_row.dart';
 
 class TaskListView extends StatelessWidget {
   final List<GameState> games;
@@ -18,9 +17,24 @@ class TaskListView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (games.isEmpty) {
-      return EmptyStateWidget(
-        message: emptyMessage,
-        icon: emptyIcon,
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              emptyIcon,
+              size: 48,
+              color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+            ),
+            SizedBox(height: 16),
+            Text(
+              emptyMessage,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+              ),
+            ),
+          ],
+        ),
       );
     }
 
@@ -29,7 +43,14 @@ class TaskListView extends StatelessWidget {
       itemCount: games.length,
       itemBuilder: (context, index) {
         final gameState = games[index];
-        return TaskGameRow(gameState: gameState);
+        return GameRow(
+          key: ValueKey(gameState.game.taskId),
+          game: gameState.game,
+          isNarrow: true,
+          statusColumnWidth: gameState.availableActions.isEmpty ? 100 : 80,
+          actionsColumnWidth: 70,
+          selectable: false,
+        );
       },
     );
   }

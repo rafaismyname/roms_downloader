@@ -17,6 +17,7 @@ class GameRow extends ConsumerStatefulWidget {
   final double sizeColumnWidth;
   final double statusColumnWidth;
   final double actionsColumnWidth;
+  final bool selectable;
 
   const GameRow({
     super.key,
@@ -25,6 +26,7 @@ class GameRow extends ConsumerStatefulWidget {
     this.sizeColumnWidth = 100,
     this.statusColumnWidth = 100,
     this.actionsColumnWidth = 100,
+    this.selectable = true,
   });
 
   @override
@@ -48,7 +50,7 @@ class _GameRowState extends ConsumerState<GameRow> {
     }
 
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       decoration: BoxDecoration(
         color: gameState.isSelected ? Theme.of(context).colorScheme.primaryContainer.withAlpha(50) : null,
         border: Border(
@@ -58,78 +60,103 @@ class _GameRowState extends ConsumerState<GameRow> {
           ),
         ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Row(
-            children: [
-              SizedBox(
-                width: 30,
-                child: Checkbox(
-                  value: gameState.isSelected,
-                  onChanged: gameState.isInteractable ? (_) => catalogNotifier.toggleGameSelection(gameId) : null,
-                ),
+          if (widget.selectable) ...[
+            SizedBox(
+              width: 20,
+              child: Checkbox(
+                value: gameState.isSelected,
+                onChanged: gameState.isInteractable ? (_) => catalogNotifier.toggleGameSelection(gameId) : null,
               ),
-              GameBoxart(
-                game: widget.game,
-                size: widget.isNarrow ? 40 : 60,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    GameTitle(
-                      game: widget.game,
-                      gameState: gameState,
-                    ),
-                    GameTags(game: widget.game),
-                    if (widget.isNarrow)
-                      Text(
-                        formatBytes(widget.game.size),
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            SizedBox(width: 6),
+          ],
+          GameBoxart(
+            game: widget.game,
+            size: (widget.isNarrow ? 50 : 60) + (widget.selectable ? 0 : 20),
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(left: 8.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            GameTitle(
+                              game: widget.game,
+                              gameState: gameState,
+                            ),
+                            Row(
+                              children: [
+                                if (widget.isNarrow)
+                                  Text(
+                                    formatBytes(widget.game.size),
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                if (widget.isNarrow) SizedBox(width: 8),
+                                Expanded(child: GameTags(game: widget.game)),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
-                  ],
-                ),
-              ),
-              if (!widget.isNarrow)
-                SizedBox(
-                  width: widget.sizeColumnWidth,
-                  child: Text(
-                    formatBytes(widget.game.size),
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      if (!widget.isNarrow)
+                        SizedBox(
+                          width: widget.sizeColumnWidth,
+                          child: Text(
+                            formatBytes(widget.game.size),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      SizedBox(
+                        width: widget.statusColumnWidth,
+                        child: Text(
+                          gameState.statusText,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: getStatusColor(context, gameState.status),
+                            fontWeight: FontWeight.w500,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      // if not selectable (no list header) and no available actions, dont show actions column
+                      if (widget.selectable || (!widget.selectable && gameState.availableActions.isNotEmpty)) ...[
+                        SizedBox(
+                          width: widget.actionsColumnWidth,
+                          child: GameActionButtons(
+                            game: widget.game,
+                            gameState: gameState,
+                            isNarrow: widget.isNarrow,
+                          ),
+                        ),
+                      ]
+                    ],
+                  ),
+                  if (gameState.showProgressBar)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4.0),
+                      child: GameProgressBar(gameState: gameState),
                     ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              SizedBox(
-                width: widget.statusColumnWidth,
-                child: Text(
-                  gameState.statusText,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: getStatusColor(context, gameState.status),
-                    fontWeight: FontWeight.w500,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
+                ],
               ),
-              SizedBox(
-                width: widget.actionsColumnWidth,
-                child: GameActionButtons(
-                  game: widget.game,
-                  gameState: gameState,
-                  isNarrow: widget.isNarrow,
-                ),
-              ),
-            ],
+            ),
           ),
-          GameProgressBar(gameState: gameState),
         ],
       ),
     );

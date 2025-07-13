@@ -30,7 +30,7 @@ class _TaskPanelModalState extends ConsumerState<TaskPanelModal> with SingleTick
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
     _tabController.addListener(() {
       setState(() {});
     });
@@ -46,33 +46,39 @@ class _TaskPanelModalState extends ConsumerState<TaskPanelModal> with SingleTick
   Widget build(BuildContext context) {
     final gameStateManager = ref.watch(gameStateManagerProvider);
 
-    final downloadingGames = gameStateManager.values
-        .where((state) => state.status == GameStatus.downloading || state.status == GameStatus.downloadPaused || state.status == GameStatus.downloadQueued)
-        .toList();
+    final downloadingGames = <GameState>[];
+    final extractingGames = <GameState>[];
+    final queuedGames = <GameState>[];
+    final completedGames = <GameState>[];
+    final failedGames = <GameState>[];
 
-    final extractingGames =
-        gameStateManager.values.where((state) => state.status == GameStatus.extracting || state.status == GameStatus.extractionQueued).toList();
-
-    final queuedGames =
-        gameStateManager.values.where((state) => state.status == GameStatus.downloadQueued || state.status == GameStatus.extractionQueued).toList();
-
-    final completedGames = gameStateManager.values
-        .where((state) =>
-            state.status == GameStatus.downloaded ||
-            state.status == GameStatus.extracted ||
-            state.status == GameStatus.downloadFailed ||
-            state.status == GameStatus.extractionFailed)
-        .toList();
+    for (final state in gameStateManager.values) {
+      if (state.status == GameStatus.downloading || state.status == GameStatus.downloadPaused || state.status == GameStatus.downloadQueued) {
+        downloadingGames.add(state);
+      }
+      if (state.status == GameStatus.extracting || state.status == GameStatus.extractionQueued) {
+        extractingGames.add(state);
+      }
+      if (state.status == GameStatus.downloadQueued || state.status == GameStatus.extractionQueued) {
+        queuedGames.add(state);
+      }
+      if (state.status == GameStatus.downloaded || state.status == GameStatus.extracted) {
+        completedGames.add(state);
+      }
+      if (state.status == GameStatus.downloadFailed || state.status == GameStatus.extractionFailed) {
+        failedGames.add(state);
+      }
+    }
 
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).scaffoldBackgroundColor,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
       ),
       child: Column(
         children: [
           Container(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
               border: Border(
                 bottom: BorderSide(
@@ -118,6 +124,8 @@ class _TaskPanelModalState extends ConsumerState<TaskPanelModal> with SingleTick
                   _buildTabButton(2, 'Queue', Icons.queue, queuedGames.length),
                   SizedBox(width: 6),
                   _buildTabButton(3, 'Completed', Icons.history, completedGames.length),
+                  SizedBox(width: 6),
+                  _buildTabButton(4, 'Failed', Icons.error, failedGames.length),
                 ],
               ),
             ),
@@ -146,6 +154,11 @@ class _TaskPanelModalState extends ConsumerState<TaskPanelModal> with SingleTick
                   emptyMessage: 'No completed tasks',
                   emptyIcon: Icons.history_outlined,
                 ),
+                TaskListView(
+                  games: failedGames,
+                  emptyMessage: 'No failed tasks',
+                  emptyIcon: Icons.error_outline,
+                ),
               ],
             ),
           ),
@@ -156,52 +169,61 @@ class _TaskPanelModalState extends ConsumerState<TaskPanelModal> with SingleTick
 
   Widget _buildTabButton(int index, String label, IconData icon, int count) {
     final isSelected = _tabController.index == index;
-    return GestureDetector(
-      onTap: () => _tabController.animateTo(index),
-      child: AnimatedContainer(
-        duration: Duration(milliseconds: 150),
-        padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: isSelected ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3) : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
-          border: isSelected ? Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)) : null,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 14,
-              color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-            SizedBox(width: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: isSelected ? FontWeight.w500 : FontWeight.normal,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _tabController.animateTo(index),
+        borderRadius: BorderRadius.circular(16),
+        focusColor: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
+        child: AnimatedContainer(
+          duration: Duration(milliseconds: 150),
+          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: isSelected ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3) : Colors.transparent,
+            borderRadius: BorderRadius.circular(16),
+            border: isSelected
+                ? Border.all(
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                  )
+                : null,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 14,
                 color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant,
               ),
-            ),
-            if (count > 0) ...[
               SizedBox(width: 4),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  count.toString(),
-                  style: TextStyle(
-                    fontSize: 9,
-                    fontWeight: FontWeight.w500,
-                    color: isSelected ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: isSelected ? FontWeight.w500 : FontWeight.normal,
+                  color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
+              if (count > 0) ...[
+                SizedBox(width: 4),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    count.toString(),
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w500,
+                      color: isSelected ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
