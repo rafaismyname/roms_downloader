@@ -14,12 +14,12 @@ import 'package:roms_downloader/widgets/header/console_dropdown.dart';
 import 'package:roms_downloader/widgets/header/search_field.dart';
 import 'package:roms_downloader/widgets/header/filter_modal.dart';
 
-class UnifiedHeader extends ConsumerStatefulWidget {
+class Header extends ConsumerStatefulWidget {
   final List<Console> consoles;
   final Console? selectedConsole;
   final Function(Console) onConsoleSelect;
 
-  const UnifiedHeader({
+  const Header({
     super.key,
     required this.consoles,
     required this.selectedConsole,
@@ -27,10 +27,10 @@ class UnifiedHeader extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<UnifiedHeader> createState() => _UnifiedHeaderState();
+  ConsumerState<Header> createState() => _HeaderState();
 }
 
-class _UnifiedHeaderState extends ConsumerState<UnifiedHeader> {
+class _HeaderState extends ConsumerState<Header> {
   final FocusNode _searchFocusNode = FocusNode();
   final FocusNode _filterFocusNode = FocusNode();
   final FocusNode _downloadFocusNode = FocusNode();

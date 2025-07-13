@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:roms_downloader/providers/app_state_provider.dart';
-import 'package:roms_downloader/widgets/header/unified_header.dart';
+import 'package:roms_downloader/widgets/header/header.dart';
 import 'package:roms_downloader/widgets/game_list/game_list.dart';
 import 'package:roms_downloader/widgets/footer/footer.dart';
 
@@ -16,7 +16,7 @@ class HomeScreen extends ConsumerWidget {
     return Scaffold(
       body: Column(
         children: [
-          UnifiedHeader(
+          Header(
             consoles: appState.consolesList,
             selectedConsole: appState.selectedConsole,
             onConsoleSelect: appStateNotifier.selectConsole,
