@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:roms_downloader/models/console_model.dart';
@@ -59,7 +57,7 @@ class _HeaderState extends ConsumerState<Header> {
     final canDownload = !appState.loading && downloadNotifier.hasDownloadableSelectedGames();
 
     return Container(
-      height: Platform.isAndroid ? 76 : 54,
+      height: (kToolbarHeight - 5) + MediaQuery.of(context).padding.top,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
