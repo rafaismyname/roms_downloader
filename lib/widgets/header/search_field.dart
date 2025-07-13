@@ -51,64 +51,67 @@ class _SearchFieldState extends State<SearchField> {
 
   @override
   Widget build(BuildContext context) {
-    return TextField(
-      controller: _controller,
-      decoration: InputDecoration(
-        hintText: 'Search games...',
-        hintStyle: TextStyle(
-          fontSize: 14,
-          color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
-        ),
-        prefixIcon: Icon(
-          Icons.search_rounded,
-          color: Theme.of(context).colorScheme.primary,
-          size: 20,
-        ),
-        suffixIcon: _controller.text.isNotEmpty
-            ? IconButton(
-                icon: Icon(
-                  Icons.clear_rounded,
-                  size: 18,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-                onPressed: () {
-                  _controller.clear();
-                  widget.onChanged('');
-                },
-              )
-            : null,
-        filled: true,
-        fillColor: Theme.of(context).colorScheme.surface,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(
-            color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
-            width: 1,
+    return SizedBox(
+      height: 40,
+      child: TextField(
+        controller: _controller,
+        decoration: InputDecoration(
+          hintText: 'Search games...',
+          hintStyle: TextStyle(
+            fontSize: 14,
+            color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
           ),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(
-            color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
-            width: 1,
-          ),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(
+          prefixIcon: Icon(
+            Icons.search_rounded,
             color: Theme.of(context).colorScheme.primary,
-            width: 2,
+            size: 20,
           ),
+          suffixIcon: _controller.text.isNotEmpty
+              ? IconButton(
+                  icon: Icon(
+                    Icons.clear_rounded,
+                    size: 18,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                  onPressed: () {
+                    _controller.clear();
+                    widget.onChanged('');
+                  },
+                )
+              : null,
+          filled: true,
+          fillColor: Theme.of(context).colorScheme.surface,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(
+              color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
+              width: 1,
+            ),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(
+              color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
+              width: 1,
+            ),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(
+              color: Theme.of(context).colorScheme.primary,
+              width: 2,
+            ),
+          ),
+          contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          isDense: true,
         ),
-        contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-        isDense: true,
+        style: TextStyle(
+          fontSize: 14,
+          color: Theme.of(context).colorScheme.onSurface,
+        ),
+        enabled: widget.isEnabled,
+        onChanged: _onSearchChanged,
       ),
-      style: TextStyle(
-        fontSize: 14,
-        color: Theme.of(context).colorScheme.onSurface,
-      ),
-      enabled: widget.isEnabled,
-      onChanged: _onSearchChanged,
     );
   }
 }

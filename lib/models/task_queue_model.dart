@@ -83,4 +83,6 @@ class TaskQueueState {
       isProcessing: isProcessing ?? this.isProcessing,
     );
   }
+
+  bool get hasRunningTasks => runningCounts.values.any((count) => count > 0);
 }

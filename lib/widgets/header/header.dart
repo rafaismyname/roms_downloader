@@ -4,7 +4,7 @@ import 'package:roms_downloader/models/console_model.dart';
 import 'package:roms_downloader/providers/app_state_provider.dart';
 import 'package:roms_downloader/providers/download_provider.dart';
 import 'package:roms_downloader/providers/catalog_provider.dart';
-import 'package:roms_downloader/providers/extraction_provider.dart';
+import 'package:roms_downloader/providers/task_queue_provider.dart';
 import 'package:roms_downloader/services/task_queue_service.dart';
 import 'package:roms_downloader/screens/settings_screen.dart';
 import 'package:roms_downloader/screens/about_screen.dart';
@@ -29,35 +29,23 @@ class Header extends ConsumerStatefulWidget {
 }
 
 class _HeaderState extends ConsumerState<Header> {
-  final FocusNode _searchFocusNode = FocusNode();
-  final FocusNode _filterFocusNode = FocusNode();
-  final FocusNode _downloadFocusNode = FocusNode();
-
-  @override
-  void dispose() {
-    _searchFocusNode.dispose();
-    _filterFocusNode.dispose();
-    _downloadFocusNode.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     final appState = ref.watch(appStateProvider);
-    final downloadState = ref.watch(downloadProvider);
     final downloadNotifier = ref.read(downloadProvider.notifier);
     final catalogState = ref.watch(catalogProvider);
     final catalogNotifier = ref.read(catalogProvider.notifier);
-    final extractionState = ref.watch(extractionProvider);
+    final taskQueueState = ref.watch(taskQueueProvider);
 
     final screenWidth = MediaQuery.of(context).size.width;
     final isNarrow = screenWidth < 600;
+    final isMobile = screenWidth < 480;
 
-    final isSettingsInteractive = !appState.loading && !downloadState.downloading && !extractionState.isExtracting;
+    final isSettingsInteractive = !appState.loading && !taskQueueState.hasRunningTasks;
     final canDownload = !appState.loading && downloadNotifier.hasDownloadableSelectedGames();
 
     return Container(
-      height: (kToolbarHeight - 5) + MediaQuery.of(context).padding.top,
+      height: !isMobile ? (kToolbarHeight - 5) + MediaQuery.of(context).padding.top : null,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
@@ -78,108 +66,198 @@ class _HeaderState extends ConsumerState<Header> {
         bottom: false,
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-          child: Row(
-            children: [
-              if (!isNarrow) ...[
-                Image.asset('assets/icon.png', width: 35),
-                SizedBox(width: 16),
-              ],
-              Expanded(
-                flex: isNarrow ? 3 : 2,
-                child: ConsoleDropdown(
-                  consoles: widget.consoles,
-                  selectedConsole: widget.selectedConsole,
-                  isInteractive: !appState.loading,
-                  onConsoleSelect: widget.onConsoleSelect,
-                ),
-              ),
-              SizedBox(width: 12),
-              Expanded(
-                flex: isNarrow ? 4 : 3,
-                child: SearchField(
-                  initialText: catalogState.filterText,
-                  isEnabled: !appState.loading,
-                  onChanged: (text) => catalogNotifier.updateFilterText(text),
-                ),
-              ),
-              SizedBox(width: 8),
-              _buildActionButton(
-                context: context,
-                icon: catalogState.filter.isActive ? Icons.filter_alt : Icons.filter_alt_outlined,
-                isActive: catalogState.filter.isActive,
-                onPressed: () => FilterModal.show(context),
-                tooltip: 'Filters',
-              ),
-              SizedBox(width: 4),
-              _buildActionButton(
-                context: context,
-                icon: Icons.download_rounded,
-                isActive: canDownload,
-                onPressed: canDownload
-                    ? () {
-                        final selectedGames = catalogState.games.where((game) => catalogState.selectedGames.contains(game.taskId)).toList();
-                        TaskQueueService.startDownloads(ref, selectedGames, widget.selectedConsole?.id);
-                      }
-                    : null,
-                tooltip: 'Download Selected',
-                showBadge: downloadState.downloading,
-              ),
-              SizedBox(width: 4),
-              PopupMenuButton<String>(
-                icon: Icon(
-                  Icons.more_vert,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-                tooltip: 'More options',
-                enabled: isSettingsInteractive,
-                onSelected: (value) {
-                  switch (value) {
-                    case 'settings':
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => SettingsScreen(consoleId: widget.selectedConsole?.id),
-                        ),
-                      );
-                      break;
-                    case 'about':
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => AboutScreen(),
-                        ),
-                      );
-                      break;
-                  }
-                },
-                itemBuilder: (context) => [
-                  PopupMenuItem(
-                    value: 'settings',
-                    child: Row(
+          child: isMobile
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
                       children: [
-                        Icon(Icons.settings, size: 18),
-                        SizedBox(width: 12),
-                        Text('Settings'),
+                        Expanded(
+                          flex: 3,
+                          child: ConsoleDropdown(
+                            consoles: widget.consoles,
+                            selectedConsole: widget.selectedConsole,
+                            isInteractive: !appState.loading,
+                            onConsoleSelect: widget.onConsoleSelect,
+                          ),
+                        ),
                       ],
                     ),
-                  ),
-                  PopupMenuItem(
-                    value: 'about',
-                    child: Row(
-                      children: [
-                        Icon(Icons.info_outline, size: 18),
-                        SizedBox(width: 12),
-                        Text('About'),
-                      ],
+                    SizedBox(height: 8),
+                    _buildActionRow(
+                      context: context,
+                      catalogState: catalogState,
+                      catalogNotifier: catalogNotifier,
+                      canDownload: canDownload,
+                      isSettingsInteractive: isSettingsInteractive,
+                      isNarrow: true,
                     ),
+                  ],
+                )
+              : Row(
+                  children: _buildHeaderRowContent(
+                    context: context,
+                    isNarrow: isNarrow,
+                    catalogState: catalogState,
+                    catalogNotifier: catalogNotifier,
+                    canDownload: canDownload,
+                    isSettingsInteractive: isSettingsInteractive,
                   ),
-                ],
-              ),
-            ],
-          ),
+                ),
         ),
       ),
     );
+  }
+
+  List<Widget> _buildHeaderRowContent({
+    required BuildContext context,
+    required bool isNarrow,
+    required catalogState,
+    required catalogNotifier,
+    required bool canDownload,
+    required bool isSettingsInteractive,
+  }) {
+    return [
+      if (!isNarrow) ...[
+        Image.asset('assets/icon.png', width: 35),
+        SizedBox(width: 16),
+      ],
+      Expanded(
+        flex: isNarrow ? 3 : 2,
+        child: ConsoleDropdown(
+          consoles: widget.consoles,
+          selectedConsole: widget.selectedConsole,
+          isInteractive: !ref.watch(appStateProvider).loading,
+          onConsoleSelect: widget.onConsoleSelect,
+        ),
+      ),
+      SizedBox(width: 12),
+      Expanded(
+        flex: isNarrow ? 4 : 3,
+        child: SearchField(
+          initialText: catalogState.filterText,
+          isEnabled: !ref.watch(appStateProvider).loading,
+          onChanged: (text) => catalogNotifier.updateFilterText(text),
+        ),
+      ),
+      SizedBox(width: 8),
+      ..._buildActionWidgets(
+        context: context,
+        catalogState: catalogState,
+        canDownload: canDownload,
+        isSettingsInteractive: isSettingsInteractive,
+      ),
+    ];
+  }
+
+  Widget _buildActionRow({
+    required BuildContext context,
+    required catalogState,
+    required catalogNotifier,
+    required bool canDownload,
+    required bool isSettingsInteractive,
+    required bool isNarrow,
+  }) {
+    return Row(
+      children: [
+        Expanded(
+          flex: 4,
+          child: SearchField(
+            initialText: catalogState.filterText,
+            isEnabled: !ref.watch(appStateProvider).loading,
+            onChanged: (text) => catalogNotifier.updateFilterText(text),
+          ),
+        ),
+        SizedBox(width: 8),
+        ..._buildActionWidgets(
+          context: context,
+          catalogState: catalogState,
+          canDownload: canDownload,
+          isSettingsInteractive: isSettingsInteractive,
+        ),
+      ],
+    );
+  }
+
+  List<Widget> _buildActionWidgets({
+    required BuildContext context,
+    required catalogState,
+    required bool canDownload,
+    required bool isSettingsInteractive,
+  }) {
+    return [
+      _buildActionButton(
+        context: context,
+        icon: catalogState.filter.isActive ? Icons.filter_alt : Icons.filter_alt_outlined,
+        isActive: catalogState.filter.isActive,
+        onPressed: () => FilterModal.show(context),
+        tooltip: 'Filters',
+      ),
+      SizedBox(width: 4),
+      _buildActionButton(
+        context: context,
+        icon: Icons.download_rounded,
+        isActive: canDownload,
+        onPressed: canDownload
+            ? () {
+                final selectedGames = catalogState.games.where((game) => catalogState.selectedGames.contains(game.taskId)).toList();
+                TaskQueueService.startDownloads(ref, selectedGames, widget.selectedConsole?.id);
+              }
+            : null,
+        tooltip: 'Download Selected',
+      ),
+      SizedBox(width: 4),
+      PopupMenuButton<String>(
+        icon: Icon(
+          Icons.more_vert,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+        tooltip: 'More options',
+        onSelected: (value) {
+          switch (value) {
+            case 'settings':
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => SettingsScreen(consoleId: widget.selectedConsole?.id),
+                ),
+              );
+              break;
+            case 'about':
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => AboutScreen(),
+                ),
+              );
+              break;
+          }
+        },
+        itemBuilder: (context) => [
+          PopupMenuItem(
+            value: 'settings',
+            enabled: isSettingsInteractive,
+            child: Row(
+              children: [
+                Icon(Icons.settings, size: 18),
+                SizedBox(width: 12),
+                Text('Settings'),
+              ],
+            ),
+          ),
+          PopupMenuItem(
+            value: 'about',
+            child: Row(
+              children: [
+                Icon(Icons.info_outline, size: 18),
+                SizedBox(width: 12),
+                Text('About'),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ];
   }
 
   Widget _buildActionButton({
@@ -188,7 +266,6 @@ class _HeaderState extends ConsumerState<Header> {
     required VoidCallback? onPressed,
     required String tooltip,
     bool isActive = false,
-    bool showBadge = false,
   }) {
     return Stack(
       children: [
@@ -220,19 +297,6 @@ class _HeaderState extends ConsumerState<Header> {
             padding: EdgeInsets.zero,
           ),
         ),
-        if (showBadge)
-          Positioned(
-            right: 8,
-            top: 8,
-            child: Container(
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.error,
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
       ],
     );
   }
