@@ -41,7 +41,7 @@ class _HeaderState extends ConsumerState<Header> {
     final isNarrow = screenWidth < 600;
     final isMobile = screenWidth < 480;
 
-    final isSettingsInteractive = !appState.loading && !taskQueueState.hasRunningTasks;
+    final canAccessSettings = !appState.loading && !taskQueueState.hasRunningTasks;
     final canDownload = !appState.loading && downloadNotifier.hasDownloadableSelectedGames();
 
     return Container(
@@ -84,98 +84,62 @@ class _HeaderState extends ConsumerState<Header> {
                       ],
                     ),
                     SizedBox(height: 8),
-                    _buildActionRow(
-                      context: context,
-                      catalogState: catalogState,
-                      catalogNotifier: catalogNotifier,
-                      canDownload: canDownload,
-                      isSettingsInteractive: isSettingsInteractive,
-                      isNarrow: true,
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 4,
+                          child: SearchField(
+                            initialText: catalogState.filterText,
+                            isEnabled: !ref.watch(appStateProvider).loading,
+                            onChanged: (text) => catalogNotifier.updateFilterText(text),
+                          ),
+                        ),
+                        SizedBox(width: 8),
+                        ..._buildActionWidgets(
+                          context: context,
+                          catalogState: catalogState,
+                          canDownload: canDownload,
+                          canAccessSettings: canAccessSettings,
+                        ),
+                      ],
                     ),
                   ],
                 )
               : Row(
-                  children: _buildHeaderRowContent(
-                    context: context,
-                    isNarrow: isNarrow,
-                    catalogState: catalogState,
-                    catalogNotifier: catalogNotifier,
-                    canDownload: canDownload,
-                    isSettingsInteractive: isSettingsInteractive,
-                  ),
+                  children: [
+                    if (!isNarrow) ...[
+                      Image.asset('assets/icon.png', width: 35),
+                      SizedBox(width: 16),
+                    ],
+                    Expanded(
+                      flex: isNarrow ? 3 : 2,
+                      child: ConsoleDropdown(
+                        consoles: widget.consoles,
+                        selectedConsole: widget.selectedConsole,
+                        isInteractive: !ref.watch(appStateProvider).loading,
+                        onConsoleSelect: widget.onConsoleSelect,
+                      ),
+                    ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      flex: isNarrow ? 4 : 3,
+                      child: SearchField(
+                        initialText: catalogState.filterText,
+                        isEnabled: !ref.watch(appStateProvider).loading,
+                        onChanged: (text) => catalogNotifier.updateFilterText(text),
+                      ),
+                    ),
+                    SizedBox(width: 8),
+                    ..._buildActionWidgets(
+                      context: context,
+                      catalogState: catalogState,
+                      canDownload: canDownload,
+                      canAccessSettings: canAccessSettings,
+                    ),
+                  ],
                 ),
         ),
       ),
-    );
-  }
-
-  List<Widget> _buildHeaderRowContent({
-    required BuildContext context,
-    required bool isNarrow,
-    required catalogState,
-    required catalogNotifier,
-    required bool canDownload,
-    required bool isSettingsInteractive,
-  }) {
-    return [
-      if (!isNarrow) ...[
-        Image.asset('assets/icon.png', width: 35),
-        SizedBox(width: 16),
-      ],
-      Expanded(
-        flex: isNarrow ? 3 : 2,
-        child: ConsoleDropdown(
-          consoles: widget.consoles,
-          selectedConsole: widget.selectedConsole,
-          isInteractive: !ref.watch(appStateProvider).loading,
-          onConsoleSelect: widget.onConsoleSelect,
-        ),
-      ),
-      SizedBox(width: 12),
-      Expanded(
-        flex: isNarrow ? 4 : 3,
-        child: SearchField(
-          initialText: catalogState.filterText,
-          isEnabled: !ref.watch(appStateProvider).loading,
-          onChanged: (text) => catalogNotifier.updateFilterText(text),
-        ),
-      ),
-      SizedBox(width: 8),
-      ..._buildActionWidgets(
-        context: context,
-        catalogState: catalogState,
-        canDownload: canDownload,
-        isSettingsInteractive: isSettingsInteractive,
-      ),
-    ];
-  }
-
-  Widget _buildActionRow({
-    required BuildContext context,
-    required catalogState,
-    required catalogNotifier,
-    required bool canDownload,
-    required bool isSettingsInteractive,
-    required bool isNarrow,
-  }) {
-    return Row(
-      children: [
-        Expanded(
-          flex: 4,
-          child: SearchField(
-            initialText: catalogState.filterText,
-            isEnabled: !ref.watch(appStateProvider).loading,
-            onChanged: (text) => catalogNotifier.updateFilterText(text),
-          ),
-        ),
-        SizedBox(width: 8),
-        ..._buildActionWidgets(
-          context: context,
-          catalogState: catalogState,
-          canDownload: canDownload,
-          isSettingsInteractive: isSettingsInteractive,
-        ),
-      ],
     );
   }
 
@@ -183,7 +147,7 @@ class _HeaderState extends ConsumerState<Header> {
     required BuildContext context,
     required catalogState,
     required bool canDownload,
-    required bool isSettingsInteractive,
+    required bool canAccessSettings,
   }) {
     return [
       _buildActionButton(
@@ -236,7 +200,7 @@ class _HeaderState extends ConsumerState<Header> {
         itemBuilder: (context) => [
           PopupMenuItem(
             value: 'settings',
-            enabled: isSettingsInteractive,
+            enabled: canAccessSettings,
             child: Row(
               children: [
                 Icon(Icons.settings, size: 18),
