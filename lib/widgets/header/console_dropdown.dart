@@ -18,40 +18,69 @@ class ConsoleDropdown extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 8),
+      height: 50,
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(4),
+        gradient: LinearGradient(
+          colors: [
+            Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.1),
+            Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.05),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: Theme.of(context).dividerColor,
-          width: 0.5,
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+          width: 1,
         ),
       ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          isExpanded: true,
-          value: selectedConsole?.id,
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurface,
+      child: Row(
+        children: [
+          Icon(
+            Icons.gamepad_rounded,
+            color: Theme.of(context).colorScheme.primary,
+            size: 18,
           ),
-          onChanged: isInteractive
-              ? (value) {
-                  if (value != null) {
-                    final console = consoles.firstWhere((c) => c.id == value);
-                    onConsoleSelect(console);
-                  }
-                }
-              : null,
-          items: consoles.map((console) {
-            return DropdownMenuItem<String>(
-              value: console.id,
-              child: Text(
-                console.name,
-                overflow: TextOverflow.ellipsis,
+          SizedBox(width: 8),
+          Expanded(
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                isExpanded: true,
+                value: selectedConsole?.id,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontWeight: FontWeight.w500,
+                  fontSize: 14,
+                ),
+                icon: Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                onChanged: isInteractive
+                    ? (value) {
+                        if (value != null) {
+                          final console = consoles.firstWhere((c) => c.id == value);
+                          onConsoleSelect(console);
+                        }
+                      }
+                    : null,
+                items: consoles.map((console) {
+                  return DropdownMenuItem<String>(
+                    value: console.id,
+                    child: Text(
+                      console.name,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  );
+                }).toList(),
               ),
-            );
-          }).toList(),
-        ),
+            ),
+          ),
+        ],
       ),
     );
   }

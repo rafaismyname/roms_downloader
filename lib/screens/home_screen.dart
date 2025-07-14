@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:roms_downloader/models/app_state_model.dart';
 import 'package:roms_downloader/providers/app_state_provider.dart';
-import 'package:roms_downloader/screens/about_screen.dart';
-import 'package:roms_downloader/widgets/header/controls.dart';
+import 'package:roms_downloader/widgets/header/header.dart';
 import 'package:roms_downloader/widgets/game_list/game_list.dart';
+import 'package:roms_downloader/widgets/game_list/game_grid.dart';
 import 'package:roms_downloader/widgets/footer/footer.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -15,56 +16,31 @@ class HomeScreen extends ConsumerWidget {
     final appStateNotifier = ref.read(appStateProvider.notifier);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'ROMs Downloader',
-          style: TextStyle(
-            fontSize: 16,
+      body: Column(
+        children: [
+          Header(
+            consoles: appState.consolesList,
+            selectedConsole: appState.selectedConsole,
+            onConsoleSelect: appStateNotifier.selectConsole,
           ),
-        ),
-        centerTitle: false,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        toolbarHeight: 40,
-        actions: [
-          IconButton(
-            icon: Icon(Icons.info_outline_rounded),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => AboutScreen(),
-                ),
-              );
-            },
-            tooltip: 'About',
+          Expanded(
+            child: appState.loading
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 16),
+                        Text('Loading...'),
+                      ],
+                    ),
+                  )
+                : appState.viewMode == ViewMode.grid
+                    ? GameGrid()
+                    : GameList(),
           ),
+          Footer(),
         ],
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Controls(
-              consoles: appState.consolesList,
-              selectedConsole: appState.selectedConsole,
-              onConsoleSelect: appStateNotifier.selectConsole,
-            ),
-            Expanded(
-              child: appState.loading
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          CircularProgressIndicator(),
-                          SizedBox(height: 16),
-                          Text('Loading...'),
-                        ],
-                      ),
-                    )
-                  : GameList(),
-            ),
-            Footer(),
-          ],
-        ),
       ),
     );
   }

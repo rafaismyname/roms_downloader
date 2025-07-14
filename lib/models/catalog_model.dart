@@ -1,7 +1,7 @@
 import 'package:roms_downloader/models/game_model.dart';
 import 'package:roms_downloader/models/catalog_filter_model.dart';
 
-const int kDefaultCatalogDisplaySize = 20;
+const int kDefaultCatalogDisplaySize = 64;
 
 class CatalogState {
   final List<Game> games;

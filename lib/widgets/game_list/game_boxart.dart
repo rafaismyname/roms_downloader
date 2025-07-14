@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:roms_downloader/models/game_model.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:photo_view/photo_view.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:roms_downloader/models/game_model.dart';
 
 class GameBoxart extends StatelessWidget {
   final Game game;
@@ -60,6 +60,7 @@ class GameBoxart extends StatelessWidget {
             height: size,
             fit: BoxFit.cover,
             errorWidget: (context, url, error) => _DefaultPlaceholder(size: size),
+            errorListener: (value) => debugPrint('Error loading boxart: $value'),
             progressIndicatorBuilder: (context, url, downloadProgress) => Container(
               width: size,
               height: size,

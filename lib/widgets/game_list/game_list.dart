@@ -120,6 +120,7 @@ class _GameListState extends ConsumerState<GameList> {
         Expanded(
           child: ListView.builder(
             controller: _scrollController,
+            padding: EdgeInsets.zero,
             itemCount: games.length + (loadingMore ? 1 : 0),
             cacheExtent: screenHeight * 1.5,
             itemBuilder: (context, index) {

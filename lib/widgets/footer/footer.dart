@@ -32,7 +32,7 @@ class Footer extends ConsumerWidget {
 
     final selectedConsole = appState.selectedConsole;
     final downloadDir = settingsNotifier.getDownloadDir(selectedConsole?.id);
-    final shouldTruncate = downloadDir.length > (60 + (isNarrow ? 0 : 20));
+    final shouldTruncate = downloadDir.length > (50 + (isNarrow ? 0 : 20));
     final truncateSize = isNarrow ? 10 : 30;
     final truncatedDownloadDir =
         shouldTruncate ? '${downloadDir.substring(0, truncateSize)}...${downloadDir.substring(downloadDir.length - truncateSize)}' : downloadDir;
