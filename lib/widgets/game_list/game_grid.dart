@@ -45,11 +45,6 @@ class _GameGridState extends ConsumerState<GameGrid> {
     return 2;
   }
 
-  double _calculateChildAspectRatio(double screenWidth) {
-    if (screenWidth < 600) return 0.7;
-    return _aspectRatio;
-  }
-
   void _updateAspectRatio(String? firstBoxartUrl) {
     if (firstBoxartUrl != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -79,7 +74,6 @@ class _GameGridState extends ConsumerState<GameGrid> {
 
     final screenWidth = MediaQuery.of(context).size.width;
     final crossAxisCount = _calculateCrossAxisCount(screenWidth);
-    final childAspectRatio = _calculateChildAspectRatio(screenWidth);
 
     if (games.isNotEmpty) {
       final currentConsoleId = games.first.consoleId;
@@ -96,7 +90,7 @@ class _GameGridState extends ConsumerState<GameGrid> {
         controller: _scrollController,
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: crossAxisCount,
-          childAspectRatio: childAspectRatio,
+          childAspectRatio: _aspectRatio,
           crossAxisSpacing: 6,
           mainAxisSpacing: 6,
         ),
@@ -126,7 +120,7 @@ class _GameGridState extends ConsumerState<GameGrid> {
           return GameGridItem(
             key: ValueKey(game.taskId),
             game: game,
-            aspectRatio: childAspectRatio,
+            aspectRatio: _aspectRatio,
           );
         },
       ),
