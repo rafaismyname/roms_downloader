@@ -15,6 +15,7 @@ class _GameGridState extends ConsumerState<GameGrid> {
   final ScrollController _scrollController = ScrollController();
   CatalogNotifier? _catalogNotifier;
   double _aspectRatio = 0.75;
+  String? _lastConsoleId;
 
   @override
   void initState() {
@@ -50,19 +51,22 @@ class _GameGridState extends ConsumerState<GameGrid> {
   }
 
   void _updateAspectRatio(String? firstBoxartUrl) {
-    if (firstBoxartUrl != null && _aspectRatio == 0.75) {
+    if (firstBoxartUrl != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        final imageProvider = CachedNetworkImageProvider(firstBoxartUrl);
-        imageProvider.resolve(const ImageConfiguration()).addListener(
-          ImageStreamListener((ImageInfo info, bool _) {
-            final aspectRatio = info.image.width / info.image.height;
-            if (mounted && aspectRatio != _aspectRatio) {
-              setState(() {
-                _aspectRatio = aspectRatio.clamp(0.5, 1.5);
-              });
-            }
-          }),
-        );
+        try {
+          CachedNetworkImageProvider(firstBoxartUrl).resolve(const ImageConfiguration()).addListener(
+            ImageStreamListener((ImageInfo info, bool _) {
+              final aspectRatio = info.image.width / info.image.height;
+              if (mounted && aspectRatio != _aspectRatio) {
+                setState(() {
+                  _aspectRatio = aspectRatio.clamp(0.5, 1.5);
+                });
+              }
+            }),
+          );
+        } catch (e) {
+          debugPrint('Error fetching image to calculate radio: $e');
+        }
       });
     }
   }
@@ -78,6 +82,11 @@ class _GameGridState extends ConsumerState<GameGrid> {
     final childAspectRatio = _calculateChildAspectRatio(screenWidth);
 
     if (games.isNotEmpty) {
+      final currentConsoleId = games.first.consoleId;
+      if (_lastConsoleId != currentConsoleId) {
+        _aspectRatio = 0.75;
+        _lastConsoleId = currentConsoleId;
+      }
       _updateAspectRatio(games.first.boxart);
     }
 
