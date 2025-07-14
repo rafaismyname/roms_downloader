@@ -5,12 +5,11 @@ import 'package:roms_downloader/models/game_state_model.dart';
 import 'package:roms_downloader/providers/catalog_provider.dart';
 import 'package:roms_downloader/providers/game_state_provider.dart';
 import 'package:roms_downloader/widgets/game_list/game_action_buttons.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:roms_downloader/widgets/game_list/game_boxart.dart';
 
 class GameGridItem extends ConsumerStatefulWidget {
   final Game game;
   final double aspectRatio;
-
 
   const GameGridItem({
     super.key,
@@ -27,138 +26,135 @@ class _GameGridItemState extends ConsumerState<GameGridItem> {
   Widget build(BuildContext context) {
     final game = widget.game;
     final aspectRatio = widget.aspectRatio;
-
     final catalogState = ref.watch(catalogProvider);
     final catalogNotifier = ref.read(catalogProvider.notifier);
     final gameState = ref.watch(gameStateProvider(game));
     final isSelected = catalogState.selectedGames.contains(game.taskId);
+    final isActive = gameState.isActive;
 
     if (gameState.status == GameStatus.init) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          final gameId = game.taskId;
-          ref.read(gameStateManagerProvider.notifier).resolveState(gameId);
+          ref.read(gameStateManagerProvider.notifier).resolveState(game.taskId);
         }
       });
     }
 
-    return GestureDetector(
-      onTap: () => catalogNotifier.toggleGameSelection(game.taskId),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(4),
-          border: Border.all(
-            color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).dividerColor.withValues(alpha: 0.2),
-            width: isSelected ? 2 : 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 8,
-              offset: Offset(0, 2),
-            ),
-          ],
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(
+          color: (isSelected || isActive) ? Theme.of(context).colorScheme.primary : Theme.of(context).dividerColor.withValues(alpha: 0.2),
+          width: (isSelected || isActive) ? 2 : 1,
         ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(4),
-          child: Stack(
-            children: [
-              AspectRatio(
-                aspectRatio: aspectRatio,
-                child: game.boxart != null ? _buildBoxartImage(context) : _buildPlaceholder(context),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(4),
+        child: Stack(
+          children: [
+            AspectRatio(
+              aspectRatio: aspectRatio,
+              child: GameBoxart(
+                game: game,
+                placeholder: _buildPlaceholder(context),
               ),
-              if (isSelected)
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: Container(
-                    width: 24,
-                    height: 24,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primary,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.2),
-                          blurRadius: 4,
-                          offset: Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Icon(
-                      Icons.check,
-                      color: Theme.of(context).colorScheme.onPrimary,
-                      size: 16,
-                    ),
-                  ),
-                ),
-              Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.transparent,
-                        Colors.black.withValues(alpha: 0.7),
-                      ],
-                    ),
-                  ),
-                  padding: EdgeInsets.all(8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        game.displayTitle,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          shadows: [
-                            Shadow(
-                              color: Colors.black.withValues(alpha: 0.8),
-                              blurRadius: 2,
-                            ),
-                          ],
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      if (gameState.showProgressBar) ...[
-                        SizedBox(height: 4),
-                        Container(
-                          height: 3,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.3),
-                            borderRadius: BorderRadius.circular(1.5),
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(1.5),
-                            child: LinearProgressIndicator(
-                              value: gameState.currentProgress,
-                              backgroundColor: Colors.transparent,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                              minHeight: 3,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
+            ),
+            if (gameState.isInteractable || isSelected) ...[
               Positioned(
                 top: 8,
                 left: 8,
+                child: SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: Checkbox(
+                    value: isSelected,
+                    onChanged: gameState.isInteractable ? (_) => catalogNotifier.toggleGameSelection(game.taskId) : null,
+                    shape: CircleBorder(),
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
+              ),
+            ],
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withValues(alpha: 0.7),
+                    ],
+                  ),
+                ),
+                padding: EdgeInsets.all(8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      game.displayTitle,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black.withValues(alpha: 0.8),
+                            blurRadius: 2,
+                          ),
+                        ],
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (gameState.showProgressBar) ...[
+                      SizedBox(height: 4),
+                      Container(
+                        height: 3,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.3),
+                          borderRadius: BorderRadius.circular(1.5),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(1.5),
+                          child: LinearProgressIndicator(
+                            value: gameState.currentProgress,
+                            backgroundColor: Colors.transparent,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            minHeight: 3,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            if (gameState.availableActions.isNotEmpty) ...[
+              Positioned(
+                top: 8,
+                right: 8,
                 child: Container(
                   height: 32,
                   decoration: BoxDecoration(
-                    color: Colors.black.withAlpha(90),
+                    color: Colors.black.withValues(alpha: 0.6),
                     borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      width: 1,
+                    ),
                   ),
                   padding: EdgeInsets.symmetric(horizontal: 2, vertical: 2),
                   child: GameActionButtons(
@@ -169,24 +165,7 @@ class _GameGridItemState extends ConsumerState<GameGridItem> {
                 ),
               ),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBoxartImage(BuildContext context) {
-    return CachedNetworkImage(
-      imageUrl: widget.game.boxart!,
-      fit: BoxFit.cover,
-      errorWidget: (context, url, error) => _buildPlaceholder(context),
-      progressIndicatorBuilder: (context, url, downloadProgress) => Container(
-        color: Theme.of(context).colorScheme.surface,
-        child: Center(
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            value: downloadProgress.progress,
-          ),
+          ],
         ),
       ),
     );
