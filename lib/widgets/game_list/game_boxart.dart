@@ -60,6 +60,7 @@ class GameBoxart extends StatelessWidget {
             height: size,
             fit: BoxFit.cover,
             errorWidget: (context, url, error) => _DefaultPlaceholder(size: size),
+            errorListener: (value) => debugPrint('Error loading boxart: $value'),
             progressIndicatorBuilder: (context, url, downloadProgress) => Container(
               width: size,
               height: size,

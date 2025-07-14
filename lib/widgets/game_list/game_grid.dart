@@ -50,17 +50,22 @@ class _GameGridState extends ConsumerState<GameGrid> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         try {
           CachedNetworkImageProvider(firstBoxartUrl).resolve(const ImageConfiguration()).addListener(
-            ImageStreamListener((ImageInfo info, bool _) {
-              final aspectRatio = info.image.width / info.image.height;
-              if (mounted && aspectRatio != _aspectRatio) {
-                setState(() {
-                  _aspectRatio = aspectRatio.clamp(0.5, 1.5);
-                });
-              }
-            }),
-          );
+                ImageStreamListener(
+                  (ImageInfo info, bool _) {
+                    final aspectRatio = info.image.width / info.image.height;
+                    if (mounted && aspectRatio != _aspectRatio) {
+                      setState(() {
+                        _aspectRatio = aspectRatio.clamp(0.5, 1.5);
+                      });
+                    }
+                  },
+                  onError: (exception, stackTrace) {
+                    debugPrint('Error loading boxart for aspect ratio calculation: $exception');
+                  },
+                ),
+              );
         } catch (e) {
-          debugPrint('Error fetching image to calculate radio: $e');
+          debugPrint('Error fetching image to calculate ratio: $e');
         }
       });
     }
@@ -88,6 +93,7 @@ class _GameGridState extends ConsumerState<GameGrid> {
       padding: EdgeInsets.all(6),
       child: GridView.builder(
         controller: _scrollController,
+        padding: EdgeInsets.zero,
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: crossAxisCount,
           childAspectRatio: _aspectRatio,

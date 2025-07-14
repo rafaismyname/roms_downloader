@@ -40,7 +40,7 @@ I do not own nor recommend those sources. As a matter of fact, the first step in
 - [x] Permissions control
 - [x] Boxart fetching
 - [ ] Settings for file cache folder
-- [ ] Grid Viewer
+- [x] Grid Viewer
 - [ ] Game metadata fetcher (rating, description...)
 - [x] Info/About page
 - [x] Android support

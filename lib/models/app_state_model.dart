@@ -12,7 +12,7 @@ class AppState {
     this.loading = false,
     this.consoles = const {},
     this.selectedConsole,
-    this.viewMode = ViewMode.list,
+    this.viewMode = ViewMode.grid,
   });
 
   AppState copyWith({
