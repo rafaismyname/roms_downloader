@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:roms_downloader/models/app_state_model.dart';
 import 'package:roms_downloader/providers/app_state_provider.dart';
 import 'package:roms_downloader/widgets/header/header.dart';
 import 'package:roms_downloader/widgets/game_list/game_list.dart';
+import 'package:roms_downloader/widgets/game_list/game_grid.dart';
 import 'package:roms_downloader/widgets/footer/footer.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -33,7 +35,9 @@ class HomeScreen extends ConsumerWidget {
                       ],
                     ),
                   )
-                : GameList(),
+                : appState.viewMode == ViewMode.grid
+                    ? GameGrid()
+                    : GameList(),
           ),
           Footer(),
         ],

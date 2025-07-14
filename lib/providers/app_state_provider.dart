@@ -52,4 +52,13 @@ class AppStateNotifier extends StateNotifier<AppState> {
   void setLoading(bool loading) {
     state = state.copyWith(loading: loading);
   }
+
+  void toggleViewMode() {
+    final newMode = state.viewMode == ViewMode.list ? ViewMode.grid : ViewMode.list;
+    state = state.copyWith(viewMode: newMode);
+  }
+
+  void setViewMode(ViewMode mode) {
+    state = state.copyWith(viewMode: mode);
+  }
 }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:roms_downloader/models/catalog_model.dart';
 import 'package:roms_downloader/models/console_model.dart';
+import 'package:roms_downloader/models/app_state_model.dart';
 import 'package:roms_downloader/providers/app_state_provider.dart';
 import 'package:roms_downloader/providers/download_provider.dart';
 import 'package:roms_downloader/providers/catalog_provider.dart';
@@ -97,6 +99,7 @@ class _HeaderState extends ConsumerState<Header> {
                         SizedBox(width: 8),
                         ..._buildActionWidgets(
                           context: context,
+                          appState: appState,
                           catalogState: catalogState,
                           canDownload: canDownload,
                           canAccessSettings: canAccessSettings,
@@ -132,6 +135,7 @@ class _HeaderState extends ConsumerState<Header> {
                     SizedBox(width: 8),
                     ..._buildActionWidgets(
                       context: context,
+                      appState: appState,
                       catalogState: catalogState,
                       canDownload: canDownload,
                       canAccessSettings: canAccessSettings,
@@ -145,10 +149,13 @@ class _HeaderState extends ConsumerState<Header> {
 
   List<Widget> _buildActionWidgets({
     required BuildContext context,
-    required catalogState,
+    required AppState appState,
+    required CatalogState catalogState,
     required bool canDownload,
     required bool canAccessSettings,
   }) {
+    final appStateNotifier = ref.read(appStateProvider.notifier);
+
     return [
       _buildActionButton(
         context: context,
@@ -169,6 +176,14 @@ class _HeaderState extends ConsumerState<Header> {
               }
             : null,
         tooltip: 'Download Selected',
+      ),
+      SizedBox(width: 4),
+      _buildActionButton(
+        context: context,
+        icon: appState.viewMode == ViewMode.grid ? Icons.view_list_rounded : Icons.grid_view_rounded,
+        isActive: false,
+        onPressed: () => appStateNotifier.toggleViewMode(),
+        tooltip: appState.viewMode == ViewMode.grid ? 'List View' : 'Grid View',
       ),
       SizedBox(width: 4),
       PopupMenuButton<String>(
