@@ -37,8 +37,8 @@ class GameActionButtons extends ConsumerWidget {
 
   List<Widget> _buildActionButtons(BuildContext context, WidgetRef ref) {
     final List<Widget> buttons = [];
-    final buttonSize = isNarrow ? 20.0 : 24.0;
-    final buttonConstraints = BoxConstraints(minWidth: 20, minHeight: 20);
+    final buttonSize = isNarrow ? 18.0 : 24.0;
+    final buttonConstraints = BoxConstraints(minWidth: 18, minHeight: 18);
 
     for (final action in gameState.availableActions) {
       switch (action) {

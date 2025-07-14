@@ -103,21 +103,88 @@ class _GameGridItemState extends ConsumerState<GameGridItem> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      game.displayTitle,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        shadows: [
-                          Shadow(
-                            color: Colors.black.withValues(alpha: 0.8),
-                            blurRadius: 2,
+                    if (game.boxart != null) ...[
+                      Text(
+                        game.displayTitle,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black.withValues(alpha: 0.8),
+                              blurRadius: 2,
+                            ),
+                          ],
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      SizedBox(height: 2),
+                    ],
+                    Row(
+                      children: [
+                        if (game.metadata?.diskNumber.isNotEmpty == true) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular(3),
+                            ),
+                            child: Text(
+                              'Disk ${game.metadata!.diskNumber}',
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w500,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                        ],
+                        if (game.metadata?.revision.isNotEmpty == true) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular(3),
+                            ),
+                            child: Text(
+                              'Rev ${game.metadata!.revision}',
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w500,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                        ],
+                        if (game.metadata?.regions.isNotEmpty == true) ...[
+                          Padding(
+                            padding: const EdgeInsets.only(right: 2),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.primary.withAlpha(100),
+                                borderRadius: BorderRadius.circular(2),
+                                border: Border.all(
+                                  color: Theme.of(context).colorScheme.primary.withAlpha(100),
+                                  width: 0.5,
+                                ),
+                              ),
+                              child: Text(
+                                game.metadata?.regions.first ?? '',
+                                style: TextStyle(
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.w600,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                              ),
+                            ),
                           ),
                         ],
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                      ],
                     ),
                     if (gameState.showProgressBar) ...[
                       SizedBox(height: 4),
@@ -147,16 +214,16 @@ class _GameGridItemState extends ConsumerState<GameGridItem> {
                 top: 8,
                 right: 8,
                 child: Container(
-                  height: 32,
+                  height: 26,
+                  padding: EdgeInsets.zero,
                   decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.6),
+                    color: Colors.black.withValues(alpha: 0.4),
                     borderRadius: BorderRadius.circular(6),
                     border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.2),
+                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.6),
                       width: 1,
                     ),
                   ),
-                  padding: EdgeInsets.symmetric(horizontal: 2, vertical: 2),
                   child: GameActionButtons(
                     game: game,
                     gameState: gameState,
@@ -198,7 +265,7 @@ class _GameGridItemState extends ConsumerState<GameGridItem> {
               Text(
                 widget.game.displayTitle,
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: widget.game.displayTitle.length > 20 ? 10 : 14,
                   fontWeight: FontWeight.w600,
                   color: Theme.of(context).colorScheme.onSurface,
                 ),
