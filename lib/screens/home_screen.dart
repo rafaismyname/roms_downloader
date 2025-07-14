@@ -4,7 +4,7 @@ import 'package:roms_downloader/models/app_state_model.dart';
 import 'package:roms_downloader/providers/app_state_provider.dart';
 import 'package:roms_downloader/widgets/header/header.dart';
 import 'package:roms_downloader/widgets/game_list/game_list.dart';
-import 'package:roms_downloader/widgets/game_list/game_grid.dart';
+import 'package:roms_downloader/widgets/game_grid/game_grid.dart';
 import 'package:roms_downloader/widgets/footer/footer.dart';
 
 class HomeScreen extends ConsumerWidget {

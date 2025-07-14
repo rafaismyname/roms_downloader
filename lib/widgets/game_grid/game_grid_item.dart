@@ -40,20 +40,27 @@ class _GameGridItemState extends ConsumerState<GameGridItem> {
       });
     }
 
+    Color? borderColor;
+    if (isSelected || isActive) {
+      borderColor = Theme.of(context).colorScheme.primary;
+    }
+    if (gameState.status == GameStatus.downloadFailed || gameState.status == GameStatus.extractionFailed) {
+      borderColor = Theme.of(context).colorScheme.tertiary;
+    }
+    if (gameState.status == GameStatus.downloaded) {
+      borderColor = Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.8);
+    }
+    if (gameState.status == GameStatus.extracted) {
+      borderColor = Theme.of(context).colorScheme.inversePrimary.withValues(alpha: 0.8);
+    }
+
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(4),
         border: Border.all(
-          color: (isSelected || isActive) ? Theme.of(context).colorScheme.primary : Theme.of(context).dividerColor.withValues(alpha: 0.2),
-          width: (isSelected || isActive) ? 2 : 1,
+          color: borderColor ?? Theme.of(context).dividerColor.withValues(alpha: 0.2),
+          width: borderColor != null ? 2 : 1,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 8,
-            offset: Offset(0, 2),
-          ),
-        ],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(4),
@@ -166,10 +173,10 @@ class _GameGridItemState extends ConsumerState<GameGridItem> {
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
                               decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.primary.withAlpha(100),
+                                color: Theme.of(context).colorScheme.primaryContainer,
                                 borderRadius: BorderRadius.circular(2),
                                 border: Border.all(
-                                  color: Theme.of(context).colorScheme.primary.withAlpha(100),
+                                  color: Theme.of(context).colorScheme.inversePrimary.withValues(alpha: 0.6),
                                   width: 0.5,
                                 ),
                               ),
@@ -217,7 +224,7 @@ class _GameGridItemState extends ConsumerState<GameGridItem> {
                   height: 26,
                   padding: EdgeInsets.zero,
                   decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.4),
+                    color: Theme.of(context).colorScheme.inversePrimary.withValues(alpha: 0.4),
                     borderRadius: BorderRadius.circular(6),
                     border: Border.all(
                       color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.6),
