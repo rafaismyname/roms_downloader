@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:roms_downloader/models/game_model.dart';
 import 'package:roms_downloader/models/game_state_model.dart';
 import 'package:roms_downloader/services/task_queue_service.dart';
+import 'package:roms_downloader/services/emulator_service.dart';
 
 class GameActionButtons extends ConsumerWidget {
   final Game game;
@@ -133,6 +134,20 @@ class GameActionButtons extends ConsumerWidget {
               child: IconButton(
                 icon: Icon(Icons.refresh, size: buttonSize),
                 onPressed: () => TaskQueueService.startExtraction(ref, game.taskId),
+                constraints: buttonConstraints,
+                padding: EdgeInsets.zero,
+                visualDensity: VisualDensity.compact,
+              ),
+            ),
+          );
+          break;
+        case GameAction.launch:
+          buttons.add(
+            Tooltip(
+              message: 'Launch Game',
+              child: IconButton(
+                icon: Icon(Icons.play_arrow, size: buttonSize),
+                onPressed: () => EmulatorService.launchGame(ref, game),
                 constraints: buttonConstraints,
                 padding: EdgeInsets.zero,
                 visualDensity: VisualDensity.compact,

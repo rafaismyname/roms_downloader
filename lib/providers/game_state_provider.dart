@@ -222,8 +222,8 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
 
   Set<GameAction> _getActions(GameStatus status, Game game) => switch (status) {
         GameStatus.ready => {GameAction.download},
-        GameStatus.downloaded => _canExtract(game) ? {GameAction.extract} : const {},
-        GameStatus.extracted => const {},
+        GameStatus.downloaded => _canExtract(game) ? {GameAction.extract} : {GameAction.launch},
+        GameStatus.extracted => {GameAction.launch},
         GameStatus.downloadFailed => {GameAction.retryDownload, GameAction.cancel},
         GameStatus.extractionFailed => {GameAction.retryExtraction, GameAction.cancel},
         GameStatus.downloadPaused => {GameAction.resume, GameAction.cancel},
