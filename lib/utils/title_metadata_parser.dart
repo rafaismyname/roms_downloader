@@ -121,204 +121,249 @@ class TitleMetadataParser {
     return regionString.split('/').map((region) => region.trim()).where((region) => region.isNotEmpty).toList();
   }
 
+  static final List<_PatternHandler> _patterns = [
+    _PatternHandler(RegExp(r'\[!\]'), (match, context) => context.dumpQualities.add(DumpQuality.goodDump)),
+    _PatternHandler(RegExp(r'\[b(\d*)\]'), (match, context) => context.dumpQualities.add(DumpQuality.badDump)),
+    _PatternHandler(RegExp(r'\[o(\d*)\]'), (match, context) => context.dumpQualities.add(DumpQuality.overdump)),
+    _PatternHandler(RegExp(r'\[h(\d*[A-Za-z]*)\]'), (match, context) => context.modifications.add(ModificationType.hack)),
+    _PatternHandler(RegExp(r'\[t(\d*[A-Za-z]*)\]'), (match, context) => context.modifications.add(ModificationType.translation)),
+    _PatternHandler(RegExp(r'\[a(\d*)\]'), (match, context) => context.distributionTypes.add(DistributionType.alternate)),
+    _PatternHandler(RegExp(r'\[f(\d*)\]'), (match, context) => context.modifications.add(ModificationType.fixed)),
+    _PatternHandler(RegExp(r'\[T[+-][A-Za-z]*(\d*)\]'), (match, context) => context.modifications.add(ModificationType.trainer)),
+    _PatternHandler(RegExp(r'^\d{5,8}\s*[-–]?\s*Disc(?:,|\b)', caseSensitive: false), (match, context) => context.romTypes.add(RomType.bios)),
+    _PatternHandler(RegExp(r'^\d{5,8}\s*[-–]?\s*CAT(?:-|\b)', caseSensitive: false), (match, context) => context.romTypes.add(RomType.bios)),
+    _PatternHandler(RegExp(r'^(?:DISC,\s*CAT)', caseSensitive: false), (match, context) => context.romTypes.add(RomType.bios)),
+    _PatternHandler(RegExp(r'\[BIOS\]'), (match, context) => context.romTypes.add(RomType.bios)),
+    _PatternHandler(RegExp(r'\[x\]'), (match, context) => context.dumpQualities.add(DumpQuality.badDump)),
+    _PatternHandler(RegExp(r'\[p(\d*)\]'), (match, context) => context.distributionTypes.add(DistributionType.pirate)),
+    _PatternHandler(RegExp(r'\[c\]'), (match, context) => context.modifications.add(ModificationType.fixed)),
+    _PatternHandler(RegExp(r'\[CR [^\]]+\]'), (match, context) => context.distributionTypes.add(DistributionType.pirate)),
+    _PatternHandler(RegExp(r'\[m(\d*)\]'), (match, context) => context.distributionTypes.add(DistributionType.multiCart)),
+    _PatternHandler(RegExp(r'\[S\]'), (match, context) => context.categories.add('Save')),
+    _PatternHandler(RegExp(r'\[(?:(?:SCPS|SCPM|SLPS|SLPM|SCUS|SLUS|SCES|SCED|SLES|SLED|PAPX|PBPX)-\d+)\]'), (match, context) => context.categories.add('Sony Code')),
+    _PatternHandler(RegExp(r'\[.*-\d+.*\]'), (match, context) => context.categories.add('Product Code')),
+    _PatternHandler(RegExp(r'\(M(\d+)\)'), (match, context) => context.distributionTypes.add(DistributionType.multiCart)),
+    _PatternHandler(RegExp(r'\(Unl\)'), (match, context) => context.distributionTypes.add(DistributionType.unlicensed)),
+    _PatternHandler(RegExp(r'\(Unlicensed\)'), (match, context) => context.distributionTypes.add(DistributionType.unlicensed)),
+    _PatternHandler(RegExp(r'\(iam8bit\)'), (match, context) => context.distributionTypes.add(DistributionType.alternate)),
+    _PatternHandler(RegExp(r'\(Animal Crossing\)'), (match, context) => context.distributionTypes.add(DistributionType.alternate)),
+    _PatternHandler(RegExp(r'\(Piko Interactive\)'), (match, context) => context.distributionTypes.add(DistributionType.alternate)),
+    _PatternHandler(RegExp(r'\(Capcom Town\)'), (match, context) => context.distributionTypes.add(DistributionType.alternate)),
+    _PatternHandler(RegExp(r'\(e-Reader Edition\)'), (match, context) => context.distributionTypes.add(DistributionType.alternate)),
+    _PatternHandler(RegExp(r'\(Kiosk\)'), (match, context) => context.distributionTypes.add(DistributionType.alternate)),
+    _PatternHandler(RegExp(r'\(Switch\)'), (match, context) => context.distributionTypes.add(DistributionType.alternate)),
+    _PatternHandler(RegExp(r'\(Retro-Bit\)'), (match, context) => context.distributionTypes.add(DistributionType.alternate)),
+    _PatternHandler(RegExp(r'\(Retro-Bit Generations\)'), (match, context) => context.distributionTypes.add(DistributionType.alternate)),
+    _PatternHandler(RegExp(r'\(Genesis Mini\)'), (match, context) => context.distributionTypes.add(DistributionType.alternate)),
+    _PatternHandler(RegExp(r'\(Sega Channel\)'), (match, context) => context.distributionTypes.add(DistributionType.alternate)),
+    _PatternHandler(RegExp(r'\Classic(s)? Collection\)'), (match, context) => context.distributionTypes.add(DistributionType.alternate)),
+    _PatternHandler(RegExp(r'\(LodgeNet\)'), (match, context) => context.distributionTypes.add(DistributionType.alternate)),
+    _PatternHandler(RegExp(r'\(HAL Laboratory\)'), (match, context) => context.distributionTypes.add(DistributionType.alternate)),
+    _PatternHandler(RegExp(r'\(Broke Studio\)'), (match, context) => context.distributionTypes.add(DistributionType.alternate)),
+    _PatternHandler(RegExp(r'\(Metal Gear Solid Collection\)'), (match, context) => context.distributionTypes.add(DistributionType.alternate)),
+    _PatternHandler(RegExp(r'\(The Cowabunga Collection\)'), (match, context) => context.distributionTypes.add(DistributionType.alternate)),
+    _PatternHandler(RegExp(r'\(Switch Online\)'), (match, context) => context.distributionTypes.add(DistributionType.alternate)),
+    _PatternHandler(RegExp(r'\(Wii Virtual Console\)'), (match, context) => context.distributionTypes.add(DistributionType.alternate)),
+    _PatternHandler(RegExp(r'\(Wii U Virtual Console\)'), (match, context) => context.distributionTypes.add(DistributionType.alternate)),
+    _PatternHandler(RegExp(r'\(GameCube\)'), (match, context) => context.distributionTypes.add(DistributionType.alternate)),
+    _PatternHandler(RegExp(r'\(GameCube Edition\)'), (match, context) => context.distributionTypes.add(DistributionType.alternate)),
+    _PatternHandler(RegExp(r'\(Limited Run Games\)'), (match, context) => context.distributionTypes.add(DistributionType.alternate)),
+    _PatternHandler(RegExp(r'\(Strictly Limited Games\)'), (match, context) => context.distributionTypes.add(DistributionType.alternate)),
+    _PatternHandler(RegExp(r'\(Columbus Circle\)'), (match, context) => context.distributionTypes.add(DistributionType.alternate)),
+    _PatternHandler(RegExp(r'\(Sega Reactor\)'), (match, context) => context.distributionTypes.add(DistributionType.alternate)),
+    _PatternHandler(RegExp(r'\(Evercade\)'), (match, context) => context.distributionTypes.add(DistributionType.alternate)),
+    _PatternHandler(RegExp(r'\(Arcade\)'), (match, context) { context.distributionTypes.add(DistributionType.alternate); context.categories.add('Arcade'); }),
+    _PatternHandler(RegExp(r'\(Debug\)'), (match, context) => context.modifications.add(ModificationType.hack)),
+    _PatternHandler(RegExp(r'\(Save Data\)'), (match, context) { context.modifications.add(ModificationType.hack); context.categories.add('Save'); }),
+    _PatternHandler(RegExp(r'\(PD\)'), (match, context) { context.distributionTypes.add(DistributionType.unlicensed); context.regions.add('Public Domain'); }),
+    _PatternHandler(RegExp(r'\(Demo[^)]*\)'), (match, context) => context.romTypes.add(RomType.demo)),
+    _PatternHandler(RegExp(r'\(Kiosk Demo\)'), (match, context) { context.romTypes.add(RomType.demo); context.categories.add('Kiosk'); }),
+    _PatternHandler(RegExp(r'\(Wi-Fi Kiosk\)'), (match, context) { context.distributionTypes.add(DistributionType.alternate); context.categories.add('Kiosk'); }),
+    _PatternHandler(RegExp(r'\(Auto Demo\)'), (match, context) => context.romTypes.add(RomType.demo)),
+    _PatternHandler(RegExp(r'\(Tech Demo\)'), (match, context) => context.romTypes.add(RomType.demo)),
+    _PatternHandler(RegExp(r'Demo Action Pack'), (match, context) => context.romTypes.add(RomType.demo)),
+    _PatternHandler(RegExp(r'Demo Pack'), (match, context) => context.romTypes.add(RomType.demo)),
+    _PatternHandler(RegExp(r'\(Sample\)'), (match, context) => context.romTypes.add(RomType.sample)),
+    _PatternHandler(RegExp(r'\(Program\)'), (match, context) => context.modifications.add(ModificationType.hack)),
+    _PatternHandler(RegExp(r'\(Proto[^)]*\)'), (match, context) => context.romTypes.add(RomType.proto)),
+    _PatternHandler(RegExp(r'\(Prototype[^)]*\)'), (match, context) => context.romTypes.add(RomType.proto)),
+    _PatternHandler(RegExp(r'\(Putative Proto\)'), (match, context) => context.romTypes.add(RomType.proto)),
+    _PatternHandler(RegExp(r'\(Beta[^)]*\)'), (match, context) => context.romTypes.add(RomType.beta)),
+    _PatternHandler(RegExp(r'\(Beta(?:[^)]*)?\)'), (match, context) => context.romTypes.add(RomType.beta)),
+    _PatternHandler(RegExp(r'\(Alpha[^)]*\)'), (match, context) => context.romTypes.add(RomType.alpha)),
+    _PatternHandler(RegExp(r'\(Preview\)'), (match, context) => context.romTypes.add(RomType.beta)),
+    _PatternHandler(RegExp(r'\(Pre-Release\)'), (match, context) => context.romTypes.add(RomType.beta)),
+    _PatternHandler(RegExp(r'\(Test Program\)'), (match, context) => context.romTypes.add(RomType.proto)),
+    _PatternHandler(RegExp(r'Auto Erase Disc'), (match, context) => context.romTypes.add(RomType.bios)),
+    _PatternHandler(RegExp(r'\(Final\)'), (match, context) => context.categories.add('Final')),
+    _PatternHandler(RegExp(r'\(Gold\)'), (match, context) => context.categories.add('Gold Master')),
+    _PatternHandler(RegExp(r'\(Master\)'), (match, context) => context.categories.add('Master')),
+    _PatternHandler(RegExp(r'\((?:Rev|REV|rev) ([A-Z\d]+)\)'), (match, context) => context.revision = match.group(1) ?? '0'),
+    _PatternHandler(RegExp(r'\((\d+)S\)'), (match, context) => context.revision = '${match.group(1)}S'),
+    _PatternHandler(RegExp(r'\(Revised\)'), (match, context) => context.revision = '1'),
+    _PatternHandler(RegExp(r'\(RE\)'), (match, context) => context.revision = '1'),
+    _PatternHandler(RegExp(r'\(v([\d\.]+)\)'), (match, context) => context.revision = match.group(1) ?? '0'),
+    _PatternHandler(RegExp(r'\(Version ([\d\.]+)\)', caseSensitive: false), (match, context) => context.revision = match.group(1) ?? '0'),
+    _PatternHandler(RegExp(r'\(Disk ([A-Z\d]+)\)'), (match, context) => context.diskNumber = match.group(1)!),
+    _PatternHandler(RegExp(r'\(Disc ([A-Z\d]+)\)'), (match, context) => context.diskNumber = match.group(1)!),
+    _PatternHandler(RegExp(r'\[Disc ([A-Z\d]+)\]'), (match, context) => context.diskNumber = match.group(1)!),
+    _PatternHandler(RegExp(r'\(Side ([AB])\)'), (match, context) => context.diskNumber = match.group(1)!),
+    _PatternHandler(RegExp(r'\(Tape ([AB\d]+)\)'), (match, context) => context.diskNumber = match.group(1)!),
+    _PatternHandler(RegExp(r'\(Cart ([AB\d]+)\)'), (match, context) => context.diskNumber = match.group(1)!),
+    _PatternHandler(RegExp(r'\(Aftermarket\)'), (match, context) => context.distributionTypes.add(DistributionType.aftermarket)),
+    _PatternHandler(RegExp(r'\(Homebrew\)'), (match, context) => context.distributionTypes.add(DistributionType.aftermarket)),
+    _PatternHandler(RegExp(r'\(Pirate\)'), (match, context) => context.distributionTypes.add(DistributionType.pirate)),
+    _PatternHandler(RegExp(r'\(Multicart[^)]*\)'), (match, context) => context.distributionTypes.add(DistributionType.multiCart)),
+    _PatternHandler(RegExp(r'\(Multi[^)]*\)'), (match, context) => context.distributionTypes.add(DistributionType.multiCart)),
+    _PatternHandler(RegExp(r'\(\d+[ -]?in[ -]?\d+\)'), (match, context) => context.distributionTypes.add(DistributionType.multiCart)),
+    _PatternHandler(RegExp(r'\(Possible Proto\)'), (match, context) => context.romTypes.add(RomType.proto)),
+    _PatternHandler(RegExp(r'\(Trainer\)'), (match, context) => context.modifications.add(ModificationType.trainer)),
+    _PatternHandler(RegExp(r'\(Virtual Console\)'), (match, context) => context.distributionTypes.add(DistributionType.alternate)),
+    _PatternHandler(RegExp(r'^\d+\.\d+\s+IDU.*', caseSensitive: false), (match, context) => context.romTypes.add(RomType.bios)),
+    _PatternHandler(RegExp(r'^Cleaning Kit for .+', caseSensitive: false), (match, context) => context.romTypes.add(RomType.bios)),
+    _PatternHandler(RegExp(r'Test Cartridge', caseSensitive: false), (match, context) => context.romTypes.add(RomType.bios)),
+    _PatternHandler(RegExp(r'\(SGB Enhanced\)'), (match, context) => context.categories.add('SGB Enhanced')),
+    _PatternHandler(RegExp(r'\(NKit[^)]*\)'), (match, context) => context.categories.add('NKit')),
+    _PatternHandler(RegExp(r'\(RVZ[^)]*\)'), (match, context) => context.categories.add('RVZ')),
+    _PatternHandler(RegExp(r'\(GDI\)'), (match, context) => context.categories.add('GDI')),
+    _PatternHandler(RegExp(r'\(CDI\)'), (match, context) => context.categories.add('CDI')),
+    _PatternHandler(RegExp(r'\(NDSi Enhanced\)'), (match, context) => context.categories.add('Enhanced')),
+    _PatternHandler(RegExp(r'\(Decrypted\)'), (match, context) => context.categories.add('Decrypted')),
+    _PatternHandler(RegExp(r'\(Encrypted\)'), (match, context) => context.categories.add('Encrypted')),
+    _PatternHandler(RegExp(r'\(NTSC\)'), (match, context) => context.categories.add('NTSC')),
+    _PatternHandler(RegExp(r'\(PAL\)'), (match, context) => context.categories.add('PAL')),
+    _PatternHandler(RegExp(r'\(SECAM\)'), (match, context) => context.categories.add('SECAM')),
+    _PatternHandler(RegExp(r'\(50Hz\)'), (match, context) => context.categories.add('50Hz')),
+    _PatternHandler(RegExp(r'\(60Hz\)'), (match, context) => context.categories.add('60Hz')),
+    _PatternHandler(RegExp(r'\(Color\)'), (match, context) => context.categories.add('Color')),
+    _PatternHandler(RegExp(r'\(Colour\)'), (match, context) => context.categories.add('Color')),
+    _PatternHandler(RegExp(r'\(Mono\)'), (match, context) => context.categories.add('Mono')),
+    _PatternHandler(RegExp(r'\(1 Player\)'), (match, context) => context.categories.add('1 Player')),
+    _PatternHandler(RegExp(r'\(2 Players?\)'), (match, context) => context.categories.add('2 Players')),
+    _PatternHandler(RegExp(r'\((\d+) Players?\)'), (match, context) => context.categories.add('${match.group(1)} Players')),
+    _PatternHandler(RegExp(r'\(Multiplayer\)'), (match, context) => context.categories.add('Multiplayer')),
+    _PatternHandler(RegExp(r'\(Cooperative\)'), (match, context) => context.categories.add('Cooperative')),
+    _PatternHandler(RegExp(r'\(Co-op\)'), (match, context) => context.categories.add('Cooperative')),
+    _PatternHandler(RegExp(r'\(Action Replay\)'), (match, context) => context.categories.add('Action Replay')),
+    _PatternHandler(RegExp(r'\(Game Genie\)'), (match, context) => context.categories.add('Game Genie')),
+    _PatternHandler(RegExp(r'\(Save States\)'), (match, context) => context.categories.add('Save States')),
+    _PatternHandler(RegExp(r'\(High Score Save\)'), (match, context) => context.categories.add('High Score Save')),
+    _PatternHandler(RegExp(r'\(Password Save\)'), (match, context) => context.categories.add('Password Save')),
+    _PatternHandler(RegExp(r'\(Battery Save\)'), (match, context) => context.categories.add('Battery Save')),
+    _PatternHandler(RegExp(r'\(SRAM\)'), (match, context) => context.categories.add('SRAM')),
+    _PatternHandler(RegExp(r'\(EEPROM\)'), (match, context) => context.categories.add('EEPROM')),
+    _PatternHandler(RegExp(r'\(Flash\)'), (match, context) => context.categories.add('Flash')),
+    _PatternHandler(RegExp(r'\(Rumble\)'), (match, context) => context.categories.add('Rumble')),
+    _PatternHandler(RegExp(r'\(Competition Cart\)'), (match, context) => context.categories.add('Competition')),
+    _PatternHandler(RegExp(r'\(Competition Cart, Nintendo Power mail-order\)'), (match, context) => context.categories.add('Competition')),
+    _PatternHandler(RegExp(r'\(Tilt Sensor\)'), (match, context) => context.categories.add('Tilt Sensor')),
+    _PatternHandler(RegExp(r'\(Light Sensor\)'), (match, context) => context.categories.add('Light Sensor')),
+    _PatternHandler(RegExp(r'\(Gyroscope\)'), (match, context) => context.categories.add('Gyroscope')),
+    _PatternHandler(RegExp(r'\(Touch\)'), (match, context) => context.categories.add('Touch')),
+    _PatternHandler(RegExp(r'\(Voice\)'), (match, context) => context.categories.add('Voice')),
+    _PatternHandler(RegExp(r'\(GB Compatible\)'), (match, context) => context.categories.add('GB Compatible')),
+    _PatternHandler(RegExp(r'\(Camera\)'), (match, context) => context.categories.add('Camera')),
+    _PatternHandler(RegExp(r'\(PRG\d+\)'), (match, context) => context.categories.add('PRG Version')),
+  ];
+
+  static final RegExp _regionPattern = RegExp(r'\(([^)]+)\)');
+  static final RegExp _htmlEntitiesPattern = RegExp(r'&(?:amp|lt|gt|quot|#39|nbsp);');
+  static final RegExp _whitespacePattern = RegExp(r'\s+');
+  static final RegExp _extensionPattern = RegExp(r'\.[a-zA-Z0-9]+$');
+  static final RegExp _theCommaPattern = RegExp(r', The - ');
+  static final RegExp _theEndingPattern = RegExp(r', The$');
+  static final RegExp _underscoreDashPattern = RegExp(r'[_-]');
+
+  static final Map<String, String> _htmlEntities = {
+    '&amp;': '&',
+    '&lt;': '<',
+    '&gt;': '>',
+    '&quot;': '"',
+    '&#39;': "'",
+    '&nbsp;': ' ',
+  };
+
   static GameMetadata parseRomTitle(String title) {
-    String displayTitle = title;
-    Set<DumpQuality> dumpQualities = {};
-    Set<RomType> romTypes = {};
-    Set<ModificationType> modifications = {};
-    Set<DistributionType> distributionTypes = {};
-    String revision = '';
-    String diskNumber = '';
-    List<String> regions = [];
-    List<String> languages = [];
-    List<String> categories = [];
+    final context = _ParseContext();
+    
+    String displayTitle = title.replaceAll(_extensionPattern, '');
 
-    displayTitle = title.replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), '');
+    final List<int> matchPositions = [];
 
-    final patterns = <RegExp, Function(Match)>{
-      RegExp(r'\[!\]'): (match) => dumpQualities.add(DumpQuality.goodDump),
-      RegExp(r'\[b(\d*)\]'): (match) => dumpQualities.add(DumpQuality.badDump),
-      RegExp(r'\[o(\d*)\]'): (match) => dumpQualities.add(DumpQuality.overdump),
-      RegExp(r'\[h(\d*[A-Za-z]*)\]'): (match) => modifications.add(ModificationType.hack),
-      RegExp(r'\[t(\d*[A-Za-z]*)\]'): (match) => modifications.add(ModificationType.translation),
-      RegExp(r'\[a(\d*)\]'): (match) => distributionTypes.add(DistributionType.alternate),
-      RegExp(r'\[f(\d*)\]'): (match) => modifications.add(ModificationType.fixed),
-      RegExp(r'\[T[+-][A-Za-z]*(\d*)\]'): (match) => modifications.add(ModificationType.trainer),
-      RegExp(r'^\d{5,8}\s*[-–]?\s*Disc(?:,|\b)', caseSensitive: false): (match) => romTypes.add(RomType.bios),
-      RegExp(r'^\d{5,8}\s*[-–]?\s*CAT(?:-|\b)', caseSensitive: false): (match) => romTypes.add(RomType.bios),
-      RegExp(r'^(?:DISC,\s*CAT)', caseSensitive: false): (match) => romTypes.add(RomType.bios),
-      RegExp(r'\[BIOS\]'): (match) => romTypes.add(RomType.bios),
-      RegExp(r'\[x\]'): (match) => dumpQualities.add(DumpQuality.badDump),
-      RegExp(r'\[p(\d*)\]'): (match) => distributionTypes.add(DistributionType.pirate),
-      RegExp(r'\[c\]'): (match) => modifications.add(ModificationType.fixed),
-      RegExp(r'\[CR [^\]]+\]'): (match) => distributionTypes.add(DistributionType.pirate),
-      RegExp(r'\[m(\d*)\]'): (match) => distributionTypes.add(DistributionType.multiCart),
-      RegExp(r'\[S\]'): (match) => categories.add('Save'),
-      RegExp(r'\[(?:(?:SCPS|SCPM|SLPS|SLPM|SCUS|SLUS|SCES|SCED|SLES|SLED|PAPX|PBPX)-\d+)\]'): (match) => categories.add('Sony Code'),
-      RegExp(r'\[.*-\d+.*\]'): (match) => categories.add('Product Code'),
-      RegExp(r'\(M(\d+)\)'): (match) => distributionTypes.add(DistributionType.multiCart),
-      RegExp(r'\(Unl\)'): (match) => distributionTypes.add(DistributionType.unlicensed),
-      RegExp(r'\(Unlicensed\)'): (match) => distributionTypes.add(DistributionType.unlicensed),
-      RegExp(r'\(iam8bit\)'): (match) => distributionTypes.add(DistributionType.alternate),
-      RegExp(r'\(Animal Crossing\)'): (match) => distributionTypes.add(DistributionType.alternate),
-      RegExp(r'\(Piko Interactive\)'): (match) => distributionTypes.add(DistributionType.alternate),
-      RegExp(r'\(Capcom Town\)'): (match) => distributionTypes.add(DistributionType.alternate),
-      RegExp(r'\(e-Reader Edition\)'): (match) => distributionTypes.add(DistributionType.alternate),
-      RegExp(r'\(Kiosk\)'): (match) => distributionTypes.add(DistributionType.alternate),
-      RegExp(r'\(Switch\)'): (match) => distributionTypes.add(DistributionType.alternate),
-      RegExp(r'\(Retro-Bit\)'): (match) => distributionTypes.add(DistributionType.alternate),
-      RegExp(r'\(Retro-Bit Generations\)'): (match) => distributionTypes.add(DistributionType.alternate),
-      RegExp(r'\(Genesis Mini\)'): (match) => distributionTypes.add(DistributionType.alternate),
-      RegExp(r'\(Sega Channel\)'): (match) => distributionTypes.add(DistributionType.alternate),
-      RegExp(r'\Classic(s)? Collection\)'): (match) => distributionTypes.add(DistributionType.alternate),
-      RegExp(r'\(LodgeNet\)'): (match) => distributionTypes.add(DistributionType.alternate),
-      RegExp(r'\(HAL Laboratory\)'): (match) => distributionTypes.add(DistributionType.alternate),
-      RegExp(r'\(Broke Studio\)'): (match) => distributionTypes.add(DistributionType.alternate),
-      RegExp(r'\(Metal Gear Solid Collection\)'): (match) => distributionTypes.add(DistributionType.alternate),
-      RegExp(r'\(The Cowabunga Collection\)'): (match) => distributionTypes.add(DistributionType.alternate),
-      RegExp(r'\(Switch Online\)'): (match) => distributionTypes.add(DistributionType.alternate),
-      RegExp(r'\(Wii Virtual Console\)'): (match) => distributionTypes.add(DistributionType.alternate),
-      RegExp(r'\(Wii U Virtual Console\)'): (match) => distributionTypes.add(DistributionType.alternate),
-      RegExp(r'\(GameCube\)'): (match) => distributionTypes.add(DistributionType.alternate),
-      RegExp(r'\(GameCube Edition\)'): (match) => distributionTypes.add(DistributionType.alternate),
-      RegExp(r'\(Limited Run Games\)'): (match) => distributionTypes.add(DistributionType.alternate),
-      RegExp(r'\(Strictly Limited Games\)'): (match) => distributionTypes.add(DistributionType.alternate),
-      RegExp(r'\(Columbus Circle\)'): (match) => distributionTypes.add(DistributionType.alternate),
-      RegExp(r'\(Sega Reactor\)'): (match) => distributionTypes.add(DistributionType.alternate),
-      RegExp(r'\(Evercade\)'): (match) => distributionTypes.add(DistributionType.alternate),
-      RegExp(r'\(Arcade\)'): (match) => {distributionTypes.add(DistributionType.alternate), categories.add('Arcade')},
-      RegExp(r'\(Debug\)'): (match) => modifications.add(ModificationType.hack),
-      RegExp(r'\(Save Data\)'): (match) => {modifications.add(ModificationType.hack), categories.add('Save')},
-      RegExp(r'\(PD\)'): (match) => {distributionTypes.add(DistributionType.unlicensed), regions.add('Public Domain')},
-      RegExp(r'\(Demo[^)]*\)'): (match) => romTypes.add(RomType.demo),
-      RegExp(r'\(Kiosk Demo\)'): (match) => {romTypes.add(RomType.demo), categories.add('Kiosk')},
-      RegExp(r'\(Wi-Fi Kiosk\)'): (match) => {distributionTypes.add(DistributionType.alternate), categories.add('Kiosk')},
-      RegExp(r'\(Auto Demo\)'): (match) => romTypes.add(RomType.demo),
-      RegExp(r'\(Tech Demo\)'): (match) => romTypes.add(RomType.demo),
-      RegExp(r'Demo Action Pack'): (match) => romTypes.add(RomType.demo),
-      RegExp(r'Demo Pack'): (match) => romTypes.add(RomType.demo),
-      RegExp(r'\(Sample\)'): (match) => romTypes.add(RomType.sample),
-      RegExp(r'\(Program\)'): (match) => modifications.add(ModificationType.hack),
-      RegExp(r'\(Proto[^)]*\)'): (match) => romTypes.add(RomType.proto),
-      RegExp(r'\(Prototype[^)]*\)'): (match) => romTypes.add(RomType.proto),
-      RegExp(r'\(Putative Proto\)'): (match) => romTypes.add(RomType.proto),
-      RegExp(r'\(Beta[^)]*\)'): (match) => romTypes.add(RomType.beta),
-      RegExp(r'\(Beta(?:[^)]*)?\)'): (match) => romTypes.add(RomType.beta),
-      RegExp(r'\(Alpha[^)]*\)'): (match) => romTypes.add(RomType.alpha),
-      RegExp(r'\(Preview\)'): (match) => romTypes.add(RomType.beta),
-      RegExp(r'\(Pre-Release\)'): (match) => romTypes.add(RomType.beta),
-      RegExp(r'\(Test Program\)'): (match) => romTypes.add(RomType.proto),
-      RegExp(r'Auto Erase Disc'): (match) => romTypes.add(RomType.bios),
-      RegExp(r'\(Final\)'): (match) => categories.add('Final'),
-      RegExp(r'\(Gold\)'): (match) => categories.add('Gold Master'),
-      RegExp(r'\(Master\)'): (match) => categories.add('Master'),
-      RegExp(r'\((?:Rev|REV|rev) ([A-Z\d]+)\)'): (match) => revision = match.group(1) ?? '0',
-      RegExp(r'\((\d+)S\)'): (match) => revision = '${match.group(1)}S',
-      RegExp(r'\(Revised\)'): (match) => revision = '1',
-      RegExp(r'\(RE\)'): (match) => revision = '1',
-      RegExp(r'\(v([\d\.]+)\)'): (match) => revision = match.group(1) ?? '0',
-      RegExp(r'\(Version ([\d\.]+)\)', caseSensitive: false): (match) => revision = match.group(1) ?? '0',
-      RegExp(r'\(Disk ([A-Z\d]+)\)'): (match) => diskNumber = match.group(1)!,
-      RegExp(r'\(Disc ([A-Z\d]+)\)'): (match) => diskNumber = match.group(1)!,
-      RegExp(r'\[Disc ([A-Z\d]+)\]'): (match) => diskNumber = match.group(1)!,
-      RegExp(r'\(Side ([AB])\)'): (match) => diskNumber = match.group(1)!,
-      RegExp(r'\(Tape ([AB\d]+)\)'): (match) => diskNumber = match.group(1)!,
-      RegExp(r'\(Cart ([AB\d]+)\)'): (match) => diskNumber = match.group(1)!,
-      RegExp(r'\(Aftermarket\)'): (match) => distributionTypes.add(DistributionType.aftermarket),
-      RegExp(r'\(Homebrew\)'): (match) => distributionTypes.add(DistributionType.aftermarket),
-      RegExp(r'\(Pirate\)'): (match) => distributionTypes.add(DistributionType.pirate),
-      RegExp(r'\(Multicart[^)]*\)'): (match) => distributionTypes.add(DistributionType.multiCart),
-      RegExp(r'\(Multi[^)]*\)'): (match) => distributionTypes.add(DistributionType.multiCart),
-      RegExp(r'\(\d+[ -]?in[ -]?\d+\)'): (match) => distributionTypes.add(DistributionType.multiCart),
-      RegExp(r'\(Possible Proto\)'): (match) => romTypes.add(RomType.proto),
-      RegExp(r'\(Trainer\)'): (match) => modifications.add(ModificationType.trainer),
-      RegExp(r'\(Virtual Console\)'): (match) => distributionTypes.add(DistributionType.alternate),
-      RegExp(r'\(Trainer\)'): (match) => modifications.add(ModificationType.hack),
-      RegExp(r'^\d+\.\d+\s+IDU.*', caseSensitive: false): (match) => romTypes.add(RomType.bios),
-      RegExp(r'^Cleaning Kit for .+', caseSensitive: false): (match) => romTypes.add(RomType.bios),
-      RegExp(r'Test Cartridge', caseSensitive: false): (match) => romTypes.add(RomType.bios),
-      RegExp(r'\(SGB Enhanced\)'): (match) => categories.add('SGB Enhanced'),
-      RegExp(r'\(NKit[^)]*\)'): (match) => categories.add('NKit'),
-      RegExp(r'\(RVZ[^)]*\)'): (match) => categories.add('RVZ'),
-      RegExp(r'\(GDI\)'): (match) => categories.add('GDI'),
-      RegExp(r'\(CDI\)'): (match) => categories.add('CDI'),
-      RegExp(r'\(NDSi Enhanced\)'): (match) => categories.add('Enhanced'),
-      RegExp(r'\(Decrypted\)'): (match) => categories.add('Decrypted'),
-      RegExp(r'\(Encrypted\)'): (match) => categories.add('Encrypted'),
-      RegExp(r'\(NTSC\)'): (match) => categories.add('NTSC'),
-      RegExp(r'\(PAL\)'): (match) => categories.add('PAL'),
-      RegExp(r'\(SECAM\)'): (match) => categories.add('SECAM'),
-      RegExp(r'\(50Hz\)'): (match) => categories.add('50Hz'),
-      RegExp(r'\(60Hz\)'): (match) => categories.add('60Hz'),
-      RegExp(r'\(Color\)'): (match) => categories.add('Color'),
-      RegExp(r'\(Colour\)'): (match) => categories.add('Color'),
-      RegExp(r'\(Mono\)'): (match) => categories.add('Mono'),
-      RegExp(r'\(1 Player\)'): (match) => categories.add('1 Player'),
-      RegExp(r'\(2 Players?\)'): (match) => categories.add('2 Players'),
-      RegExp(r'\((\d+) Players?\)'): (match) => categories.add('${match.group(1)} Players'),
-      RegExp(r'\(Multiplayer\)'): (match) => categories.add('Multiplayer'),
-      RegExp(r'\(Cooperative\)'): (match) => categories.add('Cooperative'),
-      RegExp(r'\(Co-op\)'): (match) => categories.add('Cooperative'),
-      RegExp(r'\(Action Replay\)'): (match) => categories.add('Action Replay'),
-      RegExp(r'\(Game Genie\)'): (match) => categories.add('Game Genie'),
-      RegExp(r'\(Save States\)'): (match) => categories.add('Save States'),
-      RegExp(r'\(High Score Save\)'): (match) => categories.add('High Score Save'),
-      RegExp(r'\(Password Save\)'): (match) => categories.add('Password Save'),
-      RegExp(r'\(Battery Save\)'): (match) => categories.add('Battery Save'),
-      RegExp(r'\(SRAM\)'): (match) => categories.add('SRAM'),
-      RegExp(r'\(EEPROM\)'): (match) => categories.add('EEPROM'),
-      RegExp(r'\(Flash\)'): (match) => categories.add('Flash'),
-      RegExp(r'\(Rumble\)'): (match) => categories.add('Rumble'),
-      RegExp(r'\(Competition Cart\)'): (match) => categories.add('Competition'),
-      RegExp(r'\(Competition Cart, Nintendo Power mail-order\)'): (match) => categories.add('Competition'),
-      RegExp(r'\(Tilt Sensor\)'): (match) => categories.add('Tilt Sensor'),
-      RegExp(r'\(Light Sensor\)'): (match) => categories.add('Light Sensor'),
-      RegExp(r'\(Gyroscope\)'): (match) => categories.add('Gyroscope'),
-      RegExp(r'\(Touch\)'): (match) => categories.add('Touch'),
-      RegExp(r'\(Voice\)'): (match) => categories.add('Voice'),
-      RegExp(r'\(GB Compatible\)'): (match) => categories.add('GB Compatible'),
-      RegExp(r'\(Camera\)'): (match) => categories.add('Camera'),
-      RegExp(r'\(PRG\d+\)'): (match) => categories.add('PRG Version'),
-    };
-
-    for (final entry in patterns.entries) {
-      displayTitle = displayTitle.replaceAllMapped(entry.key, (match) {
-        entry.value(match);
-        return '';
-      });
+    for (int i = 0; i < _patterns.length; i++) {
+      final pattern = _patterns[i];
+      final matches = pattern.regex.allMatches(displayTitle);
+      for (final match in matches) {
+        pattern.handler(match, context);
+        matchPositions.add(match.start);
+        matchPositions.add(match.end);
+      }
     }
 
-    final regionPattern = RegExp(r'\(([^)]+)\)');
-    final remainingMatches = regionPattern.allMatches(displayTitle).toList();
+    matchPositions.sort();
+    final buffer = StringBuffer();
+    int lastEnd = 0;
+    for (int i = 0; i < matchPositions.length; i += 2) {
+      if (i + 1 < matchPositions.length) {
+        buffer.write(displayTitle.substring(lastEnd, matchPositions[i]));
+        lastEnd = matchPositions[i + 1];
+      }
+    }
+    buffer.write(displayTitle.substring(lastEnd));
+    displayTitle = buffer.toString();
 
-    for (final match in remainingMatches) {
+    final regionMatches = _regionPattern.allMatches(displayTitle).toList();
+    final List<int> regionMatchPositions = [];
+
+    for (final match in regionMatches) {
       final content = match.group(1)!;
-      final parts = content.split(RegExp(r'[,+&/]')).map((e) => e.trim()).toList();
+      final parts = content.split(RegExp(r'[,+&/]'));
 
       bool isRegionOrLanguage = false;
 
       for (final part in parts) {
-        if (_regionCodes.containsKey(part)) {
-          final regionValue = _regionCodes[part]!;
-          final splitRegions = _splitRegions(regionValue);
-          regions.addAll(splitRegions);
-          isRegionOrLanguage = true;
-        } else if (_regionCodes.containsValue(part)) {
-          final splitRegions = _splitRegions(part);
-          regions.addAll(splitRegions);
-          isRegionOrLanguage = true;
-        } else if (_languageCodes.containsKey(part)) {
-          languages.add(_languageCodes[part]!);
-          isRegionOrLanguage = true;
-        } else if (_languageCodes.containsValue(part)) {
-          languages.add(part);
-          isRegionOrLanguage = true;
+        final trimmedPart = part.trim();
+        if (trimmedPart.isNotEmpty) {
+          final regionValue = _regionCodes[trimmedPart];
+          if (regionValue != null) {
+            final splitRegions = _splitRegions(regionValue);
+            context.regions.addAll(splitRegions);
+            isRegionOrLanguage = true;
+          } else if (_regionCodes.containsValue(trimmedPart)) {
+            final splitRegions = _splitRegions(trimmedPart);
+            context.regions.addAll(splitRegions);
+            isRegionOrLanguage = true;
+          }
+          
+          final languageValue = _languageCodes[trimmedPart];
+          if (languageValue != null) {
+            context.languages.add(languageValue);
+            isRegionOrLanguage = true;
+          } else if (_languageCodes.containsValue(trimmedPart)) {
+            context.languages.add(trimmedPart);
+            isRegionOrLanguage = true;
+          }
         }
       }
 
       if (isRegionOrLanguage) {
-        displayTitle = displayTitle.replaceAll(match.group(0)!, '');
+        regionMatchPositions.add(match.start);
+        regionMatchPositions.add(match.end);
       }
+    }
+
+    if (regionMatchPositions.isNotEmpty) {
+      regionMatchPositions.sort();
+      final buffer = StringBuffer();
+      int lastEnd = 0;
+      for (int i = 0; i < regionMatchPositions.length; i += 2) {
+        if (i + 1 < regionMatchPositions.length) {
+          buffer.write(displayTitle.substring(lastEnd, regionMatchPositions[i]));
+          lastEnd = regionMatchPositions[i + 1];
+        }
+      }
+      buffer.write(displayTitle.substring(lastEnd));
+      displayTitle = buffer.toString();
     }
 
     final regionToLanguage = {
@@ -369,62 +414,72 @@ class TitleMetadataParser {
       'Thai': 'Asia',
     };
 
-    if (languages.isEmpty && regions.isNotEmpty) {
-      for (final region in regions) {
-        if (regionToLanguage.containsKey(region)) {
-          final language = regionToLanguage[region]!;
-          if (!languages.contains(language)) {
-            languages.add(language);
-          }
+    if (context.languages.isEmpty && context.regions.isNotEmpty) {
+      for (final region in context.regions) {
+        final language = regionToLanguage[region];
+        if (language != null && !context.languages.contains(language)) {
+          context.languages.add(language);
         }
       }
     }
 
-    if (regions.isEmpty && languages.isNotEmpty) {
-      for (final language in languages) {
-        if (languageToRegion.containsKey(language)) {
-          final region = languageToRegion[language]!;
-          if (!regions.contains(region)) {
-            regions.add(region);
-          }
+    if (context.regions.isEmpty && context.languages.isNotEmpty) {
+      for (final language in context.languages) {
+        final region = languageToRegion[language];
+        if (region != null && !context.regions.contains(region)) {
+          context.regions.add(region);
         }
       }
     }
 
-    displayTitle = displayTitle
-        .replaceAll('&amp;', '&')
-        .replaceAll('&lt;', '<')
-        .replaceAll('&gt;', '>')
-        .replaceAll('&quot;', '"')
-        .replaceAll('&#39;', "'")
-        .replaceAll('&nbsp;', ' ');
+    displayTitle = displayTitle.replaceAllMapped(_htmlEntitiesPattern, (match) {
+      return _htmlEntities[match.group(0)] ?? match.group(0)!;
+    });
 
-    displayTitle = displayTitle.replaceAll(RegExp(r'\s+'), ' ').trim();
+    displayTitle = displayTitle.replaceAll(_whitespacePattern, ' ').trim();
 
-    if (displayTitle.contains(', The - ')) {
+    if (_theCommaPattern.hasMatch(displayTitle)) {
       final parts = displayTitle.split(', The - ');
       displayTitle = 'The ${parts[0]} - ${parts[1]}';
-    } else if (displayTitle.endsWith(', The')) {
+    } else if (_theEndingPattern.hasMatch(displayTitle)) {
       displayTitle = 'The ${displayTitle.substring(0, displayTitle.length - 5)}';
     }
 
-    // if displayTitle is empty but rom type is bios, set display title as filename without extension
-    if (displayTitle.isEmpty && romTypes.contains(RomType.bios)) {
+    if (displayTitle.isEmpty && context.romTypes.contains(RomType.bios)) {
       final filename = title.substring(0, title.lastIndexOf('.'));
-      displayTitle = filename.replaceAll(RegExp(r'[_-]'), ' ').trim();
+      displayTitle = filename.replaceAll(_underscoreDashPattern, ' ').trim();
     }
 
     return GameMetadata(
       displayTitle: displayTitle,
-      dumpQualities: dumpQualities,
-      romTypes: romTypes,
-      modifications: modifications,
-      distributionTypes: distributionTypes,
-      revision: revision,
-      diskNumber: diskNumber,
-      regions: regions,
-      languages: languages,
-      categories: categories,
+      dumpQualities: context.dumpQualities,
+      romTypes: context.romTypes,
+      modifications: context.modifications,
+      distributionTypes: context.distributionTypes,
+      revision: context.revision,
+      diskNumber: context.diskNumber,
+      regions: context.regions,
+      languages: context.languages,
+      categories: context.categories,
     );
   }
+}
+
+class _PatternHandler {
+  final RegExp regex;
+  final void Function(Match, _ParseContext) handler;
+  
+  const _PatternHandler(this.regex, this.handler);
+}
+
+class _ParseContext {
+  final Set<DumpQuality> dumpQualities = {};
+  final Set<RomType> romTypes = {};
+  final Set<ModificationType> modifications = {};
+  final Set<DistributionType> distributionTypes = {};
+  String revision = '';
+  String diskNumber = '';
+  final List<String> regions = [];
+  final List<String> languages = [];
+  final List<String> categories = [];
 }

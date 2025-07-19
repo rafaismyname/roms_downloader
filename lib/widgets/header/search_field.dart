@@ -20,11 +20,13 @@ class SearchField extends StatefulWidget {
 class _SearchFieldState extends State<SearchField> {
   late TextEditingController _controller;
   Timer? _debounceTimer;
+  late FocusNode _focusNode;
 
   @override
   void initState() {
     super.initState();
     _controller = TextEditingController(text: widget.initialText);
+    _focusNode = FocusNode();
   }
 
   @override
@@ -39,6 +41,7 @@ class _SearchFieldState extends State<SearchField> {
   void dispose() {
     _controller.dispose();
     _debounceTimer?.cancel();
+    _focusNode.dispose();
     super.dispose();
   }
 
@@ -55,6 +58,8 @@ class _SearchFieldState extends State<SearchField> {
       height: 40,
       child: TextField(
         controller: _controller,
+        focusNode: _focusNode,
+        onSubmitted: (_) => _focusNode.unfocus(),
         decoration: InputDecoration(
           hintText: 'Search games...',
           hintStyle: TextStyle(

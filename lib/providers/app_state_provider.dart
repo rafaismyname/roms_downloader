@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:roms_downloader/models/app_state_model.dart';
 import 'package:roms_downloader/models/catalog_model.dart';
 import 'package:roms_downloader/models/console_model.dart';
@@ -24,11 +25,16 @@ class AppStateNotifier extends StateNotifier<AppState> {
   Future<void> _initialize() async {
     await PermissionService.ensurePermissions();
 
+    final prefs = await SharedPreferences.getInstance();
+    final viewModeKey = prefs.getString('view_mode') ?? 'grid';
+    final savedViewMode = viewModeKey == 'list' ? ViewMode.list : ViewMode.grid;
+
     final consoles = await catalogService.getConsoles();
 
     state = state.copyWith(
       consoles: consoles,
       selectedConsole: consoles.isNotEmpty ? consoles.values.first : null,
+      viewMode: savedViewMode,
     );
 
     _listenToLoadingNotifications();
@@ -56,9 +62,11 @@ class AppStateNotifier extends StateNotifier<AppState> {
   void toggleViewMode() {
     final newMode = state.viewMode == ViewMode.list ? ViewMode.grid : ViewMode.list;
     state = state.copyWith(viewMode: newMode);
+    SharedPreferences.getInstance().then((prefs) => prefs.setString('view_mode', newMode.name));
   }
 
   void setViewMode(ViewMode mode) {
     state = state.copyWith(viewMode: mode);
+    SharedPreferences.getInstance().then((prefs) => prefs.setString('view_mode', mode.name));
   }
 }
