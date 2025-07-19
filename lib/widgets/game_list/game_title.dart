@@ -20,7 +20,7 @@ class GameTitle extends StatelessWidget {
           child: Tooltip(
             message: game.title,
             child: Text(
-              game.metadata?.displayTitle ?? game.title,
+              game.displayTitle,
               style: TextStyle(
                 fontSize: 13,
                 color: gameState.status == GameStatus.extracted ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface,

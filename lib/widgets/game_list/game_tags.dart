@@ -56,6 +56,7 @@ class GameTags extends StatelessWidget {
     if (metadata.romTypes.contains(RomType.proto)) tags.add('Proto');
     if (metadata.romTypes.contains(RomType.beta)) tags.add('Beta');
     if (metadata.romTypes.contains(RomType.alpha)) tags.add('Alpha');
+    if (metadata.romTypes.contains(RomType.bios)) tags.add('BIOS');
 
     if (metadata.modifications.contains(ModificationType.hack)) tags.add('Hack');
     if (metadata.modifications.contains(ModificationType.translation)) tags.add('Transl.');

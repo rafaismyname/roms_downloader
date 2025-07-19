@@ -1,6 +1,6 @@
 enum DumpQuality { goodDump, badDump, overdump }
 
-enum RomType { demo, sample, proto, beta, alpha }
+enum RomType { demo, sample, proto, beta, alpha, bios }
 
 enum ModificationType { hack, translation, fixed, trainer }
 
@@ -60,6 +60,7 @@ class GameMetadata {
       'proto': RomType.proto,
       'beta': RomType.beta,
       'alpha': RomType.alpha,
+      'bios': RomType.bios,
     };
 
     final modificationMap = {

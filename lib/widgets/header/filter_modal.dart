@@ -299,8 +299,8 @@ class _AdvancedFiltersSectionState extends State<_AdvancedFiltersSection> {
           _FilterSection(
             title: 'Type',
             icon: Icons.category,
-            items: const ['normal', 'demo', 'sample', 'proto', 'beta', 'alpha'],
-            labels: const ['Normal', 'Demo', 'Sample', 'Proto', 'Beta', 'Alpha'],
+            items: const ['normal', 'demo', 'sample', 'proto', 'beta', 'alpha', 'bios'],
+            labels: const ['Normal', 'Demo', 'Sample', 'Proto', 'Beta', 'Alpha', 'BIOS'],
             selectedItems: widget.filter.romTypes,
             onToggle: (item) => widget.catalogNotifier.toggleFlagFilter('romTypes', item),
           ),

@@ -1,7 +1,16 @@
 import 'package:rapidfuzz/rapidfuzz.dart';
 
 String normalizeTitle(String name) {
-  return name.toLowerCase().replaceAll('_', ' ').replaceAll(RegExp(r'[^\w\s]'), '').replaceAll(RegExp(r'\s+'), ' ').trim();
+  return RegExp(r'[_\W]+')
+      .allMatches(name.toLowerCase())
+      .fold<StringBuffer>(StringBuffer(), (b, m) {
+        b
+          ..write(name.substring(b.length, m.start).replaceAll('_', ' '))
+          ..write(' ');
+        return b;
+      })
+      .toString()
+      .trim();
 }
 
 Map<String, List<String>> buildTokenIndex(Iterable<String> names) {
