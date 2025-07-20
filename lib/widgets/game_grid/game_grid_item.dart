@@ -48,10 +48,10 @@ class _GameGridItemState extends ConsumerState<GameGridItem> {
       borderColor = Theme.of(context).colorScheme.tertiary;
     }
     if (gameState.status == GameStatus.downloaded) {
-      borderColor = Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.8);
+      borderColor = Theme.of(context).colorScheme.secondaryContainer;
     }
     if (gameState.status == GameStatus.extracted) {
-      borderColor = Theme.of(context).colorScheme.inversePrimary.withValues(alpha: 0.8);
+      borderColor = Theme.of(context).colorScheme.inversePrimary;
     }
 
     return Container(
@@ -59,13 +59,13 @@ class _GameGridItemState extends ConsumerState<GameGridItem> {
           borderRadius: BorderRadius.circular(4),
           border: Border.all(
             color: borderColor ?? Theme.of(context).dividerColor.withValues(alpha: 0.2),
-            width: borderColor != null ? 2 : 1,
+            width: borderColor != null ? 3 : 1,
           ),
         ),
         child: Tooltip(
           message: game.title,
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(2),
             child: Stack(
               children: [
                 AspectRatio(
@@ -120,10 +120,8 @@ class _GameGridItemState extends ConsumerState<GameGridItem> {
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
                               shadows: [
-                                Shadow(
-                                  color: Colors.black.withValues(alpha: 0.8),
-                                  blurRadius: 2,
-                                ),
+                                Shadow(color: Colors.black, blurRadius: 8, offset: Offset(0, 1)),
+                                Shadow(color: Colors.black, blurRadius: 12, offset: Offset(0, 2)),
                               ],
                             ),
                             maxLines: 2,
@@ -200,7 +198,7 @@ class _GameGridItemState extends ConsumerState<GameGridItem> {
                           Container(
                             height: 3,
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.3),
+                              color: Colors.white.withValues(alpha: 0.5),
                               borderRadius: BorderRadius.circular(1.5),
                             ),
                             child: ClipRRect(
@@ -226,10 +224,10 @@ class _GameGridItemState extends ConsumerState<GameGridItem> {
                       height: 26,
                       padding: EdgeInsets.zero,
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.inversePrimary.withValues(alpha: 0.4),
+                        color: Theme.of(context).colorScheme.inversePrimary.withValues(alpha: 0.9),
                         borderRadius: BorderRadius.circular(6),
                         border: Border.all(
-                          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.6),
+                          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.9),
                           width: 1,
                         ),
                       ),

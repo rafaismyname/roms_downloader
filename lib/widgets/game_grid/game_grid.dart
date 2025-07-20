@@ -36,13 +36,24 @@ class _GameGridState extends ConsumerState<GameGrid> {
     }
   }
 
-  int _calculateCrossAxisCount(double screenWidth) {
-    if (screenWidth > 1400) return 8;
-    if (screenWidth > 1200) return 7;
-    if (screenWidth > 900) return 6;
-    if (screenWidth > 600) return 5;
-    if (screenWidth > 400) return 4;
-    return 2;
+  int _calculateCrossAxisCount(double screenWidth, double screenHeight, double aspectRatio) {
+    final isLandscape = screenWidth > screenHeight;
+    const double baseIdealWidth = 140;
+    final double idealWidth = baseIdealWidth * (isLandscape ? 0.9 : 1.0) * (aspectRatio / 0.75);
+
+    int columns = (screenWidth / idealWidth).floor().clamp(2, 8);
+
+    int rows = (screenHeight / ((screenWidth / columns) / aspectRatio)).floor();
+    while (rows < 2 && columns > 2) {
+      columns--;
+      rows = (screenHeight / ((screenWidth / columns) / aspectRatio)).floor();
+    }
+
+    if (isLandscape && aspectRatio < 1.75 && columns < 3) {
+      columns = 4;
+    }
+    
+    return columns;
   }
 
   void _updateAspectRatio(String? firstBoxartUrl) {
@@ -77,9 +88,6 @@ class _GameGridState extends ConsumerState<GameGrid> {
     final games = catalogState.paginatedFilteredGames;
     final loadingMore = catalogState.loadingMore;
 
-    final screenWidth = MediaQuery.of(context).size.width;
-    final crossAxisCount = _calculateCrossAxisCount(screenWidth);
-
     if (games.isNotEmpty) {
       final currentConsoleId = games.first.consoleId;
       if (_lastConsoleId != currentConsoleId) {
@@ -89,8 +97,12 @@ class _GameGridState extends ConsumerState<GameGrid> {
       _updateAspectRatio(games.first.boxart);
     }
 
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final crossAxisCount = _calculateCrossAxisCount(screenWidth, screenHeight, _aspectRatio);
+
     return Padding(
-      padding: EdgeInsets.all(6),
+      padding: EdgeInsets.only(left: 6, right: 6, top: 6, bottom: 3),
       child: GridView.builder(
         controller: _scrollController,
         padding: EdgeInsets.zero,

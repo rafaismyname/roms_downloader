@@ -227,6 +227,13 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
     updateFilter(newFilter);
   }
 
+  void toggleLatestRevisionOnly() async {
+    final newFilter = state.filter.copyWith(
+      showLatestRevisionOnly: !state.filter.showLatestRevisionOnly,
+    );
+    updateFilter(newFilter);
+  }
+
   void clearFilters() async {
     updateFilter(const CatalogFilter(
       regions: {},
@@ -248,7 +255,7 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
 
   Future<void> refreshCatalog() async {
     if (state.games.isEmpty) return;
-    
+
     final currentConsole = await _getCurrentConsole();
     if (currentConsole != null) {
       state = state.copyWith(

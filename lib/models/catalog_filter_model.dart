@@ -7,6 +7,7 @@ class CatalogFilter {
   final Set<String> romTypes;
   final Set<String> modifications;
   final Set<String> distributionTypes;
+  final bool showLatestRevisionOnly;
 
   const CatalogFilter({
     this.regions = const {'USA'},
@@ -17,6 +18,7 @@ class CatalogFilter {
     this.romTypes = const {'normal'},
     this.modifications = const {'none'},
     this.distributionTypes = const {'standard', 'multiCart'},
+    this.showLatestRevisionOnly = true,
   });
 
   CatalogFilter copyWith({
@@ -30,6 +32,7 @@ class CatalogFilter {
     Set<String>? romTypes,
     Set<String>? modifications,
     Set<String>? distributionTypes,
+    bool? showLatestRevisionOnly,
     String? version,
     int? minYear,
     int? maxYear,
@@ -43,6 +46,7 @@ class CatalogFilter {
       romTypes: romTypes ?? this.romTypes,
       modifications: modifications ?? this.modifications,
       distributionTypes: distributionTypes ?? this.distributionTypes,
+      showLatestRevisionOnly: showLatestRevisionOnly ?? this.showLatestRevisionOnly,
     );
   }
 
@@ -54,6 +58,7 @@ class CatalogFilter {
         dumpQualities.isNotEmpty ||
         romTypes.isNotEmpty ||
         modifications.isNotEmpty ||
-        distributionTypes.isNotEmpty;
+        distributionTypes.isNotEmpty ||
+        showLatestRevisionOnly;
   }
 }
