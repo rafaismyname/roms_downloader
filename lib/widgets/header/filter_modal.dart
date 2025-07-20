@@ -289,74 +289,112 @@ class _AdvancedFiltersSectionState extends State<_AdvancedFiltersSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        InkWell(
-          onTap: () => setState(() => _isExpanded = !_isExpanded),
-          borderRadius: BorderRadius.circular(8),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Row(
+        Container(
+          decoration: BoxDecoration(
+            color: hasAdvancedFilters
+                ? Theme.of(context).colorScheme.primaryContainer.withAlpha(30)
+                : Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha(30),
+            borderRadius: _isExpanded
+                ? const BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    topRight: Radius.circular(12),
+                  )
+                : BorderRadius.circular(12),
+            border: Border.all(
+              color: hasAdvancedFilters ? Theme.of(context).colorScheme.primary.withAlpha(50) : Theme.of(context).colorScheme.outline.withAlpha(30),
+            ),
+          ),
+          child: InkWell(
+            onTap: () => setState(() => _isExpanded = !_isExpanded),
+            borderRadius: _isExpanded
+                ? const BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    topRight: Radius.circular(12),
+                  )
+                : BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.tune,
+                    size: 18,
+                    color: hasAdvancedFilters ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Advanced Filters',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            color: hasAdvancedFilters ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface,
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                  ),
+                  Icon(
+                    _isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                    size: 20,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        if (_isExpanded)
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(12),
+                bottomRight: Radius.circular(12),
+              ),
+              border: Border.all(
+                color: hasAdvancedFilters ? Theme.of(context).colorScheme.primary.withAlpha(50) : Theme.of(context).colorScheme.outline.withAlpha(30),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  Icons.tune,
-                  size: 16,
-                  color: hasAdvancedFilters ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant,
+                _FilterSection(
+                  title: 'Quality',
+                  icon: Icons.verified,
+                  items: const ['goodDump', 'badDump', 'overdump'],
+                  labels: const ['Good', 'Bad', 'Overdump'],
+                  selectedItems: widget.filter.dumpQualities,
+                  onToggle: (item) => widget.catalogNotifier.toggleFlagFilter('dumpQualities', item),
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  'Advanced Filters',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: hasAdvancedFilters ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w600,
-                      ),
+                const SizedBox(height: 20),
+                _FilterSection(
+                  title: 'Type',
+                  icon: Icons.category,
+                  items: const ['normal', 'demo', 'sample', 'proto', 'beta', 'alpha', 'bios'],
+                  labels: const ['Normal', 'Demo', 'Sample', 'Proto', 'Beta', 'Alpha', 'BIOS'],
+                  selectedItems: widget.filter.romTypes,
+                  onToggle: (item) => widget.catalogNotifier.toggleFlagFilter('romTypes', item),
                 ),
-                const Spacer(),
-                Icon(
-                  _isExpanded ? Icons.expand_less : Icons.expand_more,
-                  size: 20,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                const SizedBox(height: 20),
+                _FilterSection(
+                  title: 'Modifications',
+                  icon: Icons.build,
+                  items: const ['none', 'hack', 'translation', 'fixed', 'trainer'],
+                  labels: const ['Original', 'Hack', 'Translation', 'Fixed', 'Trainer'],
+                  selectedItems: widget.filter.modifications,
+                  onToggle: (item) => widget.catalogNotifier.toggleFlagFilter('modifications', item),
+                ),
+                const SizedBox(height: 20),
+                _FilterSection(
+                  title: 'Distribution',
+                  icon: Icons.inventory,
+                  items: const ['standard', 'alternate', 'unlicensed', 'aftermarket', 'pirate', 'multiCart'],
+                  labels: const ['Standard', 'Alternate', 'Unlicensed', 'Aftermarket', 'Pirate', 'Multi-Cart'],
+                  selectedItems: widget.filter.distributionTypes,
+                  onToggle: (item) => widget.catalogNotifier.toggleFlagFilter('distributionTypes', item),
                 ),
               ],
             ),
           ),
-        ),
-        if (_isExpanded) ...[
-          const SizedBox(height: 12),
-          _FilterSection(
-            title: 'Quality',
-            icon: Icons.verified,
-            items: const ['goodDump', 'badDump', 'overdump'],
-            labels: const ['Good', 'Bad', 'Overdump'],
-            selectedItems: widget.filter.dumpQualities,
-            onToggle: (item) => widget.catalogNotifier.toggleFlagFilter('dumpQualities', item),
-          ),
-          const SizedBox(height: 20),
-          _FilterSection(
-            title: 'Type',
-            icon: Icons.category,
-            items: const ['normal', 'demo', 'sample', 'proto', 'beta', 'alpha', 'bios'],
-            labels: const ['Normal', 'Demo', 'Sample', 'Proto', 'Beta', 'Alpha', 'BIOS'],
-            selectedItems: widget.filter.romTypes,
-            onToggle: (item) => widget.catalogNotifier.toggleFlagFilter('romTypes', item),
-          ),
-          const SizedBox(height: 20),
-          _FilterSection(
-            title: 'Modifications',
-            icon: Icons.build,
-            items: const ['none', 'hack', 'translation', 'fixed', 'trainer'],
-            labels: const ['Original', 'Hack', 'Translation', 'Fixed', 'Trainer'],
-            selectedItems: widget.filter.modifications,
-            onToggle: (item) => widget.catalogNotifier.toggleFlagFilter('modifications', item),
-          ),
-          const SizedBox(height: 20),
-          _FilterSection(
-            title: 'Distribution',
-            icon: Icons.inventory,
-            items: const ['standard', 'alternate', 'unlicensed', 'aftermarket', 'pirate', 'multiCart'],
-            labels: const ['Standard', 'Alternate', 'Unlicensed', 'Aftermarket', 'Pirate', 'Multi-Cart'],
-            selectedItems: widget.filter.distributionTypes,
-            onToggle: (item) => widget.catalogNotifier.toggleFlagFilter('distributionTypes', item),
-          ),
-        ],
       ],
     );
   }
