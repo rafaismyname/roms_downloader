@@ -95,14 +95,14 @@ class FilteringService {
 
   static List<Game> _filterLatestRevisions(List<Game> games) {
     if (games.isEmpty) return games;
-    
+
     final result = <Game>[];
     final Map<String, Game> latestByTitle = {};
-    
+
     for (final game in games) {
       final baseTitle = game.displayTitle;
       final currentRevision = game.metadata?.revision ?? '';
-      
+
       final existing = latestByTitle[baseTitle];
       if (existing == null) {
         latestByTitle[baseTitle] = game;
@@ -119,7 +119,7 @@ class FilteringService {
         result.add(game);
       }
     }
-    
+
     return result;
   }
 

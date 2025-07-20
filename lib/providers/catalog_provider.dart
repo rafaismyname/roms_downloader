@@ -255,7 +255,7 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
 
   Future<void> refreshCatalog() async {
     if (state.games.isEmpty) return;
-    
+
     final currentConsole = await _getCurrentConsole();
     if (currentConsole != null) {
       state = state.copyWith(
