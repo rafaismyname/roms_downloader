@@ -52,8 +52,10 @@ class Footer extends ConsumerWidget {
                     : Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                 border: Border(
                   top: BorderSide(
-                    color: Theme.of(context).dividerColor,
-                    width: 0.5,
+                    color: hasActiveTasks
+                        ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.4)
+                        : Theme.of(context).colorScheme.outline,
+                    width: hasActiveTasks ? 1.5 : 0.5,
                   ),
                 ),
               ),

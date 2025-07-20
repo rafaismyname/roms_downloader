@@ -36,14 +36,14 @@ class FilterModal extends ConsumerWidget {
           Container(
             width: 32,
             height: 4,
-            margin: const EdgeInsets.only(top: 8),
+            margin: const EdgeInsets.only(top: 6),
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.onSurfaceVariant.withAlpha(100),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             decoration: BoxDecoration(
               border: Border(
                 bottom: BorderSide(
@@ -145,7 +145,7 @@ class FilterModal extends ConsumerWidget {
             ),
           ),
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.surface,
               border: Border(

@@ -28,7 +28,7 @@ class GameBoxart extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(2),
         border: Border.all(
           color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
           width: 1,
@@ -95,7 +95,7 @@ class _DefaultPlaceholder extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(2),
         border: Border.all(
           color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
           width: 1,

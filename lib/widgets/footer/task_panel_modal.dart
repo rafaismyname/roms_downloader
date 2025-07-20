@@ -78,7 +78,7 @@ class _TaskPanelModalState extends ConsumerState<TaskPanelModal> with SingleTick
       child: Column(
         children: [
           Container(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             decoration: BoxDecoration(
               border: Border(
                 bottom: BorderSide(
