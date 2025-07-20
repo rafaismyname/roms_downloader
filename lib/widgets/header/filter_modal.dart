@@ -82,50 +82,6 @@ class FilterModal extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surface,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: Theme.of(context).colorScheme.outline.withAlpha(50),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.filter_1,
-                          size: 20,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Show latest revision only',
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                              ),
-                              Text(
-                                'Hides older revisions of the same game',
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                    ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Switch(
-                          value: filter.showLatestRevisionOnly,
-                          onChanged: (value) => catalogNotifier.toggleLatestRevisionOnly(),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
                   if (catalogState.availableRegions.isNotEmpty) ...[
                     _FilterSection(
                       title: 'Regions',
@@ -146,6 +102,40 @@ class FilterModal extends ConsumerWidget {
                     ),
                     const SizedBox(height: 20),
                   ],
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.filter_1,
+                        size: 20,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Show latest revision only',
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                            ),
+                            Text(
+                              'Hides older revisions of the same game',
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Switch(
+                        value: filter.showLatestRevisionOnly,
+                        onChanged: (value) => catalogNotifier.toggleLatestRevisionOnly(),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
                   _AdvancedFiltersSection(
                     filter: filter,
                     catalogNotifier: catalogNotifier,
