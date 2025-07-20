@@ -9,7 +9,7 @@ class FilteringService {
     final skip = input.skip;
     final limit = input.limit;
 
-    final allMatched = <Game>[];
+    var allMatched = <Game>[];
 
     for (final game in games) {
       if (_matchesFilter(game, filterText, filter)) {
@@ -18,6 +18,10 @@ class FilteringService {
     }
 
     allMatched.sort((a, b) => a.displayTitle.toLowerCase().compareTo(b.displayTitle.toLowerCase()));
+
+    if (filter.showLatestRevisionOnly) {
+      allMatched = _filterLatestRevisions(allMatched);
+    }
 
     final paginatedGames = allMatched.skip(skip).take(limit).toList();
 
@@ -87,6 +91,44 @@ class FilteringService {
     }
 
     return true;
+  }
+
+  static List<Game> _filterLatestRevisions(List<Game> games) {
+    if (games.isEmpty) return games;
+    
+    final result = <Game>[];
+    final Map<String, Game> latestByTitle = {};
+    
+    for (final game in games) {
+      final baseTitle = game.displayTitle;
+      final currentRevision = game.metadata?.revision ?? '';
+      
+      final existing = latestByTitle[baseTitle];
+      if (existing == null) {
+        latestByTitle[baseTitle] = game;
+      } else {
+        final existingRevision = existing.metadata?.revision ?? '';
+        if (_isNewerRevision(currentRevision, existingRevision)) {
+          latestByTitle[baseTitle] = game;
+        }
+      }
+    }
+
+    for (final game in games) {
+      if (latestByTitle[game.displayTitle] == game) {
+        result.add(game);
+      }
+    }
+    
+    return result;
+  }
+
+  static bool _isNewerRevision(String current, String existing) {
+    if (current.isEmpty && existing.isEmpty) return false;
+    if (existing.isEmpty) return true;
+    if (current.isEmpty) return false;
+
+    return current.compareTo(existing) > 0;
   }
 }
 

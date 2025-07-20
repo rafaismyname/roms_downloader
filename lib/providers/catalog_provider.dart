@@ -227,6 +227,13 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
     updateFilter(newFilter);
   }
 
+  void toggleLatestRevisionOnly() async {
+    final newFilter = state.filter.copyWith(
+      showLatestRevisionOnly: !state.filter.showLatestRevisionOnly,
+    );
+    updateFilter(newFilter);
+  }
+
   void clearFilters() async {
     updateFilter(const CatalogFilter(
       regions: {},
