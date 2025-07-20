@@ -7,6 +7,9 @@ import 'package:roms_downloader/providers/catalog_provider.dart';
 import 'package:roms_downloader/services/catalog_service.dart';
 import 'package:roms_downloader/services/permission_service.dart';
 
+const _viewModeKey = 'view_mode';
+const _selectedConsoleKey = 'selected_console';
+
 final appStateProvider = StateNotifierProvider<AppStateNotifier, AppState>((ref) {
   final catalogService = CatalogService();
   final catalogNotifier = ref.read(catalogProvider.notifier);
@@ -26,14 +29,19 @@ class AppStateNotifier extends StateNotifier<AppState> {
     await PermissionService.ensurePermissions();
 
     final prefs = await SharedPreferences.getInstance();
-    final viewModeKey = prefs.getString('view_mode') ?? 'grid';
+    final viewModeKey = prefs.getString(_viewModeKey) ?? 'grid';
     final savedViewMode = viewModeKey == 'list' ? ViewMode.list : ViewMode.grid;
 
     final consoles = await catalogService.getConsoles();
+    
+    final savedConsoleId = prefs.getString(_selectedConsoleKey);
+    final selectedConsole = (savedConsoleId != null && consoles.containsKey(savedConsoleId))
+        ? consoles[savedConsoleId]
+        : consoles.isNotEmpty ? consoles.values.first : null;
 
     state = state.copyWith(
       consoles: consoles,
-      selectedConsole: consoles.isNotEmpty ? consoles.values.first : null,
+      selectedConsole: selectedConsole,
       viewMode: savedViewMode,
     );
 
@@ -52,6 +60,7 @@ class AppStateNotifier extends StateNotifier<AppState> {
 
   void selectConsole(Console console) {
     state = state.copyWith(selectedConsole: console);
+    SharedPreferences.getInstance().then((prefs) => prefs.setString(_selectedConsoleKey, console.id));
     catalogNotifier.loadCatalog(console);
   }
 
@@ -62,11 +71,11 @@ class AppStateNotifier extends StateNotifier<AppState> {
   void toggleViewMode() {
     final newMode = state.viewMode == ViewMode.list ? ViewMode.grid : ViewMode.list;
     state = state.copyWith(viewMode: newMode);
-    SharedPreferences.getInstance().then((prefs) => prefs.setString('view_mode', newMode.name));
+    SharedPreferences.getInstance().then((prefs) => prefs.setString(_viewModeKey, newMode.name));
   }
 
   void setViewMode(ViewMode mode) {
     state = state.copyWith(viewMode: mode);
-    SharedPreferences.getInstance().then((prefs) => prefs.setString('view_mode', mode.name));
+    SharedPreferences.getInstance().then((prefs) => prefs.setString(_viewModeKey, mode.name));
   }
 }

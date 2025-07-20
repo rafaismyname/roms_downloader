@@ -102,7 +102,7 @@ class _AboutScreenState extends State<AboutScreen> {
             ExpandableInfoCard(
               icon: Icons.flutter_dash_rounded,
               title: 'Built with',
-              items: [
+                items: [
                 InfoItem('flutter', 'flutter.dev', 'https://flutter.dev'),
                 InfoItem('file_picker', 'pub.dev/packages/file_picker', 'https://pub.dev/packages/file_picker'),
                 InfoItem('background_downloader', 'pub.dev/packages/background_downloader', 'https://pub.dev/packages/background_downloader'),
@@ -112,6 +112,10 @@ class _AboutScreenState extends State<AboutScreen> {
                 InfoItem('flutter_archive', 'pub.dev/packages/flutter_archive', 'https://pub.dev/packages/flutter_archive'),
                 InfoItem('flutter_foreground_task', 'pub.dev/packages/flutter_foreground_task', 'https://pub.dev/packages/flutter_foreground_task'),
                 InfoItem('package_info_plus', 'pub.dev/packages/package_info_plus', 'https://pub.dev/packages/package_info_plus'),
+                InfoItem('cached_network_image', 'pub.dev/packages/cached_network_image', 'https://pub.dev/packages/cached_network_image'),
+                InfoItem('rapidfuzz', 'pub.dev/packages/rapidfuzz', 'https://pub.dev/packages/rapidfuzz'),
+                InfoItem('photo_view', 'pub.dev/packages/photo_view', 'https://pub.dev/packages/photo_view'),
+                InfoItem('disk_space_2', 'pub.dev/packages/disk_space_2', 'https://pub.dev/packages/disk_space_2'),
               ],
               onItemTap: (url) => _copyToClipboard(context, url),
             ),

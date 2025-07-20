@@ -19,31 +19,6 @@
     "url": "https://myrient.erista.me/files/Redump/Sony%20-%20PlayStation%20Portable/",
     "boxarts": "https://thumbnails.libretro.com/Sony%20-%20PlayStation%20Portable/Named_Boxarts/"
   },
-  "dreamcast": {
-    "name": "Dreamcast",
-    "url": "https://myrient.erista.me/files/Redump/Sega%20-%20Dreamcast/",
-    "boxarts": "https://thumbnails.libretro.com/Sega%20-%20Dreamcast/Named_Boxarts/"
-  },
-  "xbox": {
-    "name": "Xbox",
-    "url": "https://myrient.erista.me/files/Redump/Microsoft%20-%20Xbox/",
-    "boxarts": "https://thumbnails.libretro.com/Microsoft%20-%20Xbox/Named_Boxarts/"
-  },
-  "ss": {
-    "name": "Sega Saturn",
-    "url": "https://myrient.erista.me/files/Redump/Sega%20-%20Saturn/",
-    "boxarts": "https://thumbnails.libretro.com/Sega%20-%20Saturn/Named_Boxarts/"
-  },
-  "sg": {
-    "name": "Sega Genesis",
-    "url": "https://myrient.erista.me/files/No-Intro/Sega%20-%20Mega%20Drive%20-%20Genesis/",
-    "boxarts": "https://thumbnails.libretro.com/Sega%20-%20Mega%20Drive%20-%20Genesis/Named_Boxarts/"
-  },
-  "gg": {
-    "name": "Game Gear",
-    "url": "https://myrient.erista.me/files/No-Intro/Sega%20-%20Game%20Gear/",
-    "boxarts": "https://thumbnails.libretro.com/Sega%20-%20Game%20Gear/Named_Boxarts/"
-  },
   "gb": {
     "name": "Game Boy",
     "url": "https://myrient.erista.me/files/No-Intro/Nintendo%20-%20Game%20Boy/",
@@ -59,11 +34,6 @@
     "url": "https://myrient.erista.me/files/No-Intro/Nintendo%20-%20Game%20Boy%20Advance/",
     "boxarts": "https://thumbnails.libretro.com/Nintendo%20-%20Game%20Boy%20Advance/Named_Boxarts/"
   },
-  "n64": {
-    "name": "Nintendo 64",
-    "url": "https://myrient.erista.me/files/No-Intro/Nintendo%20-%20Nintendo%2064%20%28BigEndian%29/",
-    "boxarts": "https://thumbnails.libretro.com/Nintendo%20-%20Nintendo%2064/Named_Boxarts/"
-  },
   "nds": {
     "name": "Nintendo DS",
     "url": "https://myrient.erista.me/files/No-Intro/Nintendo%20-%20Nintendo%20DS%20%28Decrypted%29/",
@@ -73,6 +43,21 @@
     "name": "Nintendo 3DS",
     "url": "https://myrient.erista.me/files/No-Intro/Nintendo%20-%20Nintendo%203DS%20%28Decrypted%29/",
     "boxarts": "https://thumbnails.libretro.com/Nintendo%20-%20Nintendo%203DS/Named_Boxarts/"
+  },
+  "nes": {
+    "name": "Nintendo Entertainment System",
+    "url": "https://myrient.erista.me/files/No-Intro/Nintendo%20-%20Nintendo%20Entertainment%20System%20%28Headered%29/",
+    "boxarts": "https://thumbnails.libretro.com/Nintendo%20-%20Nintendo%20Entertainment%20System/Named_Boxarts/"
+  },
+  "snes": {
+    "name": "Super Nintendo",
+    "url": "https://myrient.erista.me/files/No-Intro/Nintendo%20-%20Super%20Nintendo%20Entertainment%20System/",
+    "boxarts": "https://thumbnails.libretro.com/Nintendo%20-%20Super%20Nintendo%20Entertainment%20System/Named_Boxarts/"
+  },
+  "n64": {
+    "name": "Nintendo 64",
+    "url": "https://myrient.erista.me/files/No-Intro/Nintendo%20-%20Nintendo%2064%20%28BigEndian%29/",
+    "boxarts": "https://thumbnails.libretro.com/Nintendo%20-%20Nintendo%2064/Named_Boxarts/"
   },
   "ngc": {
     "name": "Nintendo Game Cube",
@@ -89,14 +74,48 @@
     "url": "https://myrient.erista.me/files/Redump/Nintendo%20-%20Wii%20U%20-%20WUX/",
     "boxarts": "https://thumbnails.libretro.com/Nintendo%20-%20Wii%20U/Named_Boxarts/"
   },
-  "nes": {
-    "name": "Nintendo Entertainment System",
-    "url": "https://myrient.erista.me/files/No-Intro/Nintendo%20-%20Nintendo%20Entertainment%20System%20%28Headered%29/",
-    "boxarts": "https://thumbnails.libretro.com/Nintendo%20-%20Nintendo%20Entertainment%20System/Named_Boxarts/"
+  "xbox": {
+    "name": "Xbox",
+    "url": "https://myrient.erista.me/files/Redump/Microsoft%20-%20Xbox/",
+    "boxarts": "https://thumbnails.libretro.com/Microsoft%20-%20Xbox/Named_Boxarts/"
   },
-  "snes": {
-    "name": "Super Nintendo",
-    "url": "https://myrient.erista.me/files/No-Intro/Nintendo%20-%20Super%20Nintendo%20Entertainment%20System/",
-    "boxarts": "https://thumbnails.libretro.com/Nintendo%20-%20Super%20Nintendo%20Entertainment%20System/Named_Boxarts/"
+  "xbox360": {
+    "name": "Xbox 360",
+    "url": "https://myrient.erista.me/files/Redump/Microsoft%20-%20Xbox%20360/"
+  },
+  "sg": {
+    "name": "Sega Genesis",
+    "url": "https://myrient.erista.me/files/No-Intro/Sega%20-%20Mega%20Drive%20-%20Genesis/",
+    "boxarts": "https://thumbnails.libretro.com/Sega%20-%20Mega%20Drive%20-%20Genesis/Named_Boxarts/"
+  },
+  "gg": {
+    "name": "Game Gear",
+    "url": "https://myrient.erista.me/files/No-Intro/Sega%20-%20Game%20Gear/",
+    "boxarts": "https://thumbnails.libretro.com/Sega%20-%20Game%20Gear/Named_Boxarts/"
+  },
+  "ss": {
+    "name": "Sega Saturn",
+    "url": "https://myrient.erista.me/files/Redump/Sega%20-%20Saturn/",
+    "boxarts": "https://thumbnails.libretro.com/Sega%20-%20Saturn/Named_Boxarts/"
+  },
+  "dreamcast": {
+    "name": "Sega Dreamcast",
+    "url": "https://myrient.erista.me/files/Redump/Sega%20-%20Dreamcast/",
+    "boxarts": "https://thumbnails.libretro.com/Sega%20-%20Dreamcast/Named_Boxarts/"
+  },
+  "3do": {
+    "name": "Panasonic 3DO",
+    "url": "https://myrient.erista.me/files/Redump/Panasonic%20-%203DO%20Interactive%20Multiplayer/",
+    "boxarts": "https://thumbnails.libretro.com/The%203DO%20Company%20-%203DO/Named_Boxarts/"
+  },
+  "colecoVision": {
+    "name": "ColecoVision",
+    "url": "https://myrient.erista.me/files/No-Intro/Coleco%20-%20ColecoVision/",
+    "boxarts": "https://thumbnails.libretro.com/Coleco%20-%20ColecoVision/Named_Boxarts/"
+  },
+  "intellivision": {
+    "name": "Intellivision",
+    "url": "https://myrient.erista.me/files/No-Intro/Mattel%20-%20Intellivision/",
+    "boxarts": "https://thumbnails.libretro.com/Mattel%20-%20Intellivision/Named_Boxarts/"
   }
 }
