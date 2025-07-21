@@ -234,6 +234,13 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
     updateFilter(newFilter);
   }
 
+  void toggleFavoritesOnly() async {
+    final newFilter = state.filter.copyWith(
+      showFavoritesOnly: !state.filter.showFavoritesOnly,
+    );
+    updateFilter(newFilter);
+  }
+
   void clearFilters() async {
     updateFilter(const CatalogFilter(
       regions: {},

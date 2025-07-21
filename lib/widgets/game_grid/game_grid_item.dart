@@ -4,6 +4,7 @@ import 'package:roms_downloader/models/game_model.dart';
 import 'package:roms_downloader/models/game_state_model.dart';
 import 'package:roms_downloader/providers/catalog_provider.dart';
 import 'package:roms_downloader/providers/game_state_provider.dart';
+import 'package:roms_downloader/providers/favorites_provider.dart';
 import 'package:roms_downloader/widgets/game_list/game_action_buttons.dart';
 import 'package:roms_downloader/widgets/game_list/game_boxart.dart';
 
@@ -29,8 +30,10 @@ class _GameGridItemState extends ConsumerState<GameGridItem> {
     final catalogState = ref.watch(catalogProvider);
     final catalogNotifier = ref.read(catalogProvider.notifier);
     final gameState = ref.watch(gameStateProvider(game));
+    final favorites = ref.watch(favoritesProvider);
     final isSelected = catalogState.selectedGames.contains(game.taskId);
     final isActive = gameState.isActive;
+    final isFavorite = favorites.isFavorite(game.taskId);
 
     if (gameState.status == GameStatus.init) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -88,6 +91,24 @@ class _GameGridItemState extends ConsumerState<GameGridItem> {
                         shape: CircleBorder(),
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         visualDensity: VisualDensity.compact,
+                      ),
+                    ),
+                  ),
+                ],
+                if (isFavorite) ...[
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.6),
+                        shape: BoxShape.circle,
+                      ),
+                      padding: EdgeInsets.all(4),
+                      child: Icon(
+                        Icons.favorite,
+                        size: 16,
+                        color: Colors.red,
                       ),
                     ),
                   ),

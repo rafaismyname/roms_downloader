@@ -8,11 +8,12 @@ class FilteringService {
     final filter = input.filter;
     final skip = input.skip;
     final limit = input.limit;
+    final favoriteGameIds = input.favoriteGameIds;
 
     var allMatched = <Game>[];
 
     for (final game in games) {
-      if (_matchesFilter(game, filterText, filter)) {
+      if (_matchesFilter(game, filterText, filter, favoriteGameIds)) {
         allMatched.add(game);
       }
     }
@@ -32,7 +33,11 @@ class FilteringService {
     );
   }
 
-  static bool _matchesFilter(Game game, String filterText, CatalogFilter filter) {
+  static bool _matchesFilter(Game game, String filterText, CatalogFilter filter, Set<String>? favoriteGameIds) {
+    if (filter.showFavoritesOnly && favoriteGameIds != null) {
+      if (!favoriteGameIds.contains(game.taskId)) return false;
+    }
+
     if (filterText.isNotEmpty) {
       final titleMatch = game.displayTitle.toLowerCase().contains(filterText);
       final originalMatch = game.title.toLowerCase().contains(filterText);
@@ -138,6 +143,7 @@ class FilterInput {
   final CatalogFilter filter;
   final int skip;
   final int limit;
+  final Set<String>? favoriteGameIds;
 
   const FilterInput({
     required this.games,
@@ -145,6 +151,7 @@ class FilterInput {
     required this.filter,
     this.skip = 0,
     required this.limit,
+    this.favoriteGameIds,
   });
 }
 
