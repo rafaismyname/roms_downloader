@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:roms_downloader/models/catalog_filter_model.dart';
 import 'package:roms_downloader/providers/catalog_provider.dart';
-import 'package:roms_downloader/providers/favorites_provider.dart';
 
 class FilterModal extends ConsumerWidget {
   const FilterModal({super.key});
@@ -21,7 +20,6 @@ class FilterModal extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final catalogState = ref.watch(catalogProvider);
     final catalogNotifier = ref.read(catalogProvider.notifier);
-    final favorites = ref.watch(favoritesProvider);
     final filter = catalogState.filter;
 
     return Container(
@@ -123,7 +121,7 @@ class FilterModal extends ConsumerWidget {
                                   ),
                             ),
                             Text(
-                              'Shows only games marked as favorites (${favorites.count} games)',
+                              'Shows only games marked as favorites',
                               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                                   ),
@@ -133,7 +131,7 @@ class FilterModal extends ConsumerWidget {
                       ),
                       Switch(
                         value: filter.showFavoritesOnly,
-                        onChanged: favorites.isNotEmpty ? (value) => catalogNotifier.toggleFavoritesOnly() : null,
+                        onChanged: (value) => catalogNotifier.toggleFavoritesOnly(),
                       ),
                     ],
                   ),
