@@ -89,6 +89,7 @@ class _AboutScreenState extends State<AboutScreen> {
               icon: Icons.code_rounded,
               title: 'Source Code',
               subtitle: 'rafaismyname/roms_downloader',
+              url: 'https://github.com/rafaismyname/roms_downloader',
               onTap: () => _copyToClipboard(context, 'https://github.com/rafaismyname/roms_downloader'),
             ),
             SizedBox(height: 16),
@@ -96,7 +97,8 @@ class _AboutScreenState extends State<AboutScreen> {
               icon: Icons.person_rounded,
               title: 'Author',
               subtitle: 'rafaismyname',
-              onTap: () => _copyToClipboard(context, 'https://github.com/rafaismyname'),
+              url: 'https://rafaismy.name',
+              onTap: () => _copyToClipboard(context, 'https://rafaismy.name'),
             ),
             SizedBox(height: 16),
             ExpandableInfoCard(
@@ -126,6 +128,7 @@ class _AboutScreenState extends State<AboutScreen> {
               title: 'Special Thanks',
               items: [
                 InfoItem('Myrient', 'ROM Archive - myrient.erista.me', 'https://myrient.erista.me'),
+                InfoItem('0x0', 'Ephemeral storage - 0x0.st', 'https://0x0.st'),
               ],
               onItemTap: (url) => _copyToClipboard(context, url),
             ),
