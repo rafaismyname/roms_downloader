@@ -160,7 +160,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     final queueNotifier = _ref.read(taskQueueProvider.notifier);
 
     for (final game in games) {
-      final taskId = game.taskId;
+      final taskId = game.gameId;
 
       if (!isTaskDownloadable(taskId)) continue;
 
@@ -176,7 +176,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     final catalogState = _ref.read(catalogProvider);
     if (catalogState.selectedGames.isEmpty) return;
 
-    final games = catalogState.games.where((game) => catalogState.selectedGames.contains(game.taskId)).toList();
+    final games = catalogState.games.where((game) => catalogState.selectedGames.contains(game.gameId)).toList();
 
     await startDownloads(games, downloadDir, group);
   }
@@ -186,13 +186,13 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     final downloadDir = settingsNotifier.getDownloadDir(game.consoleId);
     final queueNotifier = _ref.read(taskQueueProvider.notifier);
 
-    queueNotifier.enqueue(game.taskId, TaskType.download, {
+    queueNotifier.enqueue(game.gameId, TaskType.download, {
       'game': game.toJson(),
       'downloadDir': downloadDir,
       'group': game.consoleId,
     });
 
-    catalogNotifier.deselectGame(game.taskId);
+    catalogNotifier.deselectGame(game.gameId);
   }
 
   Future<void> pauseTask(String taskId) async {
@@ -274,7 +274,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
   }
 
   Future<void> executeDownload(Game game, String downloadDir, String group) async {
-    final taskId = game.taskId;
+    final taskId = game.gameId;
     final fileName = game.filename;
 
     if (!isTaskDownloadable(taskId)) return;

@@ -15,7 +15,7 @@ class TaskQueueService {
     final queueNotifier = ref.read(taskQueueProvider.notifier);
 
     for (final game in games) {
-      queueNotifier.enqueue(game.taskId, TaskType.download, {
+      queueNotifier.enqueue(game.gameId, TaskType.download, {
         'game': game.toJson(),
         'downloadDir': downloadDir,
         'group': consoleId ?? 'default',
@@ -29,7 +29,7 @@ class TaskQueueService {
   }
 
   static void cancelTask(WidgetRef ref, Game game, GameState gameState) {
-    final taskId = game.taskId;
+    final taskId = game.gameId;
 
     if (gameState.status == GameStatus.downloading || gameState.status == GameStatus.downloadPaused || gameState.status == GameStatus.downloadFailed) {
       final downloadNotifier = ref.read(downloadProvider.notifier);

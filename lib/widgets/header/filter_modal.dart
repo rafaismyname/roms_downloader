@@ -105,6 +105,40 @@ class FilterModal extends ConsumerWidget {
                   Row(
                     children: [
                       Icon(
+                        Icons.favorite,
+                        size: 20,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Show favorites only',
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                            ),
+                            Text(
+                              'Shows only games marked as favorites',
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Switch(
+                        value: filter.showFavoritesOnly,
+                        onChanged: (value) => catalogNotifier.toggleFavoritesOnly(),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Icon(
                         Icons.filter_1,
                         size: 20,
                         color: Theme.of(context).colorScheme.primary,

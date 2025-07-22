@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:roms_downloader/models/game_model.dart';
 import 'package:roms_downloader/models/game_state_model.dart';
 import 'package:roms_downloader/services/task_queue_service.dart';
+import 'package:roms_downloader/providers/favorites_provider.dart';
 
 class GameActionButtons extends ConsumerWidget {
   final Game game;
@@ -19,18 +20,45 @@ class GameActionButtons extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final favorites = ref.watch(favoritesProvider);
+    final isFavorite = favorites.isFavorite(game.gameId);
+    
     return Center(
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: _buildActionButtons(context, ref)
-              .map((button) => Padding(
-                    padding: EdgeInsets.symmetric(horizontal: Platform.isAndroid ? 0 : 8),
-                    child: button,
-                  ))
-              .toList(),
+          children: [
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: Platform.isAndroid ? 0 : 8),
+              child: _buildFavoriteButton(context, ref, isFavorite),
+            ),
+            ..._buildActionButtons(context, ref)
+                .map((button) => Padding(
+                      padding: EdgeInsets.symmetric(horizontal: Platform.isAndroid ? 0 : 8),
+                      child: button,
+                    )),
+          ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildFavoriteButton(BuildContext context, WidgetRef ref, bool isFavorite) {
+    final buttonSize = isNarrow ? 18.0 : 24.0;
+    
+    return Tooltip(
+      message: isFavorite ? 'Remove from favorites' : 'Add to favorites',
+      child: IconButton(
+        icon: Icon(
+          isFavorite ? Icons.favorite : Icons.favorite_border,
+          size: buttonSize,
+          color: isFavorite ? Colors.red : null,
+        ),
+        onPressed: () => ref.read(favoritesProvider.notifier).toggleFavorite(game.gameId),
+        constraints: BoxConstraints(minWidth: 18, minHeight: 18),
+        padding: EdgeInsets.zero,
+        visualDensity: VisualDensity.compact,
       ),
     );
   }
@@ -62,7 +90,7 @@ class GameActionButtons extends ConsumerWidget {
               message: 'Pause',
               child: IconButton(
                 icon: Icon(Icons.pause, size: buttonSize),
-                onPressed: () => TaskQueueService.pauseDownloadTask(ref, game.taskId),
+                onPressed: () => TaskQueueService.pauseDownloadTask(ref, game.gameId),
                 constraints: buttonConstraints,
                 padding: EdgeInsets.zero,
                 visualDensity: VisualDensity.compact,
@@ -76,7 +104,7 @@ class GameActionButtons extends ConsumerWidget {
               message: 'Resume',
               child: IconButton(
                 icon: Icon(Icons.play_arrow, size: buttonSize),
-                onPressed: () => TaskQueueService.resumeDownloadTask(ref, game.taskId),
+                onPressed: () => TaskQueueService.resumeDownloadTask(ref, game.gameId),
                 constraints: buttonConstraints,
                 padding: EdgeInsets.zero,
                 visualDensity: VisualDensity.compact,
@@ -104,7 +132,7 @@ class GameActionButtons extends ConsumerWidget {
               message: 'Extract',
               child: IconButton(
                 icon: Icon(Icons.archive, size: buttonSize),
-                onPressed: () => TaskQueueService.startExtraction(ref, game.taskId),
+                onPressed: () => TaskQueueService.startExtraction(ref, game.gameId),
                 constraints: buttonConstraints,
                 padding: EdgeInsets.zero,
                 visualDensity: VisualDensity.compact,
@@ -132,7 +160,7 @@ class GameActionButtons extends ConsumerWidget {
               message: 'Retry Extraction',
               child: IconButton(
                 icon: Icon(Icons.refresh, size: buttonSize),
-                onPressed: () => TaskQueueService.startExtraction(ref, game.taskId),
+                onPressed: () => TaskQueueService.startExtraction(ref, game.gameId),
                 constraints: buttonConstraints,
                 padding: EdgeInsets.zero,
                 visualDensity: VisualDensity.compact,

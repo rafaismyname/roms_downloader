@@ -46,7 +46,7 @@ class _GameListState extends ConsumerState<GameList> {
 
     final sizeColumnWidth = isNarrow ? 60.0 : 100.0;
     final statusColumnWidth = isNarrow ? 80.0 : 100.0;
-    final actionsColumnWidth = isNarrow ? 70.0 : 80.0;
+    final actionsColumnWidth = isNarrow ? 100.0 : 120.0;
 
     return Column(
       children: [
@@ -139,7 +139,7 @@ class _GameListState extends ConsumerState<GameList> {
 
               final game = games[index];
               return GameRow(
-                key: ValueKey(game.taskId),
+                key: ValueKey(game.gameId),
                 game: game,
                 isNarrow: isNarrow,
                 sizeColumnWidth: sizeColumnWidth,

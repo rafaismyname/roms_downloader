@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class InfoItem {
   final String title;
@@ -135,7 +136,21 @@ class _ExpandableInfoCardState extends State<ExpandableInfoCard> {
                                 ),
                               ),
                               SizedBox(width: 8),
-                              Icon(Icons.copy_rounded, size: 14, color: theme.colorScheme.onSurfaceVariant),
+                              IconButton(
+                                icon: Icon(Icons.open_in_new_rounded, size: 14, color: theme.colorScheme.onSurfaceVariant),
+                                tooltip: 'Open link',
+                                onPressed: () async {
+                                  final uri = Uri.tryParse(item.url);
+                                  if (uri != null && await canLaunchUrl(uri)) {
+                                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                                  }
+                                },
+                              ),
+                              IconButton(
+                                icon: Icon(Icons.copy_rounded, size: 14, color: theme.colorScheme.onSurfaceVariant),
+                                tooltip: 'Copy link',
+                                onPressed: () => widget.onItemTap(item.url),
+                              ),
                             ],
                           ),
                         ),

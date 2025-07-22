@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:roms_downloader/models/catalog_model.dart';
 import 'package:roms_downloader/models/catalog_filter_model.dart';
 import 'package:roms_downloader/models/console_model.dart';
+import 'package:roms_downloader/models/favorites_model.dart';
 import 'package:roms_downloader/services/catalog_service.dart';
 import 'package:roms_downloader/services/filtering_service.dart';
+import 'package:roms_downloader/providers/favorites_provider.dart';
 
 final gameSelectionProvider = Provider.family<bool, String>((ref, gameId) {
   final catalogState = ref.watch(catalogProvider);
@@ -13,15 +15,22 @@ final gameSelectionProvider = Provider.family<bool, String>((ref, gameId) {
 
 final catalogProvider = StateNotifierProvider<CatalogNotifier, CatalogState>((ref) {
   final catalogService = CatalogService();
-  return CatalogNotifier(catalogService);
+  return CatalogNotifier(catalogService, ref);
 });
 
 class CatalogNotifier extends StateNotifier<CatalogState> {
   final CatalogService catalogService;
+  final Ref ref;
 
   bool _loadingMore = false;
 
-  CatalogNotifier(this.catalogService) : super(const CatalogState());
+  CatalogNotifier(this.catalogService, this.ref) : super(const CatalogState()) {
+    ref.listen<Favorites>(favoritesProvider, (previous, current) {
+      if (state.filter.showFavoritesOnly && previous?.gameIds != current.gameIds) {
+        _updateFilteredGames();
+      }
+    });
+  }
 
   Future<void> loadCatalog(Console console) async {
     if (state.loading) return;
@@ -30,7 +39,6 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
       loading: true,
       games: [],
       selectedGames: {},
-      filter: const CatalogFilter(),
     );
 
     try {
@@ -76,6 +84,7 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
     if (state.games.isEmpty) return;
 
     try {
+      final favorites = ref.read(favoritesProvider);
       final result = await compute(
           FilteringService.filterAndPaginate,
           FilterInput(
@@ -84,6 +93,7 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
             filter: state.filter,
             skip: 0,
             limit: kDefaultCatalogDisplaySize,
+            favoriteGameIds: state.filter.showFavoritesOnly ? favorites.gameIds : null,
           ));
 
       state = state.copyWith(
@@ -108,6 +118,7 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
     state = state.copyWith(loadingMore: true);
 
     try {
+      final favorites = ref.read(favoritesProvider);
       final result = await compute(
           FilteringService.filterAndPaginate,
           FilterInput(
@@ -116,6 +127,7 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
             filter: state.filter,
             skip: state.paginatedFilteredGames.length,
             limit: kDefaultCatalogDisplaySize,
+            favoriteGameIds: state.filter.showFavoritesOnly ? favorites.gameIds : null,
           ));
 
       state = state.copyWith(
@@ -234,6 +246,13 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
     updateFilter(newFilter);
   }
 
+  void toggleFavoritesOnly() async {
+    final newFilter = state.filter.copyWith(
+      showFavoritesOnly: !state.filter.showFavoritesOnly,
+    );
+    updateFilter(newFilter);
+  }
+
   void clearFilters() async {
     updateFilter(const CatalogFilter(
       regions: {},
@@ -242,6 +261,7 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
       romTypes: {},
       modifications: {},
       distributionTypes: {},
+      showFavoritesOnly: false,
     ));
   }
 

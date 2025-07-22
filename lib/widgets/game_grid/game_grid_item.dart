@@ -29,13 +29,13 @@ class _GameGridItemState extends ConsumerState<GameGridItem> {
     final catalogState = ref.watch(catalogProvider);
     final catalogNotifier = ref.read(catalogProvider.notifier);
     final gameState = ref.watch(gameStateProvider(game));
-    final isSelected = catalogState.selectedGames.contains(game.taskId);
+    final isSelected = catalogState.selectedGames.contains(game.gameId);
     final isActive = gameState.isActive;
 
     if (gameState.status == GameStatus.init) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          ref.read(gameStateManagerProvider.notifier).resolveState(game.taskId);
+          ref.read(gameStateManagerProvider.notifier).resolveState(game.gameId);
         }
       });
     }
@@ -84,7 +84,7 @@ class _GameGridItemState extends ConsumerState<GameGridItem> {
                       height: 24,
                       child: Checkbox(
                         value: isSelected,
-                        onChanged: gameState.isInteractable ? (_) => catalogNotifier.toggleGameSelection(game.taskId) : null,
+                        onChanged: gameState.isInteractable ? (_) => catalogNotifier.toggleGameSelection(game.gameId) : null,
                         shape: CircleBorder(),
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         visualDensity: VisualDensity.compact,
@@ -216,29 +216,27 @@ class _GameGridItemState extends ConsumerState<GameGridItem> {
                     ),
                   ),
                 ),
-                if (gameState.availableActions.isNotEmpty) ...[
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: Container(
-                      height: 26,
-                      padding: EdgeInsets.zero,
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.inversePrimary.withValues(alpha: 0.9),
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(
-                          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.9),
-                          width: 1,
-                        ),
-                      ),
-                      child: GameActionButtons(
-                        game: game,
-                        gameState: gameState,
-                        isNarrow: true,
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Container(
+                    height: 26,
+                    padding: EdgeInsets.zero,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.inversePrimary.withValues(alpha: 0.9),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.9),
+                        width: 1,
                       ),
                     ),
+                    child: GameActionButtons(
+                      game: game,
+                      gameState: gameState,
+                      isNarrow: true,
+                    ),
                   ),
-                ],
+                ),
               ],
             ),
           ),

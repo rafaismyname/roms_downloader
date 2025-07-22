@@ -91,8 +91,6 @@ class DirectoryService {
       } catch (_) {}
     }
 
-    // TODO1: implement more complex checks like normalized title matching
-
     return (hasFile: hasFile, hasExtracted: hasExtracted);
   }
 

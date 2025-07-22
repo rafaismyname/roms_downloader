@@ -38,7 +38,7 @@ class _GameRowState extends ConsumerState<GameRow> {
   Widget build(BuildContext context) {
     final catalogNotifier = ref.read(catalogProvider.notifier);
 
-    final gameId = widget.game.taskId;
+    final gameId = widget.game.gameId;
     final gameState = ref.watch(gameStateProvider(widget.game));
 
     if (gameState.status == GameStatus.init) {

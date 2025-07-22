@@ -19,35 +19,25 @@ I do not own nor recommend those sources. As a matter of fact, the first step in
 - Treat others as you would like to be treated.
 
 ## Features/Future
-
-- [x] Load console index/catalog async
-- [x] Display multiple indexes/catalogs
-- [x] Parallel downloads
-- [x] Search title
-- [x] Change download destination folder
-- [x] Independent downloads (start a new download while other is ongoing)
-- [x] Unzip downloaded files
-- [x] In-Library detection improved to detect extracted files and similar-named content
-- [x] Background Downloader
-- [x] Background Unzip
-- [x] Auto-extract after download
-- [x] Tasks Queue
-- [x] Filters (like country/language, type, extension, etc.)
-- [x] Allow custom consoles (via JSON)
-- [x] Allow navigating other consoles and search while download/extraction is in progress
-- [ ] Improve file detection system (custom rexeg/extensions per console)
-- [x] Custom settings per console (dest. dir/unzip rules/default filters/etc.)
+- [x] Async loading and display of multiple console indexes/catalogs
+- [x] Parallel, independent downloads with background support and tasks queue
+- [x] Search and filter titles (by country/language, type, extension, etc.)
+- [x] Change and customize download destination folder and settings per console
+- [x] Unzip and auto-extract downloaded files (background unzip, improved in-library detection for extracted/similar-named files)
+- [x] Allow custom consoles and settings via JSON
+- [x] Navigate/search other consoles while downloads/extractions are in progress
+- [ ] Improve file detection system (custom regex/extensions per console)
 - [x] Permissions control
 - [x] Boxart fetching
+- [x] Favorites, filter favorites and favorite list export/import
+- [ ] Filter by in-library
 - [ ] Settings for file cache folder
-- [x] Grid Viewer
-- [ ] Game metadata fetcher (rating, description...)
+- [x] Grid viewer
+- [ ] Game metadata fetcher (rating, description, etc.)
+- [ ] List sorting
 - [x] Info/About page
-- [x] Android support
-- [x] Mac support
-- [x] Windows support
-- [ ] Linux support (untested)
-- [ ] Handheld Linux support (untested)
+- [x] Android, Mac, and Windows support
+- [ ] Linux and handheld Linux support (untested)
 - [ ] ~~iOS support~~ No iOS support for now, cry about it.
 
 ## Technologies
