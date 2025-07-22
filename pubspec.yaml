@@ -1,6 +1,6 @@
 name: roms_downloader
 description: ROMs Downloader
-version: 1.0.16+20
+version: 1.0.16+21
 
 environment:
   flutter: ">=3.32.7"

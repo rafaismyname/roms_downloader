@@ -135,17 +135,14 @@ class _GameRowState extends ConsumerState<GameRow> {
                           textAlign: TextAlign.center,
                         ),
                       ),
-                      // if not selectable (no list header) and no available actions, dont show actions column
-                      if (widget.selectable || (!widget.selectable && gameState.availableActions.isNotEmpty)) ...[
-                        SizedBox(
-                          width: widget.actionsColumnWidth,
-                          child: GameActionButtons(
-                            game: widget.game,
-                            gameState: gameState,
-                            isNarrow: widget.isNarrow,
-                          ),
+                      SizedBox(
+                        width: widget.actionsColumnWidth,
+                        child: GameActionButtons(
+                          game: widget.game,
+                          gameState: gameState,
+                          isNarrow: widget.isNarrow,
                         ),
-                      ]
+                      ),
                     ],
                   ),
                   if (gameState.showProgressBar)

@@ -47,8 +47,8 @@ class TaskListView extends StatelessWidget {
           key: ValueKey(gameState.game.gameId),
           game: gameState.game,
           isNarrow: true,
-          statusColumnWidth: gameState.availableActions.isEmpty ? 100 : 80,
-          actionsColumnWidth: 70,
+          statusColumnWidth: 80,
+          actionsColumnWidth: 100,
           selectable: false,
         );
       },
