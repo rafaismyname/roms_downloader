@@ -17,12 +17,13 @@ class Favorites {
     String? exportSlug,
     DateTime? lastExported,
     bool clearExportSlug = false,
+    bool clearLastExported = false,
   }) {
     return Favorites(
       gameIds: gameIds ?? this.gameIds,
       lastUpdated: lastUpdated ?? DateTime.now(),
       exportSlug: clearExportSlug ? null : (exportSlug ?? this.exportSlug),
-      lastExported: lastExported ?? this.lastExported,
+      lastExported: clearLastExported ? null : (lastExported ?? this.lastExported),
     );
   }
 

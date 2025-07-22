@@ -62,6 +62,15 @@ class FavoritesNotifier extends StateNotifier<Favorites> {
     await _service.saveFavorites(state);
   }
 
+  Future<void> deleteExport() async {
+    await _service.deleteExport();
+    state = state.copyWith(
+      clearExportSlug: true,
+      clearLastExported: true,
+    );
+    await _service.saveFavorites(state);
+  }
+
   Future<void> clearFavorites() async {
     state = Favorites(lastUpdated: DateTime.now());
     await _service.clearFavorites();
