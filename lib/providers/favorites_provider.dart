@@ -20,7 +20,7 @@ class FavoritesNotifier extends StateNotifier<Favorites> {
     } else {
       newGameIds.add(gameId);
     }
-    
+
     state = state.copyWith(gameIds: newGameIds);
     await _service.saveFavorites(state);
   }
@@ -53,11 +53,9 @@ class FavoritesNotifier extends StateNotifier<Favorites> {
 
   Future<void> importFavorites(String slug, {bool merge = true}) async {
     final importedGameIds = await _service.importFavorites(slug);
-    
-    final newGameIds = merge 
-        ? (Set<String>.from(state.gameIds)..addAll(importedGameIds))
-        : importedGameIds;
-    
+
+    final newGameIds = merge ? (Set<String>.from(state.gameIds)..addAll(importedGameIds)) : importedGameIds;
+
     state = state.copyWith(gameIds: newGameIds);
     await _service.saveFavorites(state);
   }
@@ -72,8 +70,9 @@ class FavoritesNotifier extends StateNotifier<Favorites> {
   }
 
   Future<void> clearFavorites() async {
-    state = Favorites(lastUpdated: DateTime.now());
     await _service.clearFavorites();
+    state = state.copyWith(gameIds: {});
+    await _service.saveFavorites(state);
   }
 
   bool isFavorite(String gameId) => state.isFavorite(gameId);

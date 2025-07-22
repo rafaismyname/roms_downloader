@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -106,7 +107,7 @@ class _FavoritesSettingsState extends ConsumerState<FavoritesSettings> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text('Delete Export'),
-        content: Text('Are you sure you want to delete the current export? This will permanently remove the shared token.'),
+        content: Text('Are you sure you want to delete the current export? This will permanently remove the shared code.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -139,6 +140,8 @@ class _FavoritesSettingsState extends ConsumerState<FavoritesSettings> {
     final favorites = ref.watch(favoritesProvider);
     final theme = Theme.of(context);
 
+    final displayableCode = favorites.exportSlug?.split(':').first;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -150,7 +153,7 @@ class _FavoritesSettingsState extends ConsumerState<FavoritesSettings> {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.favorite, color: theme.colorScheme.primary),
+                    Icon(Icons.favorite_outline, color: theme.colorScheme.primary),
                     SizedBox(width: 12),
                     Expanded(
                       child: Column(
@@ -164,7 +167,7 @@ class _FavoritesSettingsState extends ConsumerState<FavoritesSettings> {
                           ),
                           SizedBox(height: 4),
                           Text(
-                            '${favorites.count} games marked as favorites',
+                            '${favorites.count} favorite${favorites.count == 1 ? '' : 's'}',
                             style: theme.textTheme.bodyMedium?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
                             ),
@@ -172,19 +175,18 @@ class _FavoritesSettingsState extends ConsumerState<FavoritesSettings> {
                         ],
                       ),
                     ),
+                    if (favorites.isNotEmpty)
+                      OutlinedButton.icon(
+                        onPressed: _clearFavorites,
+                        icon: Icon(Icons.clear, size: 18),
+                        label: Text('Clear'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: theme.colorScheme.error,
+                          side: BorderSide(color: theme.colorScheme.error.withValues(alpha: 0.5)),
+                        ),
+                      ),
                   ],
                 ),
-                if (favorites.isNotEmpty) ...[
-                  SizedBox(height: 8),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.tonalIcon(
-                      onPressed: _clearFavorites,
-                      icon: Icon(Icons.clear_all),
-                      label: Text('Clear All Favorites'),
-                    ),
-                  ),
-                ],
               ],
             ),
           ),
@@ -198,7 +200,7 @@ class _FavoritesSettingsState extends ConsumerState<FavoritesSettings> {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.cloud_upload, color: theme.colorScheme.primary),
+                    Icon(Icons.cloud_upload_outlined, color: theme.colorScheme.primary),
                     SizedBox(width: 12),
                     Expanded(
                       child: Column(
@@ -212,7 +214,7 @@ class _FavoritesSettingsState extends ConsumerState<FavoritesSettings> {
                           ),
                           SizedBox(height: 4),
                           Text(
-                            'Export your favorites to get a shareable token',
+                            'Export your favorites',
                             style: theme.textTheme.bodyMedium?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
                             ),
@@ -220,97 +222,111 @@ class _FavoritesSettingsState extends ConsumerState<FavoritesSettings> {
                         ],
                       ),
                     ),
+                    SizedBox(width: 12),
+                    OutlinedButton.icon(
+                      onPressed: favorites.isNotEmpty && !_isExporting ? _exportFavorites : null,
+                      icon: _isExporting
+                          ? SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                          : Icon(Icons.cloud_upload_outlined, size: 18),
+                      label: Text(_isExporting ? 'Exporting' : 'Export'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: theme.colorScheme.primary,
+                        side: BorderSide(color: theme.colorScheme.primary.withValues(alpha: 0.5)),
+                      ),
+                    ),
                   ],
                 ),
-                SizedBox(height: 8),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.icon(
-                    onPressed: favorites.isNotEmpty && !_isExporting ? _exportFavorites : null,
-                    icon: _isExporting ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : Icon(Icons.upload),
-                    label: Text(_isExporting ? 'Exporting...' : 'Export Favorites'),
-                  ),
-                ),
-                if (favorites.exportSlug != null) ...[
-                  SizedBox(height: 16),
+                if (displayableCode != null) ...[
+                  SizedBox(height: 14),
                   Container(
                     width: double.infinity,
                     padding: EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: theme.colorScheme.surfaceContainer,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(
+                        color: theme.colorScheme.outline.withValues(alpha: 0.2),
+                      ),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(Icons.link, size: 16, color: theme.colorScheme.onSurfaceVariant),
-                            SizedBox(width: 8),
                             Text(
-                              'Export Token',
+                              'Export Code',
                               style: theme.textTheme.bodySmall?.copyWith(
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.w500,
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              "Last exported: ${_formatDateTime(favorites.lastExported!)}",
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                                fontSize: 11,
                               ),
                             ),
                           ],
                         ),
-                        SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () => _copyToClipboard(favorites.exportSlug!),
-                                child: Container(
-                                  padding: EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: theme.colorScheme.surface,
-                                    borderRadius: BorderRadius.circular(6),
-                                    border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.2)),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          favorites.exportSlug!,
-                                          style: theme.textTheme.bodySmall?.copyWith(
-                                            fontFamily: 'monospace',
-                                          ),
-                                        ),
-                                      ),
-                                      Icon(Icons.copy, size: 16),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                            SizedBox(width: 8),
-                            GestureDetector(
-                              onTap: _isDeleting ? null : _deleteExport,
-                              child: Container(
-                                padding: EdgeInsets.all(7),
-                                decoration: BoxDecoration(
-                                  color: theme.colorScheme.errorContainer.withValues(alpha: 0.3),
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(color: theme.colorScheme.error.withValues(alpha: 0.3)),
-                                ),
-                                child: _isDeleting
-                                    ? SizedBox(
-                                        width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: theme.colorScheme.onErrorContainer))
-                                    : Icon(Icons.delete, size: 16, color: theme.colorScheme.onErrorContainer),
-                              ),
-                            ),
-                          ],
-                        ),
-                        if (favorites.lastExported != null) ...[
-                          SizedBox(height: 8),
-                          Text(
-                            'Last exported: ${_formatDateTime(favorites.lastExported!)}',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
+                        SizedBox(height: 12),
+                        Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.symmetric(horizontal: 10, vertical: Platform.isAndroid ? 0 : 4),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(
+                              color: theme.colorScheme.outline.withValues(alpha: 0.12),
                             ),
                           ),
-                        ],
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  displayableCode,
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    fontFamily: 'monospace',
+                                    color: theme.colorScheme.onSurface.withValues(alpha: 0.85),
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: () => _copyToClipboard(displayableCode),
+                                icon: Icon(Icons.copy, size: 18),
+                                tooltip: 'Copy',
+                                style: IconButton.styleFrom(
+                                  minimumSize: Size(32, 32),
+                                  padding: EdgeInsets.zero,
+                                  backgroundColor: Colors.transparent,
+                                  foregroundColor: theme.colorScheme.onSurfaceVariant,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: _isDeleting ? null : _deleteExport,
+                                icon: _isDeleting
+                                    ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                                    : Icon(Icons.delete_outline, size: 18),
+                                tooltip: 'Delete export',
+                                style: IconButton.styleFrom(
+                                  minimumSize: Size(32, 32),
+                                  padding: EdgeInsets.zero,
+                                  backgroundColor: Colors.transparent,
+                                  foregroundColor: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -328,7 +344,7 @@ class _FavoritesSettingsState extends ConsumerState<FavoritesSettings> {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.cloud_download, color: theme.colorScheme.primary),
+                    Icon(Icons.cloud_download_outlined, color: theme.colorScheme.primary),
                     SizedBox(width: 12),
                     Expanded(
                       child: Column(
@@ -342,7 +358,7 @@ class _FavoritesSettingsState extends ConsumerState<FavoritesSettings> {
                           ),
                           SizedBox(height: 4),
                           Text(
-                            'Import favorites using your export token',
+                            'Import favorites using an export code',
                             style: theme.textTheme.bodyMedium?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
                             ),
@@ -353,30 +369,48 @@ class _FavoritesSettingsState extends ConsumerState<FavoritesSettings> {
                   ],
                 ),
                 SizedBox(height: 16),
-                TextField(
-                  controller: _importController,
-                  decoration: InputDecoration(
-                    labelText: 'Import Token',
-                    hintText: 'Enter token (e.g., abc123:xyz...)',
-                    border: OutlineInputBorder(),
-                    suffixIcon: _importController.text.trim().isNotEmpty
-                        ? IconButton(
-                            onPressed: () => setState(() => _importController.clear()),
-                            icon: Icon(Icons.clear),
-                          )
-                        : null,
-                  ),
-                  enabled: !_isImporting,
-                  onChanged: (_) => setState(() {}),
-                ),
-                SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.icon(
-                    onPressed: _importController.text.trim().isNotEmpty && !_isImporting ? _importFavorites : null,
-                    icon: _isImporting ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : Icon(Icons.download),
-                    label: Text(_isImporting ? 'Importing...' : 'Import Favorites'),
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _importController,
+                        decoration: InputDecoration(
+                          hintText: 'Enter code (e.g., abcd.fav)',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          suffixIcon: _importController.text.trim().isNotEmpty
+                              ? IconButton(
+                                  onPressed: () => setState(() => _importController.clear()),
+                                  icon: Icon(Icons.clear),
+                                  tooltip: 'Clear',
+                                )
+                              : null,
+                        ),
+                        enabled: !_isImporting,
+                        onChanged: (_) => setState(() {}),
+                      ),
+                    ),
+                    SizedBox(width: 12),
+                    SizedBox(
+                      width: 48,
+                      height: 48,
+                      child: ElevatedButton(
+                        onPressed: _importController.text.trim().isNotEmpty && !_isImporting ? _importFavorites : null,
+                        style: ElevatedButton.styleFrom(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          backgroundColor: theme.colorScheme.secondaryContainer,
+                          foregroundColor: theme.colorScheme.onSecondaryContainer,
+                          padding: EdgeInsets.zero,
+                          minimumSize: Size(48, 48),
+                        ),
+                        child:
+                            _isImporting ? SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : Icon(Icons.download, size: 24),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

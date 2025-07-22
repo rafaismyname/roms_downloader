@@ -122,10 +122,6 @@ class FavoritesService {
       if (await file.exists()) {
         await file.delete();
       }
-
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(_exportSlugKey);
-      await prefs.remove(_lastExportedKey);
     } catch (e) {
       debugPrint('Error clearing favorites: $e');
     }
