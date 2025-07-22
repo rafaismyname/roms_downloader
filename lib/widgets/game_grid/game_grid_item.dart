@@ -29,13 +29,13 @@ class _GameGridItemState extends ConsumerState<GameGridItem> {
     final catalogState = ref.watch(catalogProvider);
     final catalogNotifier = ref.read(catalogProvider.notifier);
     final gameState = ref.watch(gameStateProvider(game));
-    final isSelected = catalogState.selectedGames.contains(game.taskId);
+    final isSelected = catalogState.selectedGames.contains(game.gameId);
     final isActive = gameState.isActive;
 
     if (gameState.status == GameStatus.init) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          ref.read(gameStateManagerProvider.notifier).resolveState(game.taskId);
+          ref.read(gameStateManagerProvider.notifier).resolveState(game.gameId);
         }
       });
     }
@@ -84,7 +84,7 @@ class _GameGridItemState extends ConsumerState<GameGridItem> {
                       height: 24,
                       child: Checkbox(
                         value: isSelected,
-                        onChanged: gameState.isInteractable ? (_) => catalogNotifier.toggleGameSelection(game.taskId) : null,
+                        onChanged: gameState.isInteractable ? (_) => catalogNotifier.toggleGameSelection(game.gameId) : null,
                         shape: CircleBorder(),
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         visualDensity: VisualDensity.compact,

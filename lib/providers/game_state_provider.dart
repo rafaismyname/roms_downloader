@@ -12,7 +12,7 @@ import 'package:roms_downloader/providers/settings_provider.dart';
 import 'package:roms_downloader/services/directory_service.dart';
 
 final gameStateProvider = Provider.family<GameState, Game>((ref, game) {
-  return ref.watch(gameStateManagerProvider)[game.taskId] ?? GameState(game: game);
+  return ref.watch(gameStateManagerProvider)[game.gameId] ?? GameState(game: game);
 });
 
 final gameStateManagerProvider = StateNotifierProvider<GameStateManager, Map<String, GameState>>((ref) {
@@ -185,9 +185,8 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
   void _initGames(List<Game> games) {
     final updates = <String, GameState>{};
     for (final game in games) {
-      // TODO1: use taskId as game identifier for now but we must implement a gameId
-      if (!state.containsKey(game.taskId)) {
-        updates[game.taskId] = GameState(game: game);
+      if (!state.containsKey(game.gameId)) {
+        updates[game.gameId] = GameState(game: game);
       }
     }
     if (updates.isNotEmpty) state = {...state, ...updates};

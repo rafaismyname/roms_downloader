@@ -39,7 +39,6 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
       loading: true,
       games: [],
       selectedGames: {},
-      filter: const CatalogFilter(),
     );
 
     try {

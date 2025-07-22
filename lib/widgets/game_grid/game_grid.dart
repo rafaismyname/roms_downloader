@@ -136,7 +136,7 @@ class _GameGridState extends ConsumerState<GameGrid> {
 
           final game = games[index];
           return GameGridItem(
-            key: ValueKey(game.taskId),
+            key: ValueKey(game.gameId),
             game: game,
             aspectRatio: _aspectRatio,
           );

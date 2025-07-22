@@ -21,7 +21,7 @@ class GameActionButtons extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final favorites = ref.watch(favoritesProvider);
-    final isFavorite = favorites.isFavorite(game.taskId);
+    final isFavorite = favorites.isFavorite(game.gameId);
     
     return Center(
       child: SingleChildScrollView(
@@ -55,7 +55,7 @@ class GameActionButtons extends ConsumerWidget {
           size: buttonSize,
           color: isFavorite ? Colors.red : null,
         ),
-        onPressed: () => ref.read(favoritesProvider.notifier).toggleFavorite(game.taskId),
+        onPressed: () => ref.read(favoritesProvider.notifier).toggleFavorite(game.gameId),
         constraints: BoxConstraints(minWidth: 18, minHeight: 18),
         padding: EdgeInsets.zero,
         visualDensity: VisualDensity.compact,
@@ -90,7 +90,7 @@ class GameActionButtons extends ConsumerWidget {
               message: 'Pause',
               child: IconButton(
                 icon: Icon(Icons.pause, size: buttonSize),
-                onPressed: () => TaskQueueService.pauseDownloadTask(ref, game.taskId),
+                onPressed: () => TaskQueueService.pauseDownloadTask(ref, game.gameId),
                 constraints: buttonConstraints,
                 padding: EdgeInsets.zero,
                 visualDensity: VisualDensity.compact,
@@ -104,7 +104,7 @@ class GameActionButtons extends ConsumerWidget {
               message: 'Resume',
               child: IconButton(
                 icon: Icon(Icons.play_arrow, size: buttonSize),
-                onPressed: () => TaskQueueService.resumeDownloadTask(ref, game.taskId),
+                onPressed: () => TaskQueueService.resumeDownloadTask(ref, game.gameId),
                 constraints: buttonConstraints,
                 padding: EdgeInsets.zero,
                 visualDensity: VisualDensity.compact,
@@ -132,7 +132,7 @@ class GameActionButtons extends ConsumerWidget {
               message: 'Extract',
               child: IconButton(
                 icon: Icon(Icons.archive, size: buttonSize),
-                onPressed: () => TaskQueueService.startExtraction(ref, game.taskId),
+                onPressed: () => TaskQueueService.startExtraction(ref, game.gameId),
                 constraints: buttonConstraints,
                 padding: EdgeInsets.zero,
                 visualDensity: VisualDensity.compact,
@@ -160,7 +160,7 @@ class GameActionButtons extends ConsumerWidget {
               message: 'Retry Extraction',
               child: IconButton(
                 icon: Icon(Icons.refresh, size: buttonSize),
-                onPressed: () => TaskQueueService.startExtraction(ref, game.taskId),
+                onPressed: () => TaskQueueService.startExtraction(ref, game.gameId),
                 constraints: buttonConstraints,
                 padding: EdgeInsets.zero,
                 visualDensity: VisualDensity.compact,

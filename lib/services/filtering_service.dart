@@ -35,7 +35,7 @@ class FilteringService {
 
   static bool _matchesFilter(Game game, String filterText, CatalogFilter filter, Set<String>? favoriteGameIds) {
     if (filter.showFavoritesOnly && favoriteGameIds != null) {
-      if (!favoriteGameIds.contains(game.taskId)) return false;
+      if (!favoriteGameIds.contains(game.gameId)) return false;
     }
 
     if (filterText.isNotEmpty) {

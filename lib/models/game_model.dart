@@ -60,7 +60,7 @@ class Game {
 
   String get filename => Uri.parse(url).pathSegments.last;
 
-  String get taskId => '$consoleId/$filename';
+  String get gameId => '$consoleId/$filename';
 
   String get displayTitle => metadata?.displayTitle ?? title;
 

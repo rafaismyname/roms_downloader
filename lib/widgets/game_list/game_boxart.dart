@@ -24,7 +24,7 @@ class GameBoxart extends StatelessWidget {
     }
 
     return Container(
-      key: ValueKey('boxart_${game.taskId}'),
+      key: ValueKey('boxart_${game.gameId}'),
       width: size,
       height: size,
       decoration: BoxDecoration(

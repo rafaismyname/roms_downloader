@@ -44,7 +44,7 @@ class TaskListView extends StatelessWidget {
       itemBuilder: (context, index) {
         final gameState = games[index];
         return GameRow(
-          key: ValueKey(gameState.game.taskId),
+          key: ValueKey(gameState.game.gameId),
           game: gameState.game,
           isNarrow: true,
           statusColumnWidth: gameState.availableActions.isEmpty ? 100 : 80,
