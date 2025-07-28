@@ -101,31 +101,34 @@ class FilteringService {
   static List<Game> _filterLatestRevisions(List<Game> games) {
     if (games.isEmpty) return games;
 
-    final result = <Game>[];
-    final Map<String, Game> latestByTitle = {};
+    final Map<String, Game> latestByGameIdentity = {};
 
     for (final game in games) {
-      final baseTitle = game.displayTitle;
-      final currentRevision = game.metadata?.revision ?? '';
+      final metadata = game.metadata;
+      final baseTitle = metadata?.displayTitle ?? game.title;
+      final regions = (metadata?.regions ?? []).join(',');
+      final languages = (metadata?.languages ?? []).join(',');
+      final diskNumber = metadata?.diskNumber ?? '';
+      
+      final gameIdentity = '$baseTitle|$regions|$languages|$diskNumber';
+      final currentRevision = metadata?.revision ?? '';
 
-      final existing = latestByTitle[baseTitle];
-      if (existing == null) {
-        latestByTitle[baseTitle] = game;
-      } else {
-        final existingRevision = existing.metadata?.revision ?? '';
-        if (_isNewerRevision(currentRevision, existingRevision)) {
-          latestByTitle[baseTitle] = game;
-        }
+      final existing = latestByGameIdentity[gameIdentity];
+      if (existing == null || _isNewerRevision(currentRevision, existing.metadata?.revision ?? '')) {
+        latestByGameIdentity[gameIdentity] = game;
       }
     }
 
-    for (final game in games) {
-      if (latestByTitle[game.displayTitle] == game) {
-        result.add(game);
-      }
-    }
-
-    return result;
+    return games.where((game) {
+      final metadata = game.metadata;
+      final baseTitle = metadata?.displayTitle ?? game.title;
+      final regions = (metadata?.regions ?? []).join(',');
+      final languages = (metadata?.languages ?? []).join(',');
+      final diskNumber = metadata?.diskNumber ?? '';
+      final gameIdentity = '$baseTitle|$regions|$languages|$diskNumber';
+      
+      return latestByGameIdentity[gameIdentity] == game;
+    }).toList();
   }
 
   static bool _isNewerRevision(String current, String existing) {
