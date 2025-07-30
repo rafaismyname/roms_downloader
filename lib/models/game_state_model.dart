@@ -44,6 +44,7 @@ class GameState {
   final String? errorMessage;
   final bool fileExists;
   final bool extractedContentExists;
+  final bool hasJustCompleted;
 
   const GameState({
     required this.game,
@@ -60,6 +61,7 @@ class GameState {
     this.errorMessage,
     this.fileExists = false,
     this.extractedContentExists = false,
+    this.hasJustCompleted = false,
   });
 
   GameState copyWith({
@@ -76,6 +78,7 @@ class GameState {
     String? errorMessage,
     bool? fileExists,
     bool? extractedContentExists,
+    bool? hasJustCompleted,
   }) {
     return GameState(
       game: game,
@@ -92,6 +95,7 @@ class GameState {
       errorMessage: errorMessage ?? this.errorMessage,
       fileExists: fileExists ?? this.fileExists,
       extractedContentExists: extractedContentExists ?? this.extractedContentExists,
+      hasJustCompleted: hasJustCompleted ?? this.hasJustCompleted,
     );
   }
 

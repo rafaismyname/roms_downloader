@@ -39,7 +39,7 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
 
     GameState? updated;
     if (isCompleted) {
-      resolveState(gameId);
+      resolveState(gameId, true);
     } else if (status == TaskStatus.canceled) {
       updated = current.copyWith(
         status: GameStatus.ready,
@@ -97,7 +97,7 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
         availableActions: {GameAction.loading},
       );
     } else if (status == ExtractionStatus.completed) {
-      resolveState(gameId);
+      resolveState(gameId, true);
     } else if (status == ExtractionStatus.failed) {
       updated = current.copyWith(
         status: GameStatus.extractionFailed,
@@ -127,7 +127,7 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
     }
   }
 
-  void resolveState(String gameId) async {
+  void resolveState(String gameId, [bool hasJustCompleted = false]) async {
     if (_resolving[gameId] == true) return;
 
     final gameState = state[gameId];
@@ -152,11 +152,12 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
       final data = (filename: game.filename, downloadDir: downloadDir);
       final result = await compute(DirectoryService().computeFileCheck, data);
 
-      final status = result.hasExtracted
-          ? GameStatus.extracted
-          : result.hasFile
-              ? GameStatus.downloaded
-              : GameStatus.ready;
+      GameStatus status = GameStatus.ready;
+      if (result.hasExtracted) {
+        status = GameStatus.extracted;
+      } else if (result.hasFile) {
+        status = GameStatus.downloaded;
+      }
 
       _updateState(
           gameId,
@@ -167,6 +168,7 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
                 showProgressBar: false,
                 isInteractable: status == GameStatus.ready,
                 availableActions: _getActions(status, game),
+                hasJustCompleted: hasJustCompleted,
               ));
     } catch (_) {
       _updateState(

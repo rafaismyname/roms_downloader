@@ -1,15 +1,19 @@
 # ROMs Downloader
+A tool to download files from an index page.
 
-A tool to download files from an index.
+Coincidentally, it can be used for downloading ROM collections in cases where you **legally** own those ROMs.
 
-Coincidentally, it can be used for downloading ROM collections in cases where you legally own those ROMs.
-
-I plan to add more utilities that I often need for my voluntary work at my church and dog shelter, like decompressing the downloaded files automatically.
+I plan to add more utilities that I often need for my voluntary work at my church and dog shelter, like described below in the [Features/Future](#featuresfuture) section.
 
 ## Data
 
-The data inside `assets/consoles.json` is merely fictional for testing purposes, it's a placeholder/template.
-I do not own nor recommend those sources. As a matter of fact, the first step in setting up this app to run locally is to edit that file, removing all the nonsense data and bringing your own index URLs.
+The data inside `assets/consoles.json` is **merely fictional** for **testing purposes**, it's a placeholder/template.
+I **do not** own nor recommend those sources. As a matter of fact, the first step in setting up this app to run locally is to edit that file, removing all the nonsense data and bringing your own index URLs.
+
+## Downloading builds
+
+I'm currently not relying on releases **JUST BECAUSE**. Meanwhile you can access the latest builds in the [build workflow page](https://github.com/rafaismyname/roms_downloader/actions/workflows/build-and-deploy.yml).
+*Note: You must be logged in to GitHub to access the workflow page and download the build.*
 
 ## Instructions
 
@@ -23,22 +27,22 @@ I do not own nor recommend those sources. As a matter of fact, the first step in
 - [x] Parallel, independent downloads with background support and tasks queue
 - [x] Search and filter titles (by country/language, type, extension, etc.)
 - [x] Change and customize download destination folder and settings per console
-- [x] Unzip and auto-extract downloaded files (background unzip, improved in-library detection for extracted/similar-named files)
+- [x] Unzip and auto-extract downloaded files (background unzip, in-library detection (extracted/similar-named files))
 - [x] Allow custom consoles and settings via JSON
 - [x] Navigate/search other consoles while downloads/extractions are in progress
-- [ ] Improve file detection system (custom regex/extensions per console)
+- [ ] Collections/Lists
 - [x] Permissions control
 - [x] Boxart fetching
 - [x] Favorites, filter favorites and favorite list export/import
-- [ ] Filter by in-library
+- [x] Filter by in-library
 - [ ] Settings for file cache folder
 - [x] Grid viewer
-- [ ] Game metadata fetcher (rating, description, etc.)
+- [ ] Game metadata (rating, description, etc.)
 - [ ] List sorting
 - [x] Info/About page
 - [x] Android, Mac, and Windows support
 - [ ] Linux and handheld Linux support (untested)
-- [ ] ~~iOS support~~ No iOS support for now, cry about it.
+- [ ] ~~iOS support~~ No iOS support for now, *cry about it*.
 
 ## Technologies
 
@@ -51,7 +55,7 @@ Not yet! Feel free to add tests.
 
 ## Stable?
 
-Heck no! I will still bring a lot of breaking changes to this.
+**Heck no!** I will still bring a lot of breaking changes to this.
 
 ## License
 
