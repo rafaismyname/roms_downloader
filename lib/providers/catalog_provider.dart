@@ -4,9 +4,12 @@ import 'package:roms_downloader/models/catalog_model.dart';
 import 'package:roms_downloader/models/catalog_filter_model.dart';
 import 'package:roms_downloader/models/console_model.dart';
 import 'package:roms_downloader/models/favorites_model.dart';
+import 'package:roms_downloader/models/game_state_model.dart';
 import 'package:roms_downloader/services/catalog_service.dart';
 import 'package:roms_downloader/services/filtering_service.dart';
+import 'package:roms_downloader/services/library_service.dart';
 import 'package:roms_downloader/providers/favorites_provider.dart';
+import 'package:roms_downloader/providers/settings_provider.dart';
 
 final gameSelectionProvider = Provider.family<bool, String>((ref, gameId) {
   final catalogState = ref.watch(catalogProvider);
@@ -80,11 +83,24 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
     }
   }
 
+  Future<Map<String, GameStatus>> getLibraryStatus() async {
+    final settingsNotifier = ref.read(settingsProvider.notifier);
+    final selectedConsole = await _getCurrentConsole();
+    if (selectedConsole == null) return {};
+
+    final downloadDir = settingsNotifier.getDownloadDir(selectedConsole.id);
+    if (downloadDir.isEmpty) return {};
+
+    return LibraryService.fetchLibraryStatus(state.games, downloadDir);
+  }
+
   Future<void> _updateFilteredGames() async {
     if (state.games.isEmpty) return;
 
     try {
-      final favorites = ref.read(favoritesProvider);
+      final favoriteGameIds = state.filter.showFavoritesOnly ? ref.read(favoritesProvider).gameIds : null;
+      final inLibraryStatus = state.filter.showInLibraryOnly ? await getLibraryStatus() : null;
+      
       final result = await compute(
           FilteringService.filterAndPaginate,
           FilterInput(
@@ -93,7 +109,8 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
             filter: state.filter,
             skip: 0,
             limit: kDefaultCatalogDisplaySize,
-            favoriteGameIds: state.filter.showFavoritesOnly ? favorites.gameIds : null,
+            favoriteGameIds: favoriteGameIds,
+            inLibraryStatus: inLibraryStatus,
           ));
 
       state = state.copyWith(
@@ -106,19 +123,16 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
     }
   }
 
-  void updateFilterText(String filter) async {
-    state = state.copyWith(filterText: filter);
-    await _updateFilteredGames();
-  }
-
-  void loadMoreItems() async {
+  Future<void> loadMoreItems() async {
     if (_loadingMore || !state.hasMoreItems) return;
 
     _loadingMore = true;
     state = state.copyWith(loadingMore: true);
 
     try {
-      final favorites = ref.read(favoritesProvider);
+      final favoriteGameIds = state.filter.showFavoritesOnly ? ref.read(favoritesProvider).gameIds : null;
+      final inLibraryStatus = state.filter.showInLibraryOnly ? await getLibraryStatus() : null;
+      
       final result = await compute(
           FilteringService.filterAndPaginate,
           FilterInput(
@@ -127,7 +141,8 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
             filter: state.filter,
             skip: state.paginatedFilteredGames.length,
             limit: kDefaultCatalogDisplaySize,
-            favoriteGameIds: state.filter.showFavoritesOnly ? favorites.gameIds : null,
+            favoriteGameIds: favoriteGameIds,
+            inLibraryStatus: inLibraryStatus,
           ));
 
       state = state.copyWith(
@@ -141,6 +156,11 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
       _loadingMore = false;
       state = state.copyWith(loadingMore: false);
     }
+  }
+
+  void updateFilterText(String filter) async {
+    state = state.copyWith(filterText: filter);
+    await _updateFilteredGames();
   }
 
   void toggleGameSelection(String gameId) {
@@ -253,6 +273,13 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
     updateFilter(newFilter);
   }
 
+  void toggleLibraryOnly() async {
+    final newFilter = state.filter.copyWith(
+      showInLibraryOnly: !state.filter.showInLibraryOnly,
+    );
+    updateFilter(newFilter);
+  }
+
   void clearFilters() async {
     updateFilter(const CatalogFilter(
       regions: {},
@@ -262,6 +289,7 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
       modifications: {},
       distributionTypes: {},
       showFavoritesOnly: false,
+      showInLibraryOnly: false,
     ));
   }
 

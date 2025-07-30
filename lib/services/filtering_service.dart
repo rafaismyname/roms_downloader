@@ -1,25 +1,25 @@
 import 'package:roms_downloader/models/game_model.dart';
+import 'package:roms_downloader/models/game_state_model.dart';
 import 'package:roms_downloader/models/catalog_filter_model.dart';
 
 class FilteringService {
   static FilterResult filterAndPaginate(FilterInput input) {
     final games = input.games;
-    final filterText = input.filterText.toLowerCase();
     final filter = input.filter;
     final skip = input.skip;
     final limit = input.limit;
-    final favoriteGameIds = input.favoriteGameIds;
 
     var allMatched = <Game>[];
 
     for (final game in games) {
-      if (_matchesFilter(game, filterText, filter, favoriteGameIds)) {
+      if (_matchesFilter(game, input)) {
         allMatched.add(game);
       }
     }
 
     allMatched.sort((a, b) => a.displayTitle.toLowerCase().compareTo(b.displayTitle.toLowerCase()));
 
+    // Filtering by latest revision is after regular filtering because it's also a grouping operation
     if (filter.showLatestRevisionOnly) {
       allMatched = _filterLatestRevisions(allMatched);
     }
@@ -33,9 +33,20 @@ class FilteringService {
     );
   }
 
-  static bool _matchesFilter(Game game, String filterText, CatalogFilter filter, Set<String>? favoriteGameIds) {
+  static bool _matchesFilter(Game game, FilterInput input) {
+    final filterText = input.filterText.toLowerCase();
+    final filter = input.filter;
+    final favoriteGameIds = input.favoriteGameIds;
+    final inLibraryStatus = input.inLibraryStatus;
+
     if (filter.showFavoritesOnly && favoriteGameIds != null) {
       if (!favoriteGameIds.contains(game.gameId)) return false;
+    }
+
+    if (filter.showInLibraryOnly && inLibraryStatus != null) {
+      if (inLibraryStatus[game.gameId] != GameStatus.downloaded && inLibraryStatus[game.gameId] != GameStatus.extracted) {
+        return false;
+      }
     }
 
     if (filterText.isNotEmpty) {
@@ -109,7 +120,7 @@ class FilteringService {
       final regions = (metadata?.regions ?? []).join(',');
       final languages = (metadata?.languages ?? []).join(',');
       final diskNumber = metadata?.diskNumber ?? '';
-      
+
       final gameIdentity = '$baseTitle|$regions|$languages|$diskNumber';
       final currentRevision = metadata?.revision ?? '';
 
@@ -126,7 +137,7 @@ class FilteringService {
       final languages = (metadata?.languages ?? []).join(',');
       final diskNumber = metadata?.diskNumber ?? '';
       final gameIdentity = '$baseTitle|$regions|$languages|$diskNumber';
-      
+
       return latestByGameIdentity[gameIdentity] == game;
     }).toList();
   }
@@ -147,6 +158,7 @@ class FilterInput {
   final int skip;
   final int limit;
   final Set<String>? favoriteGameIds;
+  final Map<String, GameStatus>? inLibraryStatus;
 
   const FilterInput({
     required this.games,
@@ -155,6 +167,7 @@ class FilterInput {
     this.skip = 0,
     required this.limit,
     this.favoriteGameIds,
+    this.inLibraryStatus,
   });
 }
 
