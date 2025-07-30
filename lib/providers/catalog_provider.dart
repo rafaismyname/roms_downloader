@@ -30,7 +30,7 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
   CatalogNotifier(this.catalogService, this.ref) : super(const CatalogState()) {
     ref.listen<Favorites>(favoritesProvider, (previous, current) {
       if (state.filter.showFavoritesOnly && previous?.gameIds != current.gameIds) {
-        _updateFilteredGames();
+        updateFilteredGames();
       }
     });
   }
@@ -73,7 +73,7 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
         availableCategories: categories,
       );
 
-      await _updateFilteredGames();
+      await updateFilteredGames();
     } catch (e) {
       debugPrint('Error loading catalog: $e');
       state = state.copyWith(
@@ -94,7 +94,7 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
     return LibraryService.fetchLibraryStatus(state.games, downloadDir);
   }
 
-  Future<void> _updateFilteredGames() async {
+  Future<void> updateFilteredGames() async {
     if (state.games.isEmpty) return;
 
     try {
@@ -160,7 +160,7 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
 
   void updateFilterText(String filter) async {
     state = state.copyWith(filterText: filter);
-    await _updateFilteredGames();
+    await updateFilteredGames();
   }
 
   void toggleGameSelection(String gameId) {
@@ -189,7 +189,7 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
 
   void updateFilter(CatalogFilter filter) async {
     state = state.copyWith(filter: filter);
-    await _updateFilteredGames();
+    await updateFilteredGames();
   }
 
   void toggleRegionFilter(String region) async {

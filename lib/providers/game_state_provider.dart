@@ -158,6 +158,15 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
       } else if (result.hasFile) {
         status = GameStatus.downloaded;
       }
+      
+      // if has just completed, update the filtered games
+      // TODO: rely more on this status and the batch library status processing
+      // a lot of potential optimizations here! especially because we're basically
+      // calculating the library status twice right now 
+      // and we could just do in batch once per hasJustCompleted = true
+      if (hasJustCompleted) {
+        _ref.read(catalogProvider.notifier).updateFilteredGames();
+      }
 
       _updateState(
           gameId,
