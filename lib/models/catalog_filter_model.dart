@@ -9,6 +9,7 @@ class CatalogFilter {
   final Set<String> distributionTypes;
   final bool showLatestRevisionOnly;
   final bool showFavoritesOnly;
+  final bool showInLibraryOnly;
 
   const CatalogFilter({
     this.regions = const {'USA'},
@@ -21,6 +22,7 @@ class CatalogFilter {
     this.distributionTypes = const {'standard', 'multiCart'},
     this.showLatestRevisionOnly = true,
     this.showFavoritesOnly = false,
+    this.showInLibraryOnly = false,
   });
 
   CatalogFilter copyWith({
@@ -36,6 +38,7 @@ class CatalogFilter {
     Set<String>? distributionTypes,
     bool? showLatestRevisionOnly,
     bool? showFavoritesOnly,
+    bool? showInLibraryOnly,
     String? version,
     int? minYear,
     int? maxYear,
@@ -51,6 +54,7 @@ class CatalogFilter {
       distributionTypes: distributionTypes ?? this.distributionTypes,
       showLatestRevisionOnly: showLatestRevisionOnly ?? this.showLatestRevisionOnly,
       showFavoritesOnly: showFavoritesOnly ?? this.showFavoritesOnly,
+      showInLibraryOnly: showInLibraryOnly ?? this.showInLibraryOnly,
     );
   }
 
@@ -64,6 +68,7 @@ class CatalogFilter {
         modifications.isNotEmpty ||
         distributionTypes.isNotEmpty ||
         showLatestRevisionOnly ||
-        showFavoritesOnly;
+        showFavoritesOnly ||
+        showInLibraryOnly;
   }
 }

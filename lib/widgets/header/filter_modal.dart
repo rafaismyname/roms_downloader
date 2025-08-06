@@ -139,6 +139,40 @@ class FilterModal extends ConsumerWidget {
                   Row(
                     children: [
                       Icon(
+                        Icons.library_books,
+                        size: 20,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Show "In Library" only',
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                            ),
+                            Text(
+                              'Shows only games that are downloaded or extracted',
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Switch(
+                        value: filter.showInLibraryOnly,
+                        onChanged: (value) => catalogNotifier.toggleLibraryOnly(),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Icon(
                         Icons.filter_1,
                         size: 20,
                         color: Theme.of(context).colorScheme.primary,

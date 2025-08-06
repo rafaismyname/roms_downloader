@@ -62,7 +62,7 @@ class _TaskPanelModalState extends ConsumerState<TaskPanelModal> with SingleTick
       if (state.status == GameStatus.downloadQueued || state.status == GameStatus.extractionQueued) {
         queuedGames.add(state);
       }
-      if (state.status == GameStatus.downloaded || state.status == GameStatus.extracted) {
+      if (state.hasJustCompleted && (state.status == GameStatus.downloaded || state.status == GameStatus.extracted)) {
         completedGames.add(state);
       }
       if (state.status == GameStatus.downloadFailed || state.status == GameStatus.extractionFailed) {
