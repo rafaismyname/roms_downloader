@@ -84,7 +84,7 @@ class GameMetadata {
       romTypes: parseFlags('romTypes', romTypeMap),
       modifications: parseFlags('modifications', modificationMap),
       distributionTypes: parseFlags('distributionTypes', distributionMap),
-      revision: json['revision'] ?? 0,
+      revision: json['revision'] ?? '',
       diskNumber: json['diskNumber'] ?? '',
       regions: List<String>.from(json['regions'] ?? []),
       languages: List<String>.from(json['languages'] ?? []),

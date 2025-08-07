@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
@@ -43,27 +44,31 @@ class FavoritesService {
     return Favorites(lastUpdated: DateTime.now());
   }
 
+  Timer? _saveFavoritesDebounce;
   Future<void> saveFavorites(Favorites favorites) async {
-    try {
-      final file = await _getFavoritesFile();
-      await file.writeAsString(jsonEncode(favorites.toJson()));
+    _saveFavoritesDebounce?.cancel();
+    _saveFavoritesDebounce = Timer(const Duration(milliseconds: 300), () async {
+      try {
+        final file = await _getFavoritesFile();
+        await file.writeAsString(jsonEncode(favorites.toJson()));
 
-      final prefs = await SharedPreferences.getInstance();
+        final prefs = await SharedPreferences.getInstance();
 
-      if (favorites.exportSlug != null) {
-        await prefs.setString(_exportSlugKey, favorites.exportSlug!);
-      } else {
-        await prefs.remove(_exportSlugKey);
+        if (favorites.exportSlug != null) {
+          await prefs.setString(_exportSlugKey, favorites.exportSlug!);
+        } else {
+          await prefs.remove(_exportSlugKey);
+        }
+
+        if (favorites.lastExported != null) {
+          await prefs.setString(_lastExportedKey, favorites.lastExported!.toIso8601String());
+        } else {
+          await prefs.remove(_lastExportedKey);
+        }
+      } catch (e) {
+        debugPrint('Error saving favorites: $e');
       }
-
-      if (favorites.lastExported != null) {
-        await prefs.setString(_lastExportedKey, favorites.lastExported!.toIso8601String());
-      } else {
-        await prefs.remove(_lastExportedKey);
-      }
-    } catch (e) {
-      debugPrint('Error saving favorites: $e');
-    }
+    });
   }
 
   Future<String> exportFavorites(Favorites favorites) async {
