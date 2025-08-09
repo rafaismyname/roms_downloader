@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:roms_downloader/models/extraction_model.dart';
 import 'package:roms_downloader/models/task_queue_model.dart';
 import 'package:roms_downloader/providers/game_state_provider.dart';
+import 'package:roms_downloader/providers/library_snapshot_provider.dart';
 import 'package:roms_downloader/providers/settings_provider.dart';
 import 'package:roms_downloader/providers/task_queue_provider.dart';
 import 'package:roms_downloader/services/directory_service.dart';
@@ -121,6 +122,16 @@ class ExtractionNotifier extends StateNotifier<ExtractionState> {
       debugPrint('Error deleting original file for task $taskId: $e');
     }
 
+    final game = gameStateManager.state[taskId]?.game;
+    if (game != null) {
+      final dir = _ref.read(settingsProvider.notifier).getDownloadDir(game.consoleId);
+      if (dir.isNotEmpty) {
+        final snap = _ref.read(librarySnapshotProvider(dir).notifier);
+        snap.markFileRemoved(game.filename);
+        snap.markDirAdded(path.basenameWithoutExtension(game.filename));
+      }
+    }
+
     gameStateManager.updateExtractionState(taskId, ExtractionStatus.completed, 1.0);
   }
 
@@ -159,7 +170,18 @@ class ExtractionNotifier extends StateNotifier<ExtractionState> {
 
     try {
       final dir = Directory(extractionDir);
-      if (dir.existsSync()) dir.deleteSync(recursive: true);
+      if (dir.existsSync()) {
+        dir.deleteSync(recursive: true);
+
+        final game = gameStateManager.state[taskId]?.game;
+        if (game != null) {
+          final dir = _ref.read(settingsProvider.notifier).getDownloadDir(game.consoleId);
+          if (dir.isNotEmpty) {
+            final snap = _ref.read(librarySnapshotProvider(dir).notifier);
+            snap.markDirRemoved(path.basename(extractionDir));
+          }
+        }
+      }
     } catch (_) {}
 
     gameStateManager.updateExtractionState(taskId, ExtractionStatus.failed, 0.0);

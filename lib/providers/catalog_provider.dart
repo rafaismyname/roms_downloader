@@ -68,8 +68,9 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
 
       final settingsNotifier = _ref.read(settingsProvider.notifier);
       final downloadDir = settingsNotifier.getDownloadDir(console.id);
-      final librarySnapshot = _ref.read(librarySnapshotProvider(downloadDir).notifier);
-      if (downloadDir.isNotEmpty) await librarySnapshot.refresh();
+      _ref.listen(librarySnapshotProvider(downloadDir), (_, __) {
+        if (state.filter.showInLibraryOnly) updateFilteredGames();
+      });
 
       state = state.copyWith(
         games: games,

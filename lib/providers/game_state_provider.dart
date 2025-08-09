@@ -139,12 +139,6 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
     final downloadDir = settingsNotifier.getDownloadDir(game.consoleId);
     if (downloadDir.isEmpty) return;
 
-    final snap = _ref.read(librarySnapshotProvider(downloadDir).notifier);
-
-    if (hasJustCompleted) await snap.refresh();
-
-    final presence = await snap.getStatus(game.filename);
-
     _resolving[gameId] = true;
     _updateState(
         gameId,
@@ -156,16 +150,15 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
             ));
 
     try {
+      final snap = _ref.read(librarySnapshotProvider(downloadDir).notifier);
+      final presence = await snap.getStatus(game.filename);
+
       GameStatus status = GameStatus.ready;
       if (presence == LibraryPresence.file) {
         status = GameStatus.downloaded;
       }
       if (presence == LibraryPresence.extracted || presence == LibraryPresence.fileAndExtracted) {
         status = GameStatus.extracted;
-      }
-
-      if (hasJustCompleted) {
-        _ref.read(catalogProvider.notifier).updateFilteredGames();
       }
 
       _updateState(

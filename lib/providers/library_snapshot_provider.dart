@@ -145,7 +145,7 @@ class LibrarySnapshotNotifier extends StateNotifier<Map<String, LibrarySnapshot>
     return snap.relatedFilesFor(filename);
   }
 
-  // ----------------- Incremental updates (keeps maps coherent) -----------------
+  // Incremental updates
 
   void markFileAdded(String filename) {
     final base = p.basename(filename);
