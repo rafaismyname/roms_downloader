@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:roms_downloader/models/catalog_model.dart';
@@ -26,6 +28,7 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
   final CatalogService catalogService;
   final Ref _ref;
 
+  Timer? _filterDebounce;
   bool _loadingMore = false;
 
   CatalogNotifier(this._ref, this.catalogService) : super(const CatalogState()) {
@@ -80,7 +83,7 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
         availableCategories: categories,
       );
 
-      await updateFilteredGames();
+      updateFilteredGames(immediate: true);
     } catch (e) {
       debugPrint('Error loading catalog: $e');
       state = state.copyWith(
@@ -125,21 +128,6 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
     );
   }
 
-  Future<void> updateFilteredGames() async {
-    if (state.games.isEmpty) return;
-
-    try {
-      final filteredAndPaginated = await _runFilterAndPaginate(skip: 0, limit: kDefaultCatalogDisplaySize);
-      state = state.copyWith(
-        cachedFilteredGames: filteredAndPaginated.games,
-        cachedTotalCount: filteredAndPaginated.totalCount,
-        cachedHasMore: filteredAndPaginated.hasMore,
-      );
-    } catch (e) {
-      debugPrint('Error filtering games: $e');
-    }
-  }
-
   Future<void> loadMoreItems() async {
     if (_loadingMore || !state.hasMoreItems) return;
 
@@ -161,9 +149,31 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
     }
   }
 
-  void updateFilterText(String filter) async {
+  void updateFilteredGames({bool immediate = false}) async {
+    if (state.games.isEmpty) return;
+
+    callback() async {
+      try {
+        final filteredAndPaginated = await _runFilterAndPaginate(skip: 0, limit: kDefaultCatalogDisplaySize);
+        state = state.copyWith(
+          cachedFilteredGames: filteredAndPaginated.games,
+          cachedTotalCount: filteredAndPaginated.totalCount,
+          cachedHasMore: filteredAndPaginated.hasMore,
+        );
+      } catch (e) {
+        debugPrint('Error filtering games: $e');
+      }
+    }
+
+    if (immediate) return callback();
+
+    _filterDebounce?.cancel();
+    _filterDebounce = Timer(const Duration(milliseconds: 200), callback);
+  }
+
+  void updateFilterText(String filter) {
     state = state.copyWith(filterText: filter);
-    await updateFilteredGames();
+    updateFilteredGames();
   }
 
   void toggleGameSelection(String gameId) {
@@ -190,9 +200,9 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
     state = state.copyWith(selectedGames: selectedGames);
   }
 
-  void updateFilter(CatalogFilter filter) async {
+  void updateFilter(CatalogFilter filter) {
     state = state.copyWith(filter: filter);
-    await updateFilteredGames();
+    updateFilteredGames();
   }
 
   void toggleRegionFilter(String region) async {
@@ -323,5 +333,11 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
       availableCategories: {},
     );
     await loadCatalog(console);
+  }
+
+  @override
+  void dispose() {
+    _filterDebounce?.cancel();
+    super.dispose();
   }
 }
