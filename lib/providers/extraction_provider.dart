@@ -97,7 +97,7 @@ class ExtractionNotifier extends StateNotifier<ExtractionState> {
     gameStateManager.updateExtractionState(taskId, ExtractionStatus.extracting, progress);
   }
 
-  void _updateCompleted(String taskId, String extractionDir) {
+  void _updateCompleted(String taskId, String extractionDir) async {
     debugPrint('Marking task $taskId as completed');
     final tasks = Map<String, ExtractionTaskState>.from(state.tasks);
     final currentTask = tasks[taskId];
@@ -115,13 +115,13 @@ class ExtractionNotifier extends StateNotifier<ExtractionState> {
     final queueNotifier = _ref.read(taskQueueProvider.notifier);
     queueNotifier.updateTaskStatus(taskId, TaskQueueStatus.completed);
 
-    gameStateManager.updateExtractionState(taskId, ExtractionStatus.completed, 1.0);
-
     try {
-      _deleteOriginalFile(taskId);
+      await _deleteOriginalFile(taskId);
     } catch (e) {
       debugPrint('Error deleting original file for task $taskId: $e');
     }
+
+    gameStateManager.updateExtractionState(taskId, ExtractionStatus.completed, 1.0);
   }
 
   Future<void> _deleteOriginalFile(String taskId) async {

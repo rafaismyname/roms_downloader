@@ -5,9 +5,10 @@ import 'package:roms_downloader/models/catalog_filter_model.dart';
 import 'package:roms_downloader/models/console_model.dart';
 import 'package:roms_downloader/models/favorites_model.dart';
 import 'package:roms_downloader/models/game_state_model.dart';
+import 'package:roms_downloader/models/library_snapshot_model.dart';
+import 'package:roms_downloader/providers/library_snapshot_provider.dart';
 import 'package:roms_downloader/services/catalog_service.dart';
 import 'package:roms_downloader/services/filtering_service.dart';
-import 'package:roms_downloader/services/library_service.dart';
 import 'package:roms_downloader/providers/favorites_provider.dart';
 import 'package:roms_downloader/providers/settings_provider.dart';
 
@@ -18,17 +19,17 @@ final gameSelectionProvider = Provider.family<bool, String>((ref, gameId) {
 
 final catalogProvider = StateNotifierProvider<CatalogNotifier, CatalogState>((ref) {
   final catalogService = CatalogService();
-  return CatalogNotifier(catalogService, ref);
+  return CatalogNotifier(ref, catalogService);
 });
 
 class CatalogNotifier extends StateNotifier<CatalogState> {
   final CatalogService catalogService;
-  final Ref ref;
+  final Ref _ref;
 
   bool _loadingMore = false;
 
-  CatalogNotifier(this.catalogService, this.ref) : super(const CatalogState()) {
-    ref.listen<Favorites>(favoritesProvider, (previous, current) {
+  CatalogNotifier(this._ref, this.catalogService) : super(const CatalogState()) {
+    _ref.listen<Favorites>(favoritesProvider, (previous, current) {
       if (state.filter.showFavoritesOnly && previous?.gameIds != current.gameIds) {
         updateFilteredGames();
       }
@@ -65,6 +66,11 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
         }
       }
 
+      final settingsNotifier = _ref.read(settingsProvider.notifier);
+      final downloadDir = settingsNotifier.getDownloadDir(console.id);
+      final librarySnapshot = _ref.read(librarySnapshotProvider(downloadDir).notifier);
+      if (downloadDir.isNotEmpty) await librarySnapshot.refresh();
+
       state = state.copyWith(
         games: games,
         loading: false,
@@ -84,23 +90,40 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
   }
 
   Future<Map<String, GameStatus>> getLibraryStatus() async {
-    final settingsNotifier = ref.read(settingsProvider.notifier);
+    final settingsNotifier = _ref.read(settingsProvider.notifier);
     final selectedConsole = await _getCurrentConsole();
     if (selectedConsole == null) return {};
 
     final downloadDir = settingsNotifier.getDownloadDir(selectedConsole.id);
     if (downloadDir.isEmpty) return {};
 
-    return LibraryService.fetchLibraryStatus(state.games, downloadDir);
+    final snap = _ref.read(librarySnapshotProvider(downloadDir).notifier);
+    final statuses = await snap.getStatuses(state.games.map((g) => g.filename));
+    final result = <String, GameStatus>{};
+    for (final g in state.games) {
+      switch (statuses[g.filename] ?? LibraryPresence.none) {
+        case LibraryPresence.fileAndExtracted:
+        case LibraryPresence.extracted:
+          result[g.gameId] = GameStatus.extracted;
+          break;
+        case LibraryPresence.file:
+          result[g.gameId] = GameStatus.downloaded;
+          break;
+        case LibraryPresence.none:
+          result[g.gameId] = GameStatus.ready;
+          break;
+      }
+    }
+    return result;
   }
 
   Future<void> updateFilteredGames() async {
     if (state.games.isEmpty) return;
 
     try {
-      final favoriteGameIds = state.filter.showFavoritesOnly ? ref.read(favoritesProvider).gameIds : null;
+      final favoriteGameIds = state.filter.showFavoritesOnly ? _ref.read(favoritesProvider).gameIds : null;
       final inLibraryStatus = state.filter.showInLibraryOnly ? await getLibraryStatus() : null;
-      
+
       final result = await compute(
           FilteringService.filterAndPaginate,
           FilterInput(
@@ -130,9 +153,9 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
     state = state.copyWith(loadingMore: true);
 
     try {
-      final favoriteGameIds = state.filter.showFavoritesOnly ? ref.read(favoritesProvider).gameIds : null;
+      final favoriteGameIds = state.filter.showFavoritesOnly ? _ref.read(favoritesProvider).gameIds : null;
       final inLibraryStatus = state.filter.showInLibraryOnly ? await getLibraryStatus() : null;
-      
+
       final result = await compute(
           FilteringService.filterAndPaginate,
           FilterInput(

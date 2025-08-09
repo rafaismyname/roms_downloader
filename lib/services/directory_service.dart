@@ -7,12 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:disk_space_2/disk_space_2.dart';
 import 'package:path/path.dart' as path;
 
-typedef FileCheckData = ({String filename, String downloadDir});
-typedef FileCheckResult = ({bool hasFile, bool hasExtracted});
-
 class DirectoryService {
-  static final Map<String, List<FileSystemEntity>> _cachedDirsContent = {};
-
   Future<String> getDownloadDir() async {
     final prefs = await SharedPreferences.getInstance();
     final savedDir = prefs.getString('downloadDir');
@@ -56,42 +51,6 @@ class DirectoryService {
       debugPrint('Error selecting directory: $e');
       return null;
     }
-  }
-
-  Future<FileCheckResult> computeFileCheck(FileCheckData data) async {
-    final expectedPath = path.join(data.downloadDir, data.filename);
-
-    // Check: does the exact file exist or any file with the same base name?
-    bool hasFile = File(expectedPath).existsSync();
-
-    // Simple check: does a folder with the same name (without extension) exist?
-    final filenameWithoutExt = path.basenameWithoutExtension(data.filename);
-    final extractionDir = path.join(data.downloadDir, filenameWithoutExt);
-    final directory = Directory(extractionDir);
-    bool hasExtracted = directory.existsSync();
-
-    // Check (one last time) if the file exists but with different extension
-    if (!hasFile && !hasExtracted) {
-      try {
-        final dir = Directory(data.downloadDir);
-        if (dir.existsSync()) {
-          final filenameBase = path.basenameWithoutExtension(data.filename);
-          final cachedContent = _cachedDirsContent[data.downloadDir];
-          final content = cachedContent ?? dir.listSync();
-          for (final entity in content) {
-            if (entity is File) {
-              final entityBase = path.basenameWithoutExtension(path.basename(entity.path));
-              if (entityBase.trim() == filenameBase.trim()) {
-                hasExtracted = true;
-                break;
-              }
-            }
-          }
-        }
-      } catch (_) {}
-    }
-
-    return (hasFile: hasFile, hasExtracted: hasExtracted);
   }
 
   static Future<bool> deleteFile(String filePath) async {

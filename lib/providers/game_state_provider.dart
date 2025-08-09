@@ -1,13 +1,14 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:background_downloader/background_downloader.dart';
 import 'package:path/path.dart' as path;
 import 'package:roms_downloader/models/game_model.dart';
 import 'package:roms_downloader/models/game_state_model.dart';
 import 'package:roms_downloader/models/extraction_model.dart';
+import 'package:roms_downloader/models/library_snapshot_model.dart';
 import 'package:roms_downloader/models/task_queue_model.dart';
 import 'package:roms_downloader/models/settings_model.dart';
 import 'package:roms_downloader/providers/catalog_provider.dart';
+import 'package:roms_downloader/providers/library_snapshot_provider.dart';
 import 'package:roms_downloader/providers/settings_provider.dart';
 import 'package:roms_downloader/services/directory_service.dart';
 
@@ -138,6 +139,12 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
     final downloadDir = settingsNotifier.getDownloadDir(game.consoleId);
     if (downloadDir.isEmpty) return;
 
+    final snap = _ref.read(librarySnapshotProvider(downloadDir).notifier);
+
+    if (hasJustCompleted) await snap.refresh();
+
+    final presence = await snap.getStatus(game.filename);
+
     _resolving[gameId] = true;
     _updateState(
         gameId,
@@ -149,21 +156,14 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
             ));
 
     try {
-      final data = (filename: game.filename, downloadDir: downloadDir);
-      final result = await compute(DirectoryService().computeFileCheck, data);
-
       GameStatus status = GameStatus.ready;
-      if (result.hasExtracted) {
-        status = GameStatus.extracted;
-      } else if (result.hasFile) {
+      if (presence == LibraryPresence.file) {
         status = GameStatus.downloaded;
       }
-      
-      // if has just completed, update the filtered games
-      // TODO: rely more on this status and the batch library status processing
-      // a lot of potential optimizations here! especially because we're basically
-      // calculating the library status twice right now 
-      // and we could just do in batch once per hasJustCompleted = true
+      if (presence == LibraryPresence.extracted || presence == LibraryPresence.fileAndExtracted) {
+        status = GameStatus.extracted;
+      }
+
       if (hasJustCompleted) {
         _ref.read(catalogProvider.notifier).updateFilteredGames();
       }
@@ -172,8 +172,8 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
           gameId,
           (s) => s.copyWith(
                 status: status,
-                fileExists: result.hasFile,
-                extractedContentExists: result.hasExtracted,
+                fileExists: presence == LibraryPresence.file || presence == LibraryPresence.fileAndExtracted,
+                extractedContentExists: presence == LibraryPresence.extracted || presence == LibraryPresence.fileAndExtracted,
                 showProgressBar: false,
                 isInteractable: status == GameStatus.ready,
                 availableActions: _getActions(status, game),
