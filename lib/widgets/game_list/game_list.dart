@@ -104,9 +104,9 @@ class _GameListState extends ConsumerState<GameList> {
           child: NotificationListener<ScrollNotification>(
             onNotification: (notification) {
               final isScroll = notification is ScrollUpdateNotification;
-              final isnNearBottom = notification.metrics.pixels >= notification.metrics.maxScrollExtent - loadMoreThresholdPx;
+              final isNearBottom = notification.metrics.pixels >= notification.metrics.maxScrollExtent - loadMoreThresholdPx;
               final isVerticalScroll = notification.metrics.axis == Axis.vertical;
-              final shouldLoadMore = isScroll && isVerticalScroll && isnNearBottom && !catalogState.loadingMore && catalogState.hasMoreItems;
+              final shouldLoadMore = isScroll && isVerticalScroll && isNearBottom && !catalogState.loadingMore && catalogState.hasMoreItems;
               if (shouldLoadMore) ref.read(catalogProvider.notifier).loadMoreItems();
               return false;
             },
