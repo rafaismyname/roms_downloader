@@ -32,14 +32,6 @@ class _GameGridItemState extends ConsumerState<GameGridItem> {
     final isSelected = catalogState.selectedGames.contains(game.gameId);
     final isActive = gameState.isActive;
 
-    if (gameState.status == GameStatus.init) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          ref.read(gameStateManagerProvider.notifier).resolveState(game.gameId);
-        }
-      });
-    }
-
     Color? borderColor;
     if (isSelected || isActive) {
       borderColor = Theme.of(context).colorScheme.primary;

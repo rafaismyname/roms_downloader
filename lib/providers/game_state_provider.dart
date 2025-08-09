@@ -152,14 +152,7 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
     try {
       final snap = _ref.read(librarySnapshotProvider(downloadDir).notifier);
       final presence = await snap.getStatus(game.filename);
-
-      GameStatus status = GameStatus.ready;
-      if (presence == LibraryPresence.file) {
-        status = GameStatus.downloaded;
-      }
-      if (presence == LibraryPresence.extracted || presence == LibraryPresence.fileAndExtracted) {
-        status = GameStatus.extracted;
-      }
+      final status = presence.toGameStatus();
 
       _updateState(
           gameId,
@@ -193,7 +186,12 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
         updates[game.gameId] = GameState(game: game);
       }
     }
-    if (updates.isNotEmpty) state = {...state, ...updates};
+    if (updates.isNotEmpty) {
+      state = {...state, ...updates};
+      for (final id in updates.keys) {
+        resolveState(id);
+      }
+    }
   }
 
   void _updateSelections(Set<String> selected) {

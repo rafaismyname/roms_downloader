@@ -1,6 +1,18 @@
 import 'package:path/path.dart' as p;
+import 'package:roms_downloader/models/game_state_model.dart';
 
-enum LibraryPresence { none, file, extracted, fileAndExtracted }
+enum LibraryPresence {
+  none,
+  file,
+  extracted,
+  fileAndExtracted;
+
+  GameStatus toGameStatus() => switch (this) {
+        LibraryPresence.extracted || LibraryPresence.fileAndExtracted => GameStatus.extracted,
+        LibraryPresence.file => GameStatus.downloaded,
+        LibraryPresence.none => GameStatus.ready,
+      };
+}
 
 class LibrarySnapshot {
   final String libraryDir;

@@ -91,56 +91,49 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
   }
 
   Future<Map<String, GameStatus>> getLibraryStatus() async {
-    final settingsNotifier = _ref.read(settingsProvider.notifier);
-    final selectedConsole = await _getCurrentConsole();
-    if (selectedConsole == null) return {};
+    final consoleId = state.games.isNotEmpty ? state.games.first.consoleId : null;
+    if (consoleId == null) return {};
 
-    final downloadDir = settingsNotifier.getDownloadDir(selectedConsole.id);
+    final settingsNotifier = _ref.read(settingsProvider.notifier);
+    final downloadDir = settingsNotifier.getDownloadDir(consoleId);
     if (downloadDir.isEmpty) return {};
 
     final snap = _ref.read(librarySnapshotProvider(downloadDir).notifier);
     final statuses = await snap.getStatuses(state.games.map((g) => g.filename));
     final result = <String, GameStatus>{};
-    for (final g in state.games) {
-      switch (statuses[g.filename] ?? LibraryPresence.none) {
-        case LibraryPresence.fileAndExtracted:
-        case LibraryPresence.extracted:
-          result[g.gameId] = GameStatus.extracted;
-          break;
-        case LibraryPresence.file:
-          result[g.gameId] = GameStatus.downloaded;
-          break;
-        case LibraryPresence.none:
-          result[g.gameId] = GameStatus.ready;
-          break;
-      }
+    for (final game in state.games) {
+      result[game.gameId] = (statuses[game.filename] ?? LibraryPresence.none).toGameStatus();
     }
     return result;
+  }
+
+  Future<FilterResult> _runFilterAndPaginate({required int skip, required int limit}) async {
+    final favs = state.filter.showFavoritesOnly ? _ref.read(favoritesProvider).gameIds : null;
+    final lib = state.filter.showInLibraryOnly ? await getLibraryStatus() : null;
+
+    return compute(
+      FilteringService.filterAndPaginate,
+      FilterInput(
+        games: state.games,
+        filterText: state.filterText,
+        filter: state.filter,
+        skip: skip,
+        limit: limit,
+        favoriteGameIds: favs,
+        inLibraryStatus: lib,
+      ),
+    );
   }
 
   Future<void> updateFilteredGames() async {
     if (state.games.isEmpty) return;
 
     try {
-      final favoriteGameIds = state.filter.showFavoritesOnly ? _ref.read(favoritesProvider).gameIds : null;
-      final inLibraryStatus = state.filter.showInLibraryOnly ? await getLibraryStatus() : null;
-
-      final result = await compute(
-          FilteringService.filterAndPaginate,
-          FilterInput(
-            games: state.games,
-            filterText: state.filterText,
-            filter: state.filter,
-            skip: 0,
-            limit: kDefaultCatalogDisplaySize,
-            favoriteGameIds: favoriteGameIds,
-            inLibraryStatus: inLibraryStatus,
-          ));
-
+      final filteredAndPaginated = await _runFilterAndPaginate(skip: 0, limit: kDefaultCatalogDisplaySize);
       state = state.copyWith(
-        cachedFilteredGames: result.games,
-        cachedTotalCount: result.totalCount,
-        cachedHasMore: result.hasMore,
+        cachedFilteredGames: filteredAndPaginated.games,
+        cachedTotalCount: filteredAndPaginated.totalCount,
+        cachedHasMore: filteredAndPaginated.hasMore,
       );
     } catch (e) {
       debugPrint('Error filtering games: $e');
@@ -154,25 +147,11 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
     state = state.copyWith(loadingMore: true);
 
     try {
-      final favoriteGameIds = state.filter.showFavoritesOnly ? _ref.read(favoritesProvider).gameIds : null;
-      final inLibraryStatus = state.filter.showInLibraryOnly ? await getLibraryStatus() : null;
-
-      final result = await compute(
-          FilteringService.filterAndPaginate,
-          FilterInput(
-            games: state.games,
-            filterText: state.filterText,
-            filter: state.filter,
-            skip: state.paginatedFilteredGames.length,
-            limit: kDefaultCatalogDisplaySize,
-            favoriteGameIds: favoriteGameIds,
-            inLibraryStatus: inLibraryStatus,
-          ));
-
+      final filteredAndPaginated = await _runFilterAndPaginate(skip: state.paginatedFilteredGames.length, limit: kDefaultCatalogDisplaySize);
       state = state.copyWith(
-        cachedFilteredGames: [...state.paginatedFilteredGames, ...result.games],
-        cachedTotalCount: result.totalCount,
-        cachedHasMore: result.hasMore,
+        cachedFilteredGames: [...state.paginatedFilteredGames, ...filteredAndPaginated.games],
+        cachedTotalCount: filteredAndPaginated.totalCount,
+        cachedHasMore: filteredAndPaginated.hasMore,
       );
     } catch (e) {
       debugPrint('Error loading more items: $e');
@@ -328,26 +307,21 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
   Future<void> refreshCatalog() async {
     if (state.games.isEmpty) return;
 
-    final currentConsole = await _getCurrentConsole();
-    if (currentConsole != null) {
-      state = state.copyWith(
-        games: [],
-        cachedFilteredGames: [],
-        cachedTotalCount: 0,
-        cachedHasMore: false,
-        selectedGames: {},
-        availableRegions: {},
-        availableLanguages: {},
-        availableCategories: {},
-      );
-      await loadCatalog(currentConsole);
-    }
-  }
-
-  Future<Console?> _getCurrentConsole() async {
-    if (state.games.isEmpty) return null;
     final consoleId = state.games.first.consoleId;
     final consoles = await catalogService.getConsoles();
-    return consoles[consoleId];
+    final console = consoles[consoleId];
+    if (console == null) return;
+
+    state = state.copyWith(
+      games: [],
+      cachedFilteredGames: [],
+      cachedTotalCount: 0,
+      cachedHasMore: false,
+      selectedGames: {},
+      availableRegions: {},
+      availableLanguages: {},
+      availableCategories: {},
+    );
+    await loadCatalog(console);
   }
 }

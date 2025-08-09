@@ -12,28 +12,6 @@ class GameList extends ConsumerStatefulWidget {
 }
 
 class _GameListState extends ConsumerState<GameList> {
-  final ScrollController _scrollController = ScrollController();
-  CatalogNotifier? _catalogNotifier;
-
-  @override
-  void initState() {
-    super.initState();
-    _scrollController.addListener(_onScroll);
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  void _onScroll() {
-    if (_scrollController.position.extentAfter < 500) {
-      _catalogNotifier ??= ref.read(catalogProvider.notifier);
-      _catalogNotifier?.loadMoreItems();
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final catalogState = ref.watch(catalogProvider);
@@ -50,6 +28,8 @@ class _GameListState extends ConsumerState<GameList> {
     final sizeColumnWidth = isNarrow ? 60.0 : 100.0;
     final statusColumnWidth = isNarrow ? 80.0 : 100.0;
     final actionsColumnWidth = isNarrow ? 100.0 : 120.0;
+
+    const loadMoreThresholdPx = 500.0;
 
     return Column(
       children: [
@@ -121,36 +101,45 @@ class _GameListState extends ConsumerState<GameList> {
           ),
         ),
         Expanded(
-          child: ListView.builder(
-            key: PageStorageKey('game-list-$selectedConsoleId'),
-            controller: _scrollController,
-            padding: EdgeInsets.zero,
-            itemCount: games.length + (loadingMore ? 1 : 0),
-            cacheExtent: screenHeight * 1.5,
-            itemBuilder: (context, index) {
-              if (index >= games.length) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  child: Center(
-                    child: SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                  ),
-                );
-              }
-
-              final game = games[index];
-              return GameRow(
-                key: ValueKey(game.gameId),
-                game: game,
-                isNarrow: isNarrow,
-                sizeColumnWidth: sizeColumnWidth,
-                statusColumnWidth: statusColumnWidth,
-                actionsColumnWidth: actionsColumnWidth,
-              );
+          child: NotificationListener<ScrollNotification>(
+            onNotification: (notification) {
+              final isScroll = notification is ScrollUpdateNotification;
+              final isnNearBottom = notification.metrics.pixels >= notification.metrics.maxScrollExtent - loadMoreThresholdPx;
+              final isVerticalScroll = notification.metrics.axis == Axis.vertical;
+              final shouldLoadMore = isScroll && isVerticalScroll && isnNearBottom && !catalogState.loadingMore && catalogState.hasMoreItems;
+              if (shouldLoadMore) ref.read(catalogProvider.notifier).loadMoreItems();
+              return false;
             },
+            child: ListView.builder(
+              key: PageStorageKey('game-list-$selectedConsoleId'),
+              padding: EdgeInsets.zero,
+              itemCount: games.length + (loadingMore ? 1 : 0),
+              cacheExtent: screenHeight * 1.5,
+              itemBuilder: (context, index) {
+                if (index >= games.length) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    child: Center(
+                      child: SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
+                  );
+                }
+
+                final game = games[index];
+                return GameRow(
+                  key: ValueKey(game.gameId),
+                  game: game,
+                  isNarrow: isNarrow,
+                  sizeColumnWidth: sizeColumnWidth,
+                  statusColumnWidth: statusColumnWidth,
+                  actionsColumnWidth: actionsColumnWidth,
+                );
+              },
+            ),
           ),
         ),
       ],
