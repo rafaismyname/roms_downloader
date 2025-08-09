@@ -5,6 +5,7 @@ import 'package:background_downloader/background_downloader.dart';
 import 'package:roms_downloader/models/game_model.dart';
 import 'package:roms_downloader/models/download_model.dart';
 import 'package:roms_downloader/models/task_queue_model.dart';
+import 'package:roms_downloader/providers/library_snapshot_provider.dart';
 import 'package:roms_downloader/services/download_service.dart';
 import 'package:roms_downloader/providers/catalog_provider.dart';
 import 'package:roms_downloader/providers/game_state_provider.dart';
@@ -64,6 +65,14 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       catalogNotifier.deselectGame(update.task.taskId);
       debugPrint('Download completed for ${update.task.taskId}');
       queueNotifier.updateTaskStatus(update.task.taskId, TaskQueueStatus.completed);
+
+      final game = gameStateManager.state[update.task.taskId]?.game;
+      if (game != null) {
+        final dir = _ref.read(settingsProvider.notifier).getDownloadDir(game.consoleId);
+        if (dir.isNotEmpty) {
+          _ref.read(librarySnapshotProvider(dir).notifier).markFileAdded(game.filename);
+        }
+      }
 
       _triggerAutoExtraction(update.task.taskId);
     } else if (update.status == TaskStatus.failed) {

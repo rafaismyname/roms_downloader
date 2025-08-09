@@ -142,6 +142,8 @@ class FilteringService {
     }).toList();
   }
 
+  // Possible bug: if revisions are non-numeric and not lexically comparable like 1.0, 1.0a, 1.0b or 1.2, 1.10,
+  // this function may not work as intended.
   static bool _isNewerRevision(String current, String existing) {
     if (current.isEmpty && existing.isEmpty) return false;
     if (existing.isEmpty) return true;

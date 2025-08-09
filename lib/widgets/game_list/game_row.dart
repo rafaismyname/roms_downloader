@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:roms_downloader/models/game_model.dart';
-import 'package:roms_downloader/models/game_state_model.dart';
 import 'package:roms_downloader/utils/formatters.dart';
 import 'package:roms_downloader/providers/catalog_provider.dart';
 import 'package:roms_downloader/providers/game_state_provider.dart';
@@ -40,19 +39,12 @@ class _GameRowState extends ConsumerState<GameRow> {
 
     final gameId = widget.game.gameId;
     final gameState = ref.watch(gameStateProvider(widget.game));
-
-    if (gameState.status == GameStatus.init) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          ref.read(gameStateManagerProvider.notifier).resolveState(gameId);
-        }
-      });
-    }
+    final isSelected = ref.watch(gameSelectionProvider(gameId));
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       decoration: BoxDecoration(
-        color: gameState.isSelected ? Theme.of(context).colorScheme.primaryContainer.withAlpha(50) : null,
+        color: isSelected ? Theme.of(context).colorScheme.primaryContainer.withAlpha(50) : null,
         border: Border(
           bottom: BorderSide(
             color: Theme.of(context).dividerColor,
@@ -67,7 +59,7 @@ class _GameRowState extends ConsumerState<GameRow> {
             SizedBox(
               width: 20,
               child: Checkbox(
-                value: gameState.isSelected,
+                value: isSelected,
                 onChanged: gameState.isInteractable ? (_) => catalogNotifier.toggleGameSelection(gameId) : null,
               ),
             ),

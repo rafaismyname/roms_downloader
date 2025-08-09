@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:background_downloader/background_downloader.dart';
 import 'package:path/path.dart' as path;
@@ -8,6 +7,7 @@ import 'package:roms_downloader/models/extraction_model.dart';
 import 'package:roms_downloader/models/task_queue_model.dart';
 import 'package:roms_downloader/models/settings_model.dart';
 import 'package:roms_downloader/providers/catalog_provider.dart';
+import 'package:roms_downloader/providers/library_snapshot_provider.dart';
 import 'package:roms_downloader/providers/settings_provider.dart';
 import 'package:roms_downloader/services/directory_service.dart';
 
@@ -29,7 +29,6 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
     });
     _ref.listen(catalogProvider, (prev, next) {
       if (prev?.games != next.games) _initGames(next.games);
-      if (prev?.selectedGames != next.selectedGames) _updateSelections(next.selectedGames);
     });
   }
 
@@ -149,31 +148,14 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
             ));
 
     try {
-      final data = (filename: game.filename, downloadDir: downloadDir);
-      final result = await compute(DirectoryService().computeFileCheck, data);
-
-      GameStatus status = GameStatus.ready;
-      if (result.hasExtracted) {
-        status = GameStatus.extracted;
-      } else if (result.hasFile) {
-        status = GameStatus.downloaded;
-      }
-      
-      // if has just completed, update the filtered games
-      // TODO: rely more on this status and the batch library status processing
-      // a lot of potential optimizations here! especially because we're basically
-      // calculating the library status twice right now 
-      // and we could just do in batch once per hasJustCompleted = true
-      if (hasJustCompleted) {
-        _ref.read(catalogProvider.notifier).updateFilteredGames();
-      }
+      final snap = _ref.read(librarySnapshotProvider(downloadDir).notifier);
+      final presence = await snap.getStatus(game.filename);
+      final status = presence.toGameStatus();
 
       _updateState(
           gameId,
           (s) => s.copyWith(
                 status: status,
-                fileExists: result.hasFile,
-                extractedContentExists: result.hasExtracted,
                 showProgressBar: false,
                 isInteractable: status == GameStatus.ready,
                 availableActions: _getActions(status, game),
@@ -200,18 +182,12 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
         updates[game.gameId] = GameState(game: game);
       }
     }
-    if (updates.isNotEmpty) state = {...state, ...updates};
-  }
-
-  void _updateSelections(Set<String> selected) {
-    final updates = <String, GameState>{};
-    for (final entry in state.entries) {
-      final isSelected = selected.contains(entry.key);
-      if (entry.value.isSelected != isSelected) {
-        updates[entry.key] = entry.value.copyWith(isSelected: isSelected);
+    if (updates.isNotEmpty) {
+      state = {...state, ...updates};
+      for (final id in updates.keys) {
+        resolveState(id);
       }
     }
-    if (updates.isNotEmpty) state = {...state, ...updates};
   }
 
   void _updateState(String gameId, GameState Function(GameState) updater) {
