@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:roms_downloader/providers/app_state_provider.dart';
 import 'package:roms_downloader/providers/catalog_provider.dart';
 import 'package:roms_downloader/widgets/game_list/game_row.dart';
 
@@ -36,6 +37,8 @@ class _GameListState extends ConsumerState<GameList> {
   @override
   Widget build(BuildContext context) {
     final catalogState = ref.watch(catalogProvider);
+    final selectedConsoleId = ref.watch(appStateProvider).selectedConsole?.id ?? 'all';
+
     final games = catalogState.paginatedFilteredGames;
     final loadingMore = catalogState.loadingMore;
 
@@ -119,6 +122,7 @@ class _GameListState extends ConsumerState<GameList> {
         ),
         Expanded(
           child: ListView.builder(
+            key: PageStorageKey('game-list-$selectedConsoleId'),
             controller: _scrollController,
             padding: EdgeInsets.zero,
             itemCount: games.length + (loadingMore ? 1 : 0),

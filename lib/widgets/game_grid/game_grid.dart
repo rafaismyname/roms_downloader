@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:roms_downloader/providers/app_state_provider.dart';
 import 'package:roms_downloader/providers/catalog_provider.dart';
 import 'package:roms_downloader/widgets/game_grid/game_grid_item.dart';
 
@@ -85,6 +86,8 @@ class _GameGridState extends ConsumerState<GameGrid> {
   @override
   Widget build(BuildContext context) {
     final catalogState = ref.watch(catalogProvider);
+    final selectedConsoleId = ref.watch(appStateProvider).selectedConsole?.id ?? 'all';
+
     final games = catalogState.paginatedFilteredGames;
     final loadingMore = catalogState.loadingMore;
 
@@ -104,6 +107,7 @@ class _GameGridState extends ConsumerState<GameGrid> {
     return Padding(
       padding: EdgeInsets.only(left: 6, right: 6, top: 6, bottom: 3),
       child: GridView.builder(
+        key: PageStorageKey('game-grid-$selectedConsoleId'),
         controller: _scrollController,
         padding: EdgeInsets.zero,
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
