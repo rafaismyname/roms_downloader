@@ -39,11 +39,12 @@ class _GameRowState extends ConsumerState<GameRow> {
 
     final gameId = widget.game.gameId;
     final gameState = ref.watch(gameStateProvider(widget.game));
+    final isSelected = ref.watch(gameSelectionProvider(gameId));
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       decoration: BoxDecoration(
-        color: gameState.isSelected ? Theme.of(context).colorScheme.primaryContainer.withAlpha(50) : null,
+        color: isSelected ? Theme.of(context).colorScheme.primaryContainer.withAlpha(50) : null,
         border: Border(
           bottom: BorderSide(
             color: Theme.of(context).dividerColor,
@@ -58,7 +59,7 @@ class _GameRowState extends ConsumerState<GameRow> {
             SizedBox(
               width: 20,
               child: Checkbox(
-                value: gameState.isSelected,
+                value: isSelected,
                 onChanged: gameState.isInteractable ? (_) => catalogNotifier.toggleGameSelection(gameId) : null,
               ),
             ),

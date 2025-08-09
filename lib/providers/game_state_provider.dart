@@ -4,7 +4,6 @@ import 'package:path/path.dart' as path;
 import 'package:roms_downloader/models/game_model.dart';
 import 'package:roms_downloader/models/game_state_model.dart';
 import 'package:roms_downloader/models/extraction_model.dart';
-import 'package:roms_downloader/models/library_snapshot_model.dart';
 import 'package:roms_downloader/models/task_queue_model.dart';
 import 'package:roms_downloader/models/settings_model.dart';
 import 'package:roms_downloader/providers/catalog_provider.dart';
@@ -30,7 +29,6 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
     });
     _ref.listen(catalogProvider, (prev, next) {
       if (prev?.games != next.games) _initGames(next.games);
-      if (prev?.selectedGames != next.selectedGames) _updateSelections(next.selectedGames);
     });
   }
 
@@ -158,8 +156,6 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
           gameId,
           (s) => s.copyWith(
                 status: status,
-                fileExists: presence == LibraryPresence.file || presence == LibraryPresence.fileAndExtracted,
-                extractedContentExists: presence == LibraryPresence.extracted || presence == LibraryPresence.fileAndExtracted,
                 showProgressBar: false,
                 isInteractable: status == GameStatus.ready,
                 availableActions: _getActions(status, game),
@@ -192,17 +188,6 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
         resolveState(id);
       }
     }
-  }
-
-  void _updateSelections(Set<String> selected) {
-    final updates = <String, GameState>{};
-    for (final entry in state.entries) {
-      final isSelected = selected.contains(entry.key);
-      if (entry.value.isSelected != isSelected) {
-        updates[entry.key] = entry.value.copyWith(isSelected: isSelected);
-      }
-    }
-    if (updates.isNotEmpty) state = {...state, ...updates};
   }
 
   void _updateState(String gameId, GameState Function(GameState) updater) {

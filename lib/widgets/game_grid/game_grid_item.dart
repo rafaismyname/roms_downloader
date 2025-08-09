@@ -26,10 +26,9 @@ class _GameGridItemState extends ConsumerState<GameGridItem> {
   Widget build(BuildContext context) {
     final game = widget.game;
     final aspectRatio = widget.aspectRatio;
-    final catalogState = ref.watch(catalogProvider);
     final catalogNotifier = ref.read(catalogProvider.notifier);
     final gameState = ref.watch(gameStateProvider(game));
-    final isSelected = catalogState.selectedGames.contains(game.gameId);
+    final isSelected = ref.watch(gameSelectionProvider(game.gameId));
     final isActive = gameState.isActive;
 
     Color? borderColor;

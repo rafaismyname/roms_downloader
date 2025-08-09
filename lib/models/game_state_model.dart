@@ -36,14 +36,11 @@ class GameState {
   final double extractionProgress;
   final double networkSpeed;
   final Duration timeRemaining;
-  final bool isSelected;
   final bool isInteractable;
   final Set<GameAction> availableActions;
   final bool showProgressBar;
   final double currentProgress;
   final String? errorMessage;
-  final bool fileExists;
-  final bool extractedContentExists;
   final bool hasJustCompleted;
 
   const GameState({
@@ -53,14 +50,11 @@ class GameState {
     this.extractionProgress = 0.0,
     this.networkSpeed = 0.0,
     this.timeRemaining = Duration.zero,
-    this.isSelected = false,
     this.isInteractable = true,
     this.availableActions = const {GameAction.loading},
     this.showProgressBar = false,
     this.currentProgress = 0.0,
     this.errorMessage,
-    this.fileExists = false,
-    this.extractedContentExists = false,
     this.hasJustCompleted = false,
   });
 
@@ -76,8 +70,6 @@ class GameState {
     bool? showProgressBar,
     double? currentProgress,
     String? errorMessage,
-    bool? fileExists,
-    bool? extractedContentExists,
     bool? hasJustCompleted,
   }) {
     return GameState(
@@ -87,14 +79,11 @@ class GameState {
       extractionProgress: extractionProgress ?? this.extractionProgress,
       networkSpeed: networkSpeed ?? this.networkSpeed,
       timeRemaining: timeRemaining ?? this.timeRemaining,
-      isSelected: isSelected ?? this.isSelected,
       isInteractable: isInteractable ?? this.isInteractable,
       availableActions: availableActions ?? this.availableActions,
       showProgressBar: showProgressBar ?? this.showProgressBar,
       currentProgress: currentProgress ?? this.currentProgress,
       errorMessage: errorMessage ?? this.errorMessage,
-      fileExists: fileExists ?? this.fileExists,
-      extractedContentExists: extractedContentExists ?? this.extractedContentExists,
       hasJustCompleted: hasJustCompleted ?? this.hasJustCompleted,
     );
   }
