@@ -2,7 +2,7 @@ import 'dart:math';
 
 Map<String, String> buildDownloadHeaders(String url, [Map<String, String>? extra]) {
   final rand = Random();
-  final Map<String, String> uaPerHost = {};
+
   const languages = [
     'en-US,en;q=0.9',
     'en-GB,en;q=0.9',
@@ -10,7 +10,9 @@ Map<String, String> buildDownloadHeaders(String url, [Map<String, String>? extra
     'en-US,en;q=0.9,de;q=0.7',
     'en-US,en;q=0.9,pt;q=0.8,gl;q=0.7,es;q=0.6',
   ];
+
   const platforms = ['"Windows"', '"macOS"', '"Linux"'];
+
   String randomChromeUA() {
     final major = 135 + rand.nextInt(5);
     final build = 0 + rand.nextInt(10);
@@ -30,12 +32,13 @@ Map<String, String> buildDownloadHeaders(String url, [Map<String, String>? extra
         '$major.$minor Safari/605.1.15';
   }
 
-  String uaForHost(String host) => uaPerHost.putIfAbsent(host, () {
-        final pick = rand.nextInt(100);
-        if (pick < 55) return randomChromeUA();
-        if (pick < 80) return randomFirefoxUA();
-        return randomSafariUA();
-      });
+  String uaForHost() {
+    final pick = rand.nextInt(100);
+    if (pick < 55) return randomChromeUA();
+    if (pick < 80) return randomFirefoxUA();
+    return randomSafariUA();
+  }
+
   String randomSecChUa() {
     final chromeVer = 135 + rand.nextInt(5);
     return '"Not)A;Brand";v="8", "Chromium";v="$chromeVer", "Google Chrome";v="$chromeVer"';
@@ -44,18 +47,17 @@ Map<String, String> buildDownloadHeaders(String url, [Map<String, String>? extra
   String randomSecChUaMobile() => rand.nextBool() ? '?0' : '?1';
   String randomSecChUaPlatform() => platforms[rand.nextInt(platforms.length)];
   String randomSecFetchSite() => rand.nextInt(10) < 8 ? 'same-origin' : 'none';
-  final host = Uri.tryParse(url)?.host ?? 'localhost';
 
   return {
-    'User-Agent': uaForHost(host),
+    'User-Agent': uaForHost(),
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
     'Accept-Language': languages[rand.nextInt(languages.length)],
     'Accept-Encoding': 'gzip, deflate, br, zstd',
     'Connection': 'keep-alive',
     'Pragma': 'no-cache',
     'Cache-Control': 'no-cache',
-    'Host': host,
-    'Referer': 'https://$host/',
+    // 'Host': Uri.tryParse(url)?.host ?? 'localhost', // Dont set 'Host', it can lead to 404 errors in Android
+    'Referer': url.substring(0, url.lastIndexOf('/') + 1),
     'sec-ch-ua': randomSecChUa(),
     'sec-ch-ua-mobile': randomSecChUaMobile(),
     'sec-ch-ua-platform': randomSecChUaPlatform(),

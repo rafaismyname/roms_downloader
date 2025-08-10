@@ -17,23 +17,27 @@ class _GameGridState extends ConsumerState<GameGrid> {
   String? _lastConsoleId;
 
   int _calculateCrossAxisCount(double screenWidth, double screenHeight, double aspectRatio) {
-    final isLandscape = screenWidth > screenHeight;
-    const double baseIdealWidth = 140;
-    final double idealWidth = baseIdealWidth * (isLandscape ? 0.9 : 1.0) * (aspectRatio / 0.75);
+    try {
+      final isLandscape = screenWidth > screenHeight;
+      const double baseIdealWidth = 140;
+      final double idealWidth = baseIdealWidth * (isLandscape ? 0.9 : 1.0) * (aspectRatio / 0.75);
 
-    int columns = (screenWidth / idealWidth).floor().clamp(2, 8);
+      int columns = (screenWidth / idealWidth).floor().clamp(2, 8);
 
-    int rows = (screenHeight / ((screenWidth / columns) / aspectRatio)).floor();
-    while (rows < 2 && columns > 2) {
-      columns--;
-      rows = (screenHeight / ((screenWidth / columns) / aspectRatio)).floor();
+      int rows = (screenHeight / ((screenWidth / columns) / aspectRatio)).floor();
+      while (rows < 2 && columns > 2) {
+        columns--;
+        rows = (screenHeight / ((screenWidth / columns) / aspectRatio)).floor();
+      }
+
+      if (isLandscape && aspectRatio < 1.75 && columns < 3) {
+        columns = 4;
+      }
+
+      return columns;
+    } catch (e) {
+      return 3;
     }
-
-    if (isLandscape && aspectRatio < 1.75 && columns < 3) {
-      columns = 4;
-    }
-
-    return columns;
   }
 
   void _updateAspectRatio(String? firstBoxartUrl) {

@@ -253,32 +253,69 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     return catalogState.selectedGames.any((taskId) => isTaskDownloadable(taskId));
   }
 
+  // WARNING: This is tends to be problematic if keeps giving headaches:
+  // just use downloadService.cancelTaskById in the allTasks loop instead of this whole control and call it a day
   Future<void> _syncWithBackgroundTasks() async {
+    debugPrint('_syncWithBackgroundTasks: Starting sync with background tasks');
     try {
-      final allTasks = await FileDownloader().allTasks();
+      final allTasks = await FileDownloader().allTasks(allGroups: true);
+      debugPrint('_syncWithBackgroundTasks: Found ${allTasks.length} tasks from FileDownloader');
 
       final taskStatus = Map<String, TaskStatus>.from(state.taskStatus);
       final taskProgress = Map<String, TaskProgressUpdate>.from(state.taskProgress);
 
       for (final task in allTasks) {
+        debugPrint('_syncWithBackgroundTasks: Inspecting task ${task.taskId} of type ${task.runtimeType}');
         if (task is DownloadTask) {
           _tasks[task.taskId] = task;
+          debugPrint('_syncWithBackgroundTasks: Registered DownloadTask ${task.taskId}');
 
           if (!taskStatus.containsKey(task.taskId)) {
             taskStatus[task.taskId] = TaskStatus.running;
-            debugPrint('Discovered background task ${task.taskId}');
+            debugPrint('_syncWithBackgroundTasks: Set status to running for ${task.taskId}');
+          }
+        } else {
+          debugPrint('_syncWithBackgroundTasks: Skipped non-DownloadTask ${task.taskId}');
+        }
+      }
+
+      // Cancel any paused tasks that are still in the database
+      try {
+        final pausedRecords = await FileDownloader().database.allRecordsWithStatus(TaskStatus.paused);
+        debugPrint('_syncWithBackgroundTasks: Found ${pausedRecords.length} paused tasks from FileDownloader');
+        for (final record in pausedRecords) {
+          if (record.status == TaskStatus.paused) {
+            debugPrint('_syncWithBackgroundTasks: Found paused task ${record.taskId} -> cancelling');
+
+            try {
+              await downloadService.cancelTaskById(record.taskId);
+            } catch (e) {
+              debugPrint('_syncWithBackgroundTasks: Error cancelling paused task ${record.taskId}: $e');
+            }
+
+            taskStatus.remove(record.taskId);
+            taskProgress.remove(record.taskId);
+            _tasks.remove(record.taskId);
+
+            debugPrint('_syncWithBackgroundTasks: Paused task ${record.taskId} Cancelled and removed from tracking');
           }
         }
+      } catch (e) {
+        debugPrint('_syncWithBackgroundTasks: Could not process paused tasks: $e');
       }
 
       state = state.copyWith(
         taskStatus: taskStatus,
         taskProgress: taskProgress,
       );
+      debugPrint('_syncWithBackgroundTasks: State updated with ${taskStatus.length} statuses');
 
       _updateDownloadingState();
-    } catch (e) {
+
+      debugPrint('_syncWithBackgroundTasks: Finished updating downloading state');
+    } catch (e, stack) {
       debugPrint('Error syncing with background tasks: $e');
+      debugPrint('Stack trace: $stack');
     }
   }
 

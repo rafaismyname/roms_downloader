@@ -42,54 +42,20 @@ class LibrarySnapshotNotifier extends StateNotifier<Map<String, LibrarySnapshot>
       return;
     }
 
-    final exact = <String>{};
-    final bases = <String>{};
-    final related = <String, List<String>>{};
-    // ignore: prefer_function_declarations_over_variables
-    final abs = (String name) => p.join(_libraryDir, name);
-
+    Map<String, dynamic> raw;
     try {
-      // Single pass over root
-      for (final e in dir.listSync()) {
-        final base = p.basename(e.path);
-        final baseNoExt = p.basenameWithoutExtension(base);
-
-        if (e is File) {
-          exact.add(base); // "Name.ext"
-          bases.add(baseNoExt); // index base too
-          // exact filename -> itself (abs path)
-          related[base] = [abs(base)];
-          // also make base aware of this file (helps when no extracted dir)
-          related.putIfAbsent(baseNoExt, () => <String>[]).add(abs(base));
-        } else if (e is Directory) {
-          bases.add(base);
-          bases.add(baseNoExt);
-
-          // Collect files directly inside the extracted dir (non-recursive = cheap)
-          final files = <String>[];
-          try {
-            for (final sub in e.listSync()) {
-              if (sub is File) files.add(sub.path);
-            }
-          } catch (_) {}
-
-          // Map both the dir name and its base (robust to ".../Game" vs ".../Game (USA)")
-          if (files.isNotEmpty) {
-            related[base] = [...files];
-            related[baseNoExt] = [
-              ...files, // if both keys exist, dir contents take priority in getter anyway
-              ...(related[baseNoExt] ?? const []),
-            ];
-          } else {
-            // Ensure keys exist even if empty so lookups are O(1) without null checks
-            related.putIfAbsent(base, () => <String>[]);
-            related.putIfAbsent(baseNoExt, () => <String>[]);
-          }
-        }
-      }
+      raw = await compute(_scanLibraryDir, _libraryDir);
     } catch (e) {
-      debugPrint('Error reading $_libraryDir: $e');
+      debugPrint('Isolate scan failed, fallback inline: $e');
+      // Fallback to inline (original logic) if compute fails
+      raw = await _scanLibraryDir(_libraryDir);
     }
+
+    final exact = Set<String>.from(raw['exact'] as List);
+    final bases = Set<String>.from(raw['bases'] as List);
+    final related = (raw['related'] as Map).map<String, List<String>>(
+      (k, v) => MapEntry(k as String, List<String>.from(v as List)),
+    );
 
     state = {
       ...state,
@@ -104,6 +70,63 @@ class LibrarySnapshotNotifier extends StateNotifier<Map<String, LibrarySnapshot>
     _refreshing = false;
     _refreshingCompleter?.complete();
     _refreshingCompleter = null;
+  }
+
+  Future<Map<String, dynamic>> _scanLibraryDir(String libraryDir) async {
+    final dir = Directory(libraryDir);
+    if (!dir.existsSync()) {
+      return {
+        'exact': <String>[],
+        'bases': <String>[],
+        'related': <String, List<String>>{},
+      };
+    }
+
+    final exact = <String>{};
+    final bases = <String>{};
+    final related = <String, List<String>>{};
+    String abs(String name) => p.join(libraryDir, name);
+
+    try {
+      for (final e in dir.listSync()) {
+        final base = p.basename(e.path);
+        final baseNoExt = p.basenameWithoutExtension(base);
+
+        if (e is File) {
+          exact.add(base);
+          bases.add(baseNoExt);
+          related[base] = [abs(base)];
+          related.putIfAbsent(baseNoExt, () => <String>[]).add(abs(base));
+        } else if (e is Directory) {
+          bases.add(base);
+          bases.add(baseNoExt);
+
+          final files = <String>[];
+          try {
+            for (final sub in e.listSync()) {
+              if (sub is File) files.add(sub.path);
+            }
+          } catch (_) {}
+
+          if (files.isNotEmpty) {
+            related[base] = [...files];
+            related[baseNoExt] = [
+              ...files,
+              ...(related[baseNoExt] ?? const []),
+            ];
+          } else {
+            related.putIfAbsent(base, () => <String>[]);
+            related.putIfAbsent(baseNoExt, () => <String>[]);
+          }
+        }
+      }
+    } catch (_) {}
+
+    return {
+      'exact': exact.toList(),
+      'bases': bases.toList(),
+      'related': related,
+    };
   }
 
   Future<LibrarySnapshot> _ensure() async {
