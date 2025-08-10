@@ -1,4 +1,5 @@
 import 'package:background_downloader/background_downloader.dart';
+import 'package:roms_downloader/utils/network.dart';
 
 class DownloadService {
   Future<FileDownloader> initialize() async {
@@ -50,6 +51,7 @@ class DownloadService {
     required String fileName,
     required String directory,
     String group = 'default',
+    Map<String, String>? headers,
   }) {
     return DownloadTask(
       taskId: taskId,
@@ -62,6 +64,7 @@ class DownloadService {
       allowPause: true,
       priority: 5,
       retries: 3,
+      headers: buildDownloadHeaders(url, headers),
     );
   }
 

@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:roms_downloader/models/console_model.dart';
 import 'package:roms_downloader/models/game_model.dart';
+import 'package:roms_downloader/utils/network.dart';
 import 'package:roms_downloader/utils/title_metadata_parser.dart';
 import 'package:roms_downloader/services/boxart_service.dart';
 
@@ -82,16 +83,18 @@ class CatalogService {
   Future<List<Game>> _fetchCatalog(Console console) async {
     final client = HttpClient();
     client.connectionTimeout = const Duration(seconds: 30);
-    client.userAgent = 'Mozilla/5.0 (compatible; Flutter app)';
 
     List<Game> catalog = [];
 
     try {
       final request = await client.getUrl(Uri.parse(console.url));
+      final headers = buildDownloadHeaders(console.url);
+      headers.forEach(request.headers.set);
+
       final response = await request.close();
 
       if (response.statusCode != 200) {
-        throw Exception('HTTP ${response.statusCode}: Failed to fetch catalog from ${console.url}');
+      throw Exception('HTTP ${response.statusCode}: Failed to fetch catalog from ${console.url}');
       }
 
       final html = await response.transform(utf8.decoder).join();
