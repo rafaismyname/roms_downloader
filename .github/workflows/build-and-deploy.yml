@@ -172,6 +172,7 @@ jobs:
   
   # Linux build - Disabled until tested
   build-linux:
+    if: false
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -276,6 +277,7 @@ jobs:
   
   # Handheld Linux build - Disabled until tested
   build-handheld-linux:
+    if: false
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -551,8 +553,8 @@ jobs:
           path: "ROMs_Downloader_Handheld_Linux_${{ matrix.arch }}.zip"
 
   generate-download-links:
-    needs: [build-android, build-macos, build-windows, build-linux, build-handheld-linux]
-    # needs: [build-android, build-macos, build-windows]
+    # needs: [build-android, build-macos, build-windows, build-linux, build-handheld-linux]
+    needs: [build-android, build-macos, build-windows]
     runs-on: ubuntu-latest
     steps:
       - name: Download all artifacts
