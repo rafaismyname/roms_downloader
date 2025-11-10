@@ -654,17 +654,9 @@ jobs:
           echo "Flutter bundle created at build/flutter_assets"
           ls -lh build/flutter_assets/ | head -20
 
-      - name: Setup cross-compilation environment
+      - name: Download Flutter engine for target architecture
         run: |
-          # Install cross-compilation tools
-          sudo dpkg --add-architecture ${{ matrix.debian_arch }}
-          sudo apt-get update
-          sudo apt-get install -y \
-            gcc-${{ matrix.gnu_arch }}-linux-gnu \
-            g++-${{ matrix.gnu_arch }}-linux-gnu \
-            crossbuild-essential-${{ matrix.debian_arch }}
-          
-          # Download Flutter engine for target architecture
+          # Get Flutter engine version
           ENGINE_VERSION=$(cat $FLUTTER_ROOT/bin/internal/engine.version)
           echo "Flutter engine version: $ENGINE_VERSION"
           
@@ -672,9 +664,18 @@ jobs:
           mkdir -p flutter_engine
           cd flutter_engine
           
-          # Download the Linux ARM64 engine artifacts
+          # Download the pre-built Linux ARM64 engine artifacts
+          # This includes gen_snapshot which we need to create app.so
+          echo "Downloading Flutter engine for ${{ matrix.flutter_arch }}..."
           wget "https://storage.googleapis.com/flutter_infra_release/flutter/$ENGINE_VERSION/${{ matrix.flutter_arch }}-release/linux-${{ matrix.arch }}-release.zip" -O engine.zip
-          unzip engine.zip
+          
+          if [ $? -ne 0 ]; then
+            echo "Failed to download engine, trying alternative URL format..."
+            wget "https://storage.googleapis.com/flutter_infra_release/flutter/$ENGINE_VERSION/linux-${{ matrix.arch }}-release/linux-${{ matrix.arch }}-flutter-gtk.zip" -O engine.zip
+          fi
+          
+          unzip -q engine.zip
+          echo "Engine artifacts downloaded:"
           ls -lh
           cd ..
 
