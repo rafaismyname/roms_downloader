@@ -77,13 +77,14 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
 
       state = state.copyWith(
         games: games,
-        loading: false,
         availableRegions: regions,
         availableLanguages: languages,
         availableCategories: categories,
       );
 
-      updateFilteredGames(immediate: true);
+      await updateFilteredGames(immediate: true);
+
+      state = state.copyWith(loading: false);
     } catch (e) {
       debugPrint('Error loading catalog: $e');
       state = state.copyWith(
@@ -149,7 +150,7 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
     }
   }
 
-  void updateFilteredGames({bool immediate = false}) async {
+  Future<void> updateFilteredGames({bool immediate = false}) async {
     if (state.games.isEmpty) return;
 
     callback() async {
@@ -165,10 +166,13 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
       }
     }
 
-    if (immediate) return callback();
-
-    _filterDebounce?.cancel();
-    _filterDebounce = Timer(const Duration(milliseconds: 200), callback);
+    if (immediate) {
+      _filterDebounce?.cancel();
+      await callback();
+    } else {
+      _filterDebounce?.cancel();
+      _filterDebounce = Timer(const Duration(milliseconds: 200), callback);
+    }
   }
 
   void updateFilterText(String filter) {

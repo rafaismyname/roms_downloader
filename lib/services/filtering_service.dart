@@ -58,12 +58,16 @@ class FilteringService {
     final metadata = game.metadata;
     if (metadata == null) return true;
 
-    if (filter.regions.isNotEmpty && !filter.regions.any((region) => metadata.regions.contains(region) || metadata.regions.isEmpty)) {
-      return false;
+    if (filter.regions.isNotEmpty) {
+      if (metadata.regions.isNotEmpty && !metadata.regions.any((region) => filter.regions.contains(region))) {
+        return false;
+      }
     }
 
-    if (filter.languages.isNotEmpty && !filter.languages.any((language) => metadata.languages.contains(language) || metadata.languages.isEmpty)) {
-      return false;
+    if (filter.languages.isNotEmpty) {
+      if (metadata.languages.isNotEmpty && !metadata.languages.any((language) => filter.languages.contains(language))) {
+        return false;
+      }
     }
 
     if (filter.categories.isNotEmpty && !filter.categories.any((category) => metadata.categories.contains(category))) {

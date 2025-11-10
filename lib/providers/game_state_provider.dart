@@ -12,7 +12,16 @@ import 'package:roms_downloader/providers/settings_provider.dart';
 import 'package:roms_downloader/services/directory_service.dart';
 
 final gameStateProvider = Provider.family<GameState, Game>((ref, game) {
-  return ref.watch(gameStateManagerProvider)[game.gameId] ?? GameState(game: game);
+  final manager = ref.watch(gameStateManagerProvider.notifier);
+  final currentState = ref.watch(gameStateManagerProvider)[game.gameId];
+  
+  if (currentState == null) return GameState(game: game);
+  
+  if (currentState.status == GameStatus.init && !manager.isResolving(game.gameId)) {
+    Future.microtask(() => manager.resolveState(game.gameId));
+  }
+  
+  return currentState;
 });
 
 final gameStateManagerProvider = StateNotifierProvider<GameStateManager, Map<String, GameState>>((ref) {
@@ -22,6 +31,8 @@ final gameStateManagerProvider = StateNotifierProvider<GameStateManager, Map<Str
 class GameStateManager extends StateNotifier<Map<String, GameState>> {
   final Ref _ref;
   final Map<String, bool> _resolving = {};
+  
+  bool isResolving(String gameId) => _resolving[gameId] == true;
 
   GameStateManager(this._ref) : super({}) {
     _ref.listen(settingWatcherProvider(AppSettings.downloadDir), (prev, next) {
@@ -184,9 +195,6 @@ class GameStateManager extends StateNotifier<Map<String, GameState>> {
     }
     if (updates.isNotEmpty) {
       state = {...state, ...updates};
-      for (final id in updates.keys) {
-        resolveState(id);
-      }
     }
   }
 
