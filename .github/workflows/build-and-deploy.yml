@@ -642,28 +642,11 @@ jobs:
 
       - name: Build Flutter bundle for flutter-pi
         run: |
-          # Build the Flutter bundle - this creates both assets and kernel snapshot
-          echo "Building Flutter bundle with kernel snapshot..."
+          # Build the Flutter bundle (creates assets)
+          echo "Building Flutter bundle..."
           flutter build bundle --release
           
-          echo "Flutter bundle created"
-          ls -lh build/flutter_assets/ | head -20
-          
-          # The kernel snapshot (app.dill) is created during bundle build
-          # Find it in the dart_tool directory
-          echo "Searching for kernel snapshot..."
-          KERNEL_FILE=$(find .dart_tool/flutter_build -name "app.dill" -type f | head -1)
-          
-          if [ -z "$KERNEL_FILE" ]; then
-            echo "ERROR: Could not find app.dill kernel snapshot"
-            echo "Searching all possible locations..."
-            find .dart_tool -name "*.dill" -type f
-            find build -name "*.dill" -type f
-            exit 1
-          fi
-          
-          echo "Found kernel snapshot: $KERNEL_FILE"
-          ls -lh "$KERNEL_FILE"
+          echo "✓ Flutter bundle created"
           
           # Create flutter-pi bundle directory
           mkdir -p flutter_pi_bundle
@@ -671,40 +654,43 @@ jobs:
           # Copy Flutter assets
           cp -r build/flutter_assets flutter_pi_bundle/
           
-          # Copy kernel snapshot as kernel_blob.bin (flutter-pi convention)
-          cp "$KERNEL_FILE" flutter_pi_bundle/kernel_blob.bin
+          # Compile Dart kernel snapshot using Flutter's Dart SDK
+          echo "Compiling Dart kernel snapshot..."
           
-          echo "Flutter-pi bundle structure:"
-          ls -lh flutter_pi_bundle/
-          echo "Kernel blob size:"
+          # Use Flutter's Dart SDK to compile the app
+          $FLUTTER_ROOT/bin/cache/dart-sdk/bin/dart compile kernel \
+            --target=flutter \
+            --packages=.dart_tool/package_config.json \
+            --output=flutter_pi_bundle/kernel_blob.bin \
+            lib/main.dart
+          
+          echo "✓ Kernel snapshot compiled"
           ls -lh flutter_pi_bundle/kernel_blob.bin
           
-          # Create a note file explaining JIT mode
+          echo "Flutter-pi bundle contents:"
+          du -sh flutter_pi_bundle/flutter_assets
+          du -sh flutter_pi_bundle/kernel_blob.bin
+          
+          # Create a note file
           cat > flutter_pi_bundle/FLUTTER_PI_NOTES.txt << 'EOF'
-          Flutter-pi JIT Mode
-          ===================
+          Flutter-pi JIT Mode Bundle
+          ==========================
           
-          This build runs in JIT (Just-In-Time) mode using kernel_blob.bin
+          This bundle includes:
+          - flutter_assets/    : UI assets, fonts, images
+          - kernel_blob.bin    : Compiled Dart kernel (JIT)
           
-          What this means:
-          - Dart code is compiled on device at first run
-          - Compiled code is cached for subsequent runs
-          - Performance is excellent for most applications
-          - Startup is slightly slower than AOT (only first time)
+          flutter-pi will JIT-compile this to native code on first run.
+          Subsequent runs use cached compiled code for fast startup.
           
-          Why JIT instead of AOT?
-          - AOT compilation requires ARM64 gen_snapshot tool
-          - Not available in GitHub Actions x64 runners
-          - Cross-compilation toolchain complexity avoided
+          Performance: Excellent for most applications
+          Startup: Fast after first run (compilation is cached)
           
-          Want AOT for maximum performance?
-          - Build locally on ARM64 device with Flutter SDK
-          - Or use QEMU user-mode emulation on x64
-          
-          JIT mode is recommended for most users.
+          This approach avoids cross-compilation complexity while
+          maintaining good performance on embedded devices.
           EOF
           
-          echo "✓ Flutter-pi bundle ready for JIT execution"
+          echo "✓ Flutter-pi bundle ready"
 
       - name: Create flutter-pi compatible bundle
         run: |
