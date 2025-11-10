@@ -377,15 +377,18 @@ jobs:
           # Compress executable with UPX (best effort)
           upx --best handheld_bundle/roms_downloader 2>/dev/null || echo "UPX compression failed or not available, continuing..."
           
-          # Create a startup script for handheld environments
-          cat > handheld_bundle/start_roms_downloader.sh << 'EOF'
+          # Create EmulationStation-compatible launcher (the file users see in menu)
+          cat > handheld_bundle/"ROMs Downloader.sh" << 'EOF'
           #!/bin/bash
-          
-          # Handheld Linux launcher script for ROMs Downloader
-          # Compatible with Batocera, RockNIX, JELOS, and similar distros
+          # EmulationStation Port Launcher
+          # This file will appear in the Ports menu
           
           # Get the directory where this script is located
           SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+          
+          # Close EmulationStation to free up resources (optional but recommended)
+          # Uncomment the next line if you want ES to close when launching the app
+          # killall emulationstation emulationstatio 2>/dev/null
           
           # Set up environment
           export XDG_DATA_HOME="${SCRIPT_DIR}/app_data"
@@ -524,7 +527,74 @@ jobs:
           exit $EXIT_CODE
           EOF
           
-          chmod +x handheld_bundle/start_roms_downloader.sh
+          chmod +x handheld_bundle/"ROMs Downloader.sh"
+          
+          # Create metadata file for EmulationStation (makes it show up properly)
+          cat > handheld_bundle/"ROMs Downloader.txt" << 'METADATA_EOF'
+          ROMs Downloader - Download and manage your ROM collection
+          
+          A Flutter-based ROM downloader and manager for your handheld device.
+          Supports downloading from catalogs, extracting archives, and organizing your library.
+          
+          Installation: Just copy this folder to /userdata/roms/ports/ (Batocera) or /roms/ports/ (RocknixOS/JELOS)
+          METADATA_EOF
+          
+          # Create simple README for users
+          cat > handheld_bundle/README.txt << 'README_EOF'
+          ╔════════════════════════════════════════════════╗
+          ║       ROMs Downloader - Handheld Edition       ║
+          ╚════════════════════════════════════════════════╝
+          
+          📦 INSTALLATION (SUPER SIMPLE!)
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          
+          For Batocera:
+            1. Copy this entire folder to: /userdata/roms/ports/
+            2. Restart EmulationStation or refresh the gamelist
+            3. Go to "Ports" in the main menu
+            4. Select "ROMs Downloader" and enjoy!
+          
+          For RocknixOS/JELOS:
+            1. Copy this entire folder to: /roms/ports/
+            2. Restart EmulationStation
+            3. Go to "Ports" in the main menu
+            4. Select "ROMs Downloader" and enjoy!
+          
+          📁 EASY COPY METHODS
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          
+          • USB: Copy to USB drive, then to ports folder on device
+          • Network: Use Windows file sharing or SCP
+          • Web Interface: Use Batocera web interface to upload
+          
+          🎮 LAUNCHING
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          
+          Just select "ROMs Downloader" from the Ports menu!
+          No command line needed. Works like any other port.
+          
+          🐛 TROUBLESHOOTING
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          
+          If the app doesn't launch:
+            • Check roms_downloader.log in this folder
+            • Make sure the folder is in the correct location
+            • Try the Flutter-pi build instead (if on ARM device)
+          
+          If you don't see it in the menu:
+            • Restart EmulationStation
+            • Check that "ROMs Downloader.sh" file exists
+            • Make sure you're looking in the Ports section
+          
+          ℹ️ MORE INFO
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          
+          GitHub: https://github.com/rafaismyname/roms_downloader
+          Issues: Report bugs on GitHub
+          
+          Build Type: GTK Handheld Build
+          Architecture: ${{ matrix.arch }}
+          README_EOF
           
           # Create a direct launcher (simple version without diagnostics)
           cat > handheld_bundle/run.sh << 'EOF'
@@ -657,15 +727,17 @@ jobs:
           # Copy engine artifacts
           cp flutter_engine/icudtl.dat flutter_pi_bundle/ || echo "icudtl.dat not found"
           
-          # Create flutter-pi startup script
-          cat > flutter_pi_bundle/start_flutter_pi.sh << 'FLUTTERPI_EOF'
+          # Create EmulationStation-compatible launcher
+          cat > flutter_pi_bundle/"ROMs Downloader.sh" << 'FLUTTERPI_EOF'
           #!/bin/bash
-          
-          # Flutter-pi launcher for Batocera/RocknixOS
-          # This version requires flutter-pi to be installed on the system
+          # EmulationStation Port Launcher - Flutter-pi Edition
+          # This file will appear in the Ports menu
           
           SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
           LOG_FILE="${SCRIPT_DIR}/flutter_pi.log"
+          
+          # Close EmulationStation (optional)
+          # killall emulationstation emulationstatio 2>/dev/null
           
           echo "$(date): Starting ROMs Downloader with flutter-pi" | tee "${LOG_FILE}"
           
@@ -701,7 +773,78 @@ jobs:
           flutter-pi --release . 2>&1 | tee -a "${LOG_FILE}"
           FLUTTERPI_EOF
           
-          chmod +x flutter_pi_bundle/start_flutter_pi.sh
+          chmod +x flutter_pi_bundle/"ROMs Downloader.sh"
+          
+          # Create metadata file for EmulationStation
+          cat > flutter_pi_bundle/"ROMs Downloader.txt" << 'METADATA_EOF'
+          ROMs Downloader - Flutter-pi Edition
+          
+          Download and manage your ROM collection with this Flutter-based app.
+          This version uses flutter-pi for better performance on embedded devices.
+          
+          Requirements: flutter-pi must be installed on your system
+          Installation: Copy to /userdata/roms/ports/ (Batocera) or /roms/ports/ (RocknixOS/JELOS)
+          METADATA_EOF
+          
+          # Create simple README
+          cat > flutter_pi_bundle/README.txt << 'README_EOF'
+          ╔════════════════════════════════════════════════╗
+          ║    ROMs Downloader - Flutter-pi Edition        ║
+          ╚════════════════════════════════════════════════╝
+          
+          📦 INSTALLATION (SUPER SIMPLE!)
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          
+          For Batocera:
+            1. Copy this entire folder to: /userdata/roms/ports/
+            2. Restart EmulationStation
+            3. Go to "Ports" in the main menu
+            4. Select "ROMs Downloader" and enjoy!
+          
+          For RocknixOS/JELOS:
+            1. Copy this entire folder to: /roms/ports/
+            2. Restart EmulationStation
+            3. Go to "Ports" in the main menu
+            4. Select "ROMs Downloader" and enjoy!
+          
+          ⚠️ REQUIREMENTS
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          
+          This build requires flutter-pi to be installed!
+          Check if installed: which flutter-pi
+          
+          If not installed, either:
+            • Use the GTK build instead (simpler)
+            • Install flutter-pi (advanced users)
+          
+          🎮 LAUNCHING
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          
+          Just select "ROMs Downloader" from the Ports menu!
+          No command line needed. Works like any other port.
+          
+          🐛 TROUBLESHOOTING
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          
+          "flutter-pi: command not found"
+            → flutter-pi is not installed
+            → Try the GTK build instead
+          
+          App doesn't appear in menu:
+            → Restart EmulationStation
+            → Check "ROMs Downloader.sh" exists
+          
+          Check flutter_pi.log in this folder for details
+          
+          ℹ️ MORE INFO
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          
+          GitHub: https://github.com/rafaismyname/roms_downloader
+          Flutter-pi: https://github.com/ardera/flutter-pi
+          
+          Build Type: Flutter-pi Build (Framebuffer)
+          Architecture: ${{ matrix.arch }}
+          README_EOF
           
           # Create README
           cat > flutter_pi_bundle/README.txt << 'README_EOF'
