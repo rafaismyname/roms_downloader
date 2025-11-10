@@ -677,8 +677,8 @@ jobs:
           
           echo "Using Flutter SDK: $FLUTTER_SDK"
           
-          # Compile using frontend_server (this understands dart:ui and Flutter imports)
-          $FLUTTER_ROOT/bin/cache/dart-sdk/bin/dart \
+          # Compile using frontend_server_aot with dartaotruntime (this understands dart:ui and Flutter imports)
+          $FLUTTER_ROOT/bin/cache/dart-sdk/bin/dartaotruntime \
             "$FRONTEND_SERVER" \
             --sdk-root "$FLUTTER_SDK" \
             --target=flutter \
