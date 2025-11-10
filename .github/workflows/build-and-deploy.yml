@@ -654,13 +654,25 @@ jobs:
           # Copy Flutter assets
           cp -r build/flutter_assets flutter_pi_bundle/
           
-          # Compile Dart kernel snapshot using Flutter's Dart SDK
-          echo "Compiling Dart kernel snapshot..."
+          # Use Flutter's frontend_server to compile kernel (correct tool for Flutter apps)
+          echo "Compiling Flutter kernel snapshot..."
           
-          # Use Flutter's Dart SDK to compile the app (no --target flag needed)
-          $FLUTTER_ROOT/bin/cache/dart-sdk/bin/dart compile kernel \
-            --packages=.dart_tool/package_config.json \
-            --output=flutter_pi_bundle/kernel_blob.bin \
+          # Find Flutter's frontend_server
+          FRONTEND_SERVER="$FLUTTER_ROOT/bin/cache/artifacts/engine/linux-x64/frontend_server.dart.snapshot"
+          
+          if [ ! -f "$FRONTEND_SERVER" ]; then
+            echo "frontend_server not found, triggering Flutter to download engine artifacts..."
+            flutter doctor -v
+            flutter precache --linux
+          fi
+          
+          # Compile using frontend_server (this understands dart:ui and Flutter imports)
+          $FLUTTER_ROOT/bin/cache/dart-sdk/bin/dart \
+            "$FRONTEND_SERVER" \
+            --sdk-root $FLUTTER_ROOT/bin/cache/artifacts/engine/common/flutter_patched_sdk/ \
+            --target=flutter \
+            --packages .dart_tool/package_config.json \
+            --output-dill flutter_pi_bundle/kernel_blob.bin \
             lib/main.dart
           
           echo "✓ Kernel snapshot compiled"
