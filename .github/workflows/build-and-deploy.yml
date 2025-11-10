@@ -671,49 +671,67 @@ jobs:
           echo "Flutter cache: $FLUTTER_ROOT/bin/cache"
           ls -la $FLUTTER_ROOT/bin/cache/artifacts/engine/linux-x64/ || echo "Engine artifacts not yet cached"
 
-      - name: Build AOT snapshot for ARM64 using Flutter tools
+      - name: Build kernel snapshot for JIT execution
         run: |
-          # Use Flutter's assemble command to build for linux-arm64
-          # This will download the correct engine artifacts and build the AOT snapshot
+          # For flutter-pi JIT mode, we need the kernel snapshot (compiled Dart code)
+          # This is platform-independent and can be built on x64 for ARM64 execution
           
-          echo "Building AOT snapshot for linux-arm64..."
+          echo "Building kernel snapshot..."
           
-          # First, ensure we have the kernel_blob.bin (Dart compiled code)
+          # Create output directory
+          mkdir -p build/kernel
+          
+          # Build kernel snapshot using flutter assemble
           flutter assemble \
             --no-version-check \
+            --output=build/kernel \
             -dTargetPlatform=linux-arm64 \
             -dBuildMode=release \
             kernel_snapshot
           
           echo "Kernel snapshot created"
-          find .dart_tool/flutter_build -name "*.dill" -o -name "kernel_blob.bin"
+          echo "Build output:"
+          ls -lh build/kernel/
           
-          # Now we need to create the AOT snapshot
-          # Since Flutter doesn't directly support cross-compilation to ARM64 Linux,
-          # we'll use a workaround: create a placeholder app.so
-          # In production, flutter-pi on the device will JIT compile, or we document
-          # that users need flutter-pi with AOT support
+          # Find the generated kernel file
+          KERNEL_FILE=$(find build/kernel -name "*.dill" -o -name "kernel_blob.bin" | head -1)
+          if [ -z "$KERNEL_FILE" ]; then
+            echo "Searching in .dart_tool as fallback..."
+            KERNEL_FILE=$(find .dart_tool/flutter_build -name "app.dill" | head -1)
+          fi
           
-          # For now, create a note file explaining this
+          if [ -n "$KERNEL_FILE" ]; then
+            echo "Found kernel file: $KERNEL_FILE"
+            cp "$KERNEL_FILE" flutter_pi_bundle/kernel_blob.bin
+            ls -lh flutter_pi_bundle/kernel_blob.bin
+          else
+            echo "ERROR: Could not find kernel snapshot"
+            echo "Searching all build directories..."
+            find build -name "*.dill" 2>/dev/null || true
+            find .dart_tool -name "*.dill" 2>/dev/null || true
+            exit 1
+          fi
+          
+          # Create a note file explaining JIT mode
           cat > flutter_pi_bundle/FLUTTER_PI_NOTES.txt << 'EOF'
-          Flutter-pi AOT Compilation Note
-          ================================
+          Flutter-pi JIT Mode
+          ===================
           
-          This build uses flutter-pi's JIT mode since cross-compiling
-          AOT snapshots for ARM64 requires the ARM64 gen_snapshot tool
-          which is not available in GitHub Actions x64 runners.
+          This build runs in JIT (Just-In-Time) mode, which means:
+          - The Dart code is compiled on first run
+          - Performance is still excellent for most use cases
+          - No cross-compilation toolchain needed
           
-          For better performance, you can compile AOT on the device itself:
+          Why JIT instead of AOT?
+          - AOT requires ARM64 gen_snapshot tool
+          - Not available in GitHub Actions x64 runners
+          - JIT provides good performance without cross-compilation complexity
           
-          1. Install flutter-pi on your device
-          2. Use this bundle in JIT mode, or
-          3. Build AOT locally on an ARM64 device with Flutter SDK
-          
-          JIT mode still provides good performance for most use cases.
+          For production AOT (slightly faster startup):
+          Build locally on ARM64 device with Flutter SDK installed
           EOF
           
-          echo "Note: This build will run in JIT mode on flutter-pi"
-          echo "For production, consider building on ARM64 hardware or using QEMU"
+          echo "✓ Kernel snapshot ready for JIT execution on flutter-pi"
 
       - name: Create flutter-pi compatible bundle
         run: |
