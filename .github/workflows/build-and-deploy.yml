@@ -640,98 +640,71 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
-      - name: Build Flutter bundle and AOT snapshot
+      - name: Build Flutter bundle for flutter-pi
         run: |
-          # Build the Flutter bundle with assets
+          # Build the Flutter bundle - this creates both assets and kernel snapshot
+          echo "Building Flutter bundle with kernel snapshot..."
           flutter build bundle --release
           
-          echo "Flutter bundle created at build/flutter_assets"
+          echo "Flutter bundle created"
           ls -lh build/flutter_assets/ | head -20
           
-          # Create output directory
+          # The kernel snapshot (app.dill) is created during bundle build
+          # Find it in the dart_tool directory
+          echo "Searching for kernel snapshot..."
+          KERNEL_FILE=$(find .dart_tool/flutter_build -name "app.dill" -type f | head -1)
+          
+          if [ -z "$KERNEL_FILE" ]; then
+            echo "ERROR: Could not find app.dill kernel snapshot"
+            echo "Searching all possible locations..."
+            find .dart_tool -name "*.dill" -type f
+            find build -name "*.dill" -type f
+            exit 1
+          fi
+          
+          echo "Found kernel snapshot: $KERNEL_FILE"
+          ls -lh "$KERNEL_FILE"
+          
+          # Create flutter-pi bundle directory
           mkdir -p flutter_pi_bundle
           
           # Copy Flutter assets
           cp -r build/flutter_assets flutter_pi_bundle/
           
-          echo "Bundle structure:"
-          ls -lh flutter_pi_bundle/flutter_assets/ | head -20
-
-      - name: Get Flutter SDK paths and prepare for AOT compilation
-        run: |
-          # Get Flutter SDK engine version
-          ENGINE_VERSION=$(cat $FLUTTER_ROOT/bin/internal/engine.version)
-          echo "Flutter engine version: $ENGINE_VERSION"
+          # Copy kernel snapshot as kernel_blob.bin (flutter-pi convention)
+          cp "$KERNEL_FILE" flutter_pi_bundle/kernel_blob.bin
           
-          # The Flutter SDK includes gen_snapshot for the host platform (x64)
-          # We'll use Flutter's built-in AOT compilation instead of manually calling gen_snapshot
-          # This is more reliable and uses the correct toolchain
-          
-          echo "Flutter SDK location: $FLUTTER_ROOT"
-          echo "Flutter cache: $FLUTTER_ROOT/bin/cache"
-          ls -la $FLUTTER_ROOT/bin/cache/artifacts/engine/linux-x64/ || echo "Engine artifacts not yet cached"
-
-      - name: Build kernel snapshot for JIT execution
-        run: |
-          # For flutter-pi JIT mode, we need the kernel snapshot (compiled Dart code)
-          # This is platform-independent and can be built on x64 for ARM64 execution
-          
-          echo "Building kernel snapshot..."
-          
-          # Create output directory
-          mkdir -p build/kernel
-          
-          # Build kernel snapshot using flutter assemble
-          flutter assemble \
-            --no-version-check \
-            --output=build/kernel \
-            -dTargetPlatform=linux-arm64 \
-            -dBuildMode=release \
-            kernel_snapshot
-          
-          echo "Kernel snapshot created"
-          echo "Build output:"
-          ls -lh build/kernel/
-          
-          # Find the generated kernel file
-          KERNEL_FILE=$(find build/kernel -name "*.dill" -o -name "kernel_blob.bin" | head -1)
-          if [ -z "$KERNEL_FILE" ]; then
-            echo "Searching in .dart_tool as fallback..."
-            KERNEL_FILE=$(find .dart_tool/flutter_build -name "app.dill" | head -1)
-          fi
-          
-          if [ -n "$KERNEL_FILE" ]; then
-            echo "Found kernel file: $KERNEL_FILE"
-            cp "$KERNEL_FILE" flutter_pi_bundle/kernel_blob.bin
-            ls -lh flutter_pi_bundle/kernel_blob.bin
-          else
-            echo "ERROR: Could not find kernel snapshot"
-            echo "Searching all build directories..."
-            find build -name "*.dill" 2>/dev/null || true
-            find .dart_tool -name "*.dill" 2>/dev/null || true
-            exit 1
-          fi
+          echo "Flutter-pi bundle structure:"
+          ls -lh flutter_pi_bundle/
+          echo "Kernel blob size:"
+          ls -lh flutter_pi_bundle/kernel_blob.bin
           
           # Create a note file explaining JIT mode
           cat > flutter_pi_bundle/FLUTTER_PI_NOTES.txt << 'EOF'
           Flutter-pi JIT Mode
           ===================
           
-          This build runs in JIT (Just-In-Time) mode, which means:
-          - The Dart code is compiled on first run
-          - Performance is still excellent for most use cases
-          - No cross-compilation toolchain needed
+          This build runs in JIT (Just-In-Time) mode using kernel_blob.bin
+          
+          What this means:
+          - Dart code is compiled on device at first run
+          - Compiled code is cached for subsequent runs
+          - Performance is excellent for most applications
+          - Startup is slightly slower than AOT (only first time)
           
           Why JIT instead of AOT?
-          - AOT requires ARM64 gen_snapshot tool
+          - AOT compilation requires ARM64 gen_snapshot tool
           - Not available in GitHub Actions x64 runners
-          - JIT provides good performance without cross-compilation complexity
+          - Cross-compilation toolchain complexity avoided
           
-          For production AOT (slightly faster startup):
-          Build locally on ARM64 device with Flutter SDK installed
+          Want AOT for maximum performance?
+          - Build locally on ARM64 device with Flutter SDK
+          - Or use QEMU user-mode emulation on x64
+          
+          JIT mode is recommended for most users.
           EOF
           
-          echo "✓ Kernel snapshot ready for JIT execution on flutter-pi"
+          echo "✓ Flutter-pi bundle ready for JIT execution"
 
       - name: Create flutter-pi compatible bundle
         run: |
