@@ -657,30 +657,17 @@ jobs:
           # Use Flutter's frontend_server to compile kernel (correct tool for Flutter apps)
           echo "Compiling Flutter kernel snapshot..."
           
-          # Find the correct frontend_server path
-          echo "Searching for frontend_server..."
-          find $FLUTTER_ROOT/bin/cache -name "frontend_server.dart.snapshot" 2>/dev/null || true
-          find $FLUTTER_ROOT/bin/cache -name "frontend_server_starter.dart.snapshot" 2>/dev/null || true
+          # Use the AOT version of frontend_server (it's what's available)
+          FRONTEND_SERVER="$FLUTTER_ROOT/bin/cache/dart-sdk/bin/snapshots/frontend_server_aot.dart.snapshot"
           
-          # Try multiple possible locations
-          FRONTEND_SERVER=""
-          for path in \
-            "$FLUTTER_ROOT/bin/cache/dart-sdk/bin/snapshots/frontend_server.dart.snapshot" \
-            "$FLUTTER_ROOT/bin/cache/dart-sdk/bin/snapshots/frontend_server_starter.dart.snapshot" \
-            "$FLUTTER_ROOT/bin/cache/artifacts/engine/linux-x64/frontend_server.dart.snapshot"; do
-            if [ -f "$path" ]; then
-              FRONTEND_SERVER="$path"
-              echo "Found frontend_server at: $path"
-              break
-            fi
-          done
-          
-          if [ -z "$FRONTEND_SERVER" ]; then
-            echo "ERROR: Could not find frontend_server"
-            echo "Listing dart-sdk structure:"
-            ls -la $FLUTTER_ROOT/bin/cache/dart-sdk/bin/snapshots/ || true
+          if [ ! -f "$FRONTEND_SERVER" ]; then
+            echo "ERROR: frontend_server_aot.dart.snapshot not found at: $FRONTEND_SERVER"
+            echo "Available snapshots:"
+            ls -la $FLUTTER_ROOT/bin/cache/dart-sdk/bin/snapshots/
             exit 1
           fi
+          
+          echo "✓ Found frontend_server at: $FRONTEND_SERVER"
           
           # Find Flutter SDK path
           FLUTTER_SDK="$FLUTTER_ROOT/bin/cache/artifacts/engine/common/flutter_patched_sdk/"
