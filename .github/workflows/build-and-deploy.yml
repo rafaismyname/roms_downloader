@@ -657,9 +657,8 @@ jobs:
           # Compile Dart kernel snapshot using Flutter's Dart SDK
           echo "Compiling Dart kernel snapshot..."
           
-          # Use Flutter's Dart SDK to compile the app
+          # Use Flutter's Dart SDK to compile the app (no --target flag needed)
           $FLUTTER_ROOT/bin/cache/dart-sdk/bin/dart compile kernel \
-            --target=flutter \
             --packages=.dart_tool/package_config.json \
             --output=flutter_pi_bundle/kernel_blob.bin \
             lib/main.dart
