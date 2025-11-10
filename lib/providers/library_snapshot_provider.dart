@@ -44,11 +44,11 @@ class LibrarySnapshotNotifier extends StateNotifier<Map<String, LibrarySnapshot>
 
     Map<String, dynamic> raw;
     try {
-      raw = await compute(_scanLibraryDir, _libraryDir);
+      raw = await compute(_scanLibraryDirIsolate, _libraryDir);
     } catch (e) {
       debugPrint('Isolate scan failed, fallback inline: $e');
       // Fallback to inline (original logic) if compute fails
-      raw = await _scanLibraryDir(_libraryDir);
+      raw = _scanLibraryDirIsolate(_libraryDir);
     }
 
     final exact = Set<String>.from(raw['exact'] as List);
@@ -70,63 +70,6 @@ class LibrarySnapshotNotifier extends StateNotifier<Map<String, LibrarySnapshot>
     _refreshing = false;
     _refreshingCompleter?.complete();
     _refreshingCompleter = null;
-  }
-
-  Future<Map<String, dynamic>> _scanLibraryDir(String libraryDir) async {
-    final dir = Directory(libraryDir);
-    if (!dir.existsSync()) {
-      return {
-        'exact': <String>[],
-        'bases': <String>[],
-        'related': <String, List<String>>{},
-      };
-    }
-
-    final exact = <String>{};
-    final bases = <String>{};
-    final related = <String, List<String>>{};
-    String abs(String name) => p.join(libraryDir, name);
-
-    try {
-      for (final e in dir.listSync()) {
-        final base = p.basename(e.path);
-        final baseNoExt = p.basenameWithoutExtension(base);
-
-        if (e is File) {
-          exact.add(base);
-          bases.add(baseNoExt);
-          related[base] = [abs(base)];
-          related.putIfAbsent(baseNoExt, () => <String>[]).add(abs(base));
-        } else if (e is Directory) {
-          bases.add(base);
-          bases.add(baseNoExt);
-
-          final files = <String>[];
-          try {
-            for (final sub in e.listSync()) {
-              if (sub is File) files.add(sub.path);
-            }
-          } catch (_) {}
-
-          if (files.isNotEmpty) {
-            related[base] = [...files];
-            related[baseNoExt] = [
-              ...files,
-              ...(related[baseNoExt] ?? const []),
-            ];
-          } else {
-            related.putIfAbsent(base, () => <String>[]);
-            related.putIfAbsent(baseNoExt, () => <String>[]);
-          }
-        }
-      }
-    } catch (_) {}
-
-    return {
-      'exact': exact.toList(),
-      'bases': bases.toList(),
-      'related': related,
-    };
   }
 
   Future<LibrarySnapshot> _ensure() async {
@@ -300,4 +243,61 @@ class LibrarySnapshotNotifier extends StateNotifier<Map<String, LibrarySnapshot>
     }
     return out;
   }
+}
+
+Map<String, dynamic> _scanLibraryDirIsolate(String libraryDir) {
+  final dir = Directory(libraryDir);
+  if (!dir.existsSync()) {
+    return {
+      'exact': <String>[],
+      'bases': <String>[],
+      'related': <String, List<String>>{},
+    };
+  }
+
+  final exact = <String>{};
+  final bases = <String>{};
+  final related = <String, List<String>>{};
+  String abs(String name) => p.join(libraryDir, name);
+
+  try {
+    for (final e in dir.listSync()) {
+      final base = p.basename(e.path);
+      final baseNoExt = p.basenameWithoutExtension(base);
+
+      if (e is File) {
+        exact.add(base);
+        bases.add(baseNoExt);
+        related[base] = [abs(base)];
+        related.putIfAbsent(baseNoExt, () => <String>[]).add(abs(base));
+      } else if (e is Directory) {
+        bases.add(base);
+        bases.add(baseNoExt);
+
+        final files = <String>[];
+        try {
+          for (final sub in e.listSync()) {
+            if (sub is File) files.add(sub.path);
+          }
+        } catch (_) {}
+
+        if (files.isNotEmpty) {
+          related[base] = [...files];
+          related[baseNoExt] = [
+            ...files,
+            ...(related[baseNoExt] ?? const []),
+          ];
+        } else {
+          related.putIfAbsent(base, () => <String>[]);
+          related.putIfAbsent(baseNoExt, () => <String>[]);
+        }
+      }
+    }
+  } catch (_) {}
+
+  return {
+    'exact': exact.toList(),
+    'bases': bases.toList(),
+    'related': related,
+  };
 }

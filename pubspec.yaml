@@ -1,9 +1,9 @@
 name: roms_downloader
 description: ROMs Downloader
-version: 1.0.18+28
+version: 1.0.18+29
 
 environment:
-  flutter: ">=3.32.8"
+  flutter: ">=3.35.7"
   sdk: ">=3.0.0 <4.0.0"
 
 dependencies:
@@ -11,8 +11,8 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.8
   path_provider: ^2.1.5
-  file_picker: ^10.2.1
-  background_downloader: ^9.2.3
+  file_picker: ^10.3.3
+  background_downloader: ^9.3.0
   flutter_riverpod: ^2.6.1
   json_annotation: ^4.9.0
   path: ^1.9.1
@@ -22,16 +22,16 @@ dependencies:
   archive: ^4.0.7
   flutter_archive: ^6.0.3
   flutter_foreground_task: ^9.1.0
-  package_info_plus: ^8.3.0
+  package_info_plus: ^9.0.0
   cached_network_image: ^3.4.1
   rapidfuzz: ^0.1.1
   photo_view: ^0.15.0
-  disk_space_2: ^1.0.10
+  disk_space_2: ^1.0.11
 
 dev_dependencies:
   flutter_lints: ^6.0.0
-  build_runner: ^2.6.0
-  json_serializable: ^6.10.0
+  build_runner: ^2.10.1
+  json_serializable: ^6.11.1
 
 flutter:
   uses-material-design: true

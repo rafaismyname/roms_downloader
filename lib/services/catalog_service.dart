@@ -12,6 +12,7 @@ import 'package:roms_downloader/services/boxart_service.dart';
 
 class CatalogService {
   static final Map<String, Map<String, Console>> _consolesCache = {};
+  static final Map<String, List<Game>> _catalogCache = {};
   final BoxartService _boxartService = BoxartService();
 
   Future<Map<String, Console>> getConsoles([String consolesFilePath = 'consoles.json']) async {
@@ -47,6 +48,9 @@ class CatalogService {
   }
 
   Future<List<Game>> loadCatalog(String consoleId) async {
+    if (_catalogCache.containsKey(consoleId) && _catalogCache[consoleId]!.isNotEmpty) {
+      return _catalogCache[consoleId]!;
+    }
     final consoles = await getConsoles();
 
     if (!consoles.containsKey(consoleId)) {
@@ -60,15 +64,17 @@ class CatalogService {
     if (await cacheFile.exists()) {
       try {
         final jsonStr = await cacheFile.readAsString();
-        final List<dynamic> jsonList = jsonDecode(jsonStr);
+        final List<Map<String, dynamic>> jsonList = await compute(_decodeGamesIsolate, jsonStr);
         final cachedResult = jsonList.map((json) => Game.fromJson(json)).toList();
         if (cachedResult.isNotEmpty && cachedResult.first.metadata != null) {
           final hasBoxarts = cachedResult.any((game) => game.details?.boxart != null);
           if (!hasBoxarts && console.boxarts != null) {
             final enrichedResult = await _boxartService.mutateGamesWithBoxarts(cachedResult, console);
             await cacheFile.writeAsString(jsonEncode(enrichedResult.map((g) => g.toJson()).toList()));
+            _catalogCache[consoleId] = enrichedResult;
             return enrichedResult;
           }
+          _catalogCache[consoleId] = cachedResult;
           return cachedResult;
         }
       } catch (e) {
@@ -92,17 +98,17 @@ class CatalogService {
       headers.forEach(request.headers.set);
 
       final response = await request.close();
-
       if (response.statusCode != 200) {
-      throw Exception('HTTP ${response.statusCode}: Failed to fetch catalog from ${console.url}');
+        throw Exception('HTTP ${response.statusCode}: Failed to fetch catalog from ${console.url}');
       }
 
       final html = await response.transform(utf8.decoder).join();
-      catalog = _parseHtml(html, console);
+      final parsed = await compute(_parseHtmlIsolate, [html, console.toJson()]);
+      catalog = parsed.map((entry) => Game.fromJson(entry)).toList();
       catalog = await _boxartService.mutateGamesWithBoxarts(catalog, console);
-
       final cacheFile = await _getCacheFile(console.cacheFile);
       await cacheFile.writeAsString(jsonEncode(catalog.map((g) => g.toJson()).toList()));
+      _catalogCache[console.id] = catalog;
     } catch (e) {
       debugPrint('Error fetching catalog: $e');
     } finally {
@@ -112,65 +118,7 @@ class CatalogService {
     return catalog;
   }
 
-  List<Game> _parseHtml(String html, Console console) {
-    final regExp = RegExp(console.regex ?? console.defaultRegex, multiLine: true);
-
-    final matches = regExp.allMatches(html);
-    final games = <Game>[];
-
-    for (final match in matches) {
-      final href = match.namedGroup('href')!;
-      final title = match.namedGroup('title') ?? match.namedGroup('text')!;
-      final sizeStr = match.namedGroup('size')!;
-
-      final sizeBytes = _parseSizeBytes(sizeStr);
-      final fullUrl = href.startsWith('http') ? href : '${console.url}$href';
-      final metadata = TitleMetadataParser.parseRomTitle(title);
-
-      games.add(Game(
-        title: title,
-        url: fullUrl,
-        size: sizeBytes,
-        consoleId: console.id,
-        metadata: metadata,
-      ));
-    }
-
-    return games;
-  }
-
-  int _parseSizeBytes(String sizeStr) {
-    try {
-      final trimmed = sizeStr.trim();
-      if (trimmed.isEmpty) return 0;
-
-      final match = RegExp(r'^(\d+(?:\.\d+)?)\s*([a-zA-Z]*)$').firstMatch(trimmed);
-      if (match == null) return 0;
-
-      final num = double.tryParse(match.group(1)!) ?? 0.0;
-      final unit = match.group(2)!;
-
-      switch (unit.toLowerCase()) {
-        case "k":
-        case "kb":
-        case "kib":
-          return (num * 1024).round();
-        case "m":
-        case "mb":
-        case "mib":
-          return (num * 1024 * 1024).round();
-        case "g":
-        case "gb":
-        case "gib":
-          return (num * 1024 * 1024 * 1024).round();
-        default:
-          return num.round();
-      }
-    } catch (e) {
-      debugPrint('Error parsing size "$sizeStr": $e');
-      return 0;
-    }
-  }
+  
 
   Future<File> _getCacheFile(String cacheFile) async {
     final dir = await getApplicationCacheDirectory();
@@ -188,6 +136,7 @@ class CatalogService {
           if (await cacheFile.exists()) {
             await cacheFile.delete();
           }
+          _catalogCache.remove(consoleId);
         }
       } else {
         final consoles = await getConsoles();
@@ -199,4 +148,61 @@ class CatalogService {
       debugPrint('Error clearing catalog cache: $e');
     }
   }
+}
+
+List<Map<String, dynamic>> _parseHtmlIsolate(List<dynamic> args) {
+  final html = args[0] as String;
+  final console = args[1] as Map<String, dynamic>;
+  final regExp = RegExp((console['regex'] as String?) ?? Console.fromJson(console).defaultRegex, multiLine: true);
+  final matches = regExp.allMatches(html);
+  final out = <Map<String, dynamic>>[];
+  for (final match in matches) {
+    final href = match.namedGroup('href');
+    final titleRaw = match.namedGroup('title');
+    final text = match.namedGroup('text');
+    final sizeStr = match.namedGroup('size');
+    if (href == null || sizeStr == null) continue;
+    final title = titleRaw ?? text ?? href;
+    if (title == '.' || title == '..') continue;
+    final size = _parseSizeBytesIsolate(sizeStr);
+    final baseUrl = console['url'] as String;
+    final fullUrl = href.startsWith('http') ? href : '$baseUrl$href';
+    final metadata = TitleMetadataParser.parseRomTitle(title).toJson();
+    out.add({'title': title, 'url': fullUrl, 'size': size, 'consoleId': console['id'], 'metadata': metadata});
+  }
+  return out;
+}
+
+int _parseSizeBytesIsolate(String sizeStr) {
+  try {
+    final trimmed = sizeStr.trim();
+    if (trimmed.isEmpty) return 0;
+    final match = RegExp(r'^(\d+(?:\.\d+)?)\s*([a-zA-Z]*)$').firstMatch(trimmed);
+    if (match == null) return 0;
+    final numVal = double.tryParse(match.group(1)! ) ?? 0.0;
+    final unit = match.group(2)!;
+    switch (unit.toLowerCase()) {
+      case 'k':
+      case 'kb':
+      case 'kib':
+        return (numVal * 1024).round();
+      case 'm':
+      case 'mb':
+      case 'mib':
+        return (numVal * 1024 * 1024).round();
+      case 'g':
+      case 'gb':
+      case 'gib':
+        return (numVal * 1024 * 1024 * 1024).round();
+      default:
+        return numVal.round();
+    }
+  } catch (_) {
+    return 0;
+  }
+}
+
+List<Map<String, dynamic>> _decodeGamesIsolate(String jsonStr) {
+  final list = jsonDecode(jsonStr) as List<dynamic>;
+  return list.whereType<Map<String, dynamic>>().toList();
 }
