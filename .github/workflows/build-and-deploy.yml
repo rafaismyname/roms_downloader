@@ -657,19 +657,43 @@ jobs:
           # Use Flutter's frontend_server to compile kernel (correct tool for Flutter apps)
           echo "Compiling Flutter kernel snapshot..."
           
-          # Find Flutter's frontend_server
-          FRONTEND_SERVER="$FLUTTER_ROOT/bin/cache/artifacts/engine/linux-x64/frontend_server.dart.snapshot"
+          # Find the correct frontend_server path
+          echo "Searching for frontend_server..."
+          find $FLUTTER_ROOT/bin/cache -name "frontend_server.dart.snapshot" 2>/dev/null || true
+          find $FLUTTER_ROOT/bin/cache -name "frontend_server_starter.dart.snapshot" 2>/dev/null || true
           
-          if [ ! -f "$FRONTEND_SERVER" ]; then
-            echo "frontend_server not found, triggering Flutter to download engine artifacts..."
-            flutter doctor -v
-            flutter precache --linux
+          # Try multiple possible locations
+          FRONTEND_SERVER=""
+          for path in \
+            "$FLUTTER_ROOT/bin/cache/dart-sdk/bin/snapshots/frontend_server.dart.snapshot" \
+            "$FLUTTER_ROOT/bin/cache/dart-sdk/bin/snapshots/frontend_server_starter.dart.snapshot" \
+            "$FLUTTER_ROOT/bin/cache/artifacts/engine/linux-x64/frontend_server.dart.snapshot"; do
+            if [ -f "$path" ]; then
+              FRONTEND_SERVER="$path"
+              echo "Found frontend_server at: $path"
+              break
+            fi
+          done
+          
+          if [ -z "$FRONTEND_SERVER" ]; then
+            echo "ERROR: Could not find frontend_server"
+            echo "Listing dart-sdk structure:"
+            ls -la $FLUTTER_ROOT/bin/cache/dart-sdk/bin/snapshots/ || true
+            exit 1
           fi
+          
+          # Find Flutter SDK path
+          FLUTTER_SDK="$FLUTTER_ROOT/bin/cache/artifacts/engine/common/flutter_patched_sdk/"
+          if [ ! -d "$FLUTTER_SDK" ]; then
+            FLUTTER_SDK="$FLUTTER_ROOT/bin/cache/flutter_patched_sdk/"
+          fi
+          
+          echo "Using Flutter SDK: $FLUTTER_SDK"
           
           # Compile using frontend_server (this understands dart:ui and Flutter imports)
           $FLUTTER_ROOT/bin/cache/dart-sdk/bin/dart \
             "$FRONTEND_SERVER" \
-            --sdk-root $FLUTTER_ROOT/bin/cache/artifacts/engine/common/flutter_patched_sdk/ \
+            --sdk-root "$FLUTTER_SDK" \
             --target=flutter \
             --packages .dart_tool/package_config.json \
             --output-dill flutter_pi_bundle/kernel_blob.bin \
