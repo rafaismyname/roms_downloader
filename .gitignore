@@ -340,3 +340,8 @@ Karte-Info.plist
 
 # melos
 pubspec_overrides.yaml
+
+# PortMaster build artifacts
+portmaster/package/
+portmaster/*.zip
+portmaster/*.AppImage

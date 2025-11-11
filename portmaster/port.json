@@ -1,0 +1,22 @@
+{
+  "version": 4,
+  "name": "ROMs Downloader",
+  "items": [
+    "roms_downloader.sh"
+  ],
+  "items_opt": [],
+  "attr": {
+    "title": "ROMs Downloader",
+    "desc": "A tool to download ROM collections from custom indexes. Browse, search, and download files with parallel downloads, background support, and auto-extraction. Features boxart fetching, favorites management, and in-library detection.",
+    "inst": "Launch the app and configure your custom indexes via the settings menu. The app supports direct downloads with queue management and automatic extraction of compressed files.",
+    "genres": [
+      "utility",
+      "tools"
+    ],
+    "porter": [
+      "rafaismyname"
+    ],
+    "rtr": true,
+    "runtime": []
+  }
+}

@@ -168,9 +168,88 @@ jobs:
         with:
           name: windows-zip-${{ matrix.arch }}
           path: "ROMs_Downloader_Windows_${{ matrix.arch }}.zip"
+
+  build-linux-portmaster:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: [x64, arm64]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: ${{ env.FLUTTER_CHANNEL }}
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libstdc++-12-dev zip
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Build Linux (${{ matrix.arch }})
+        run: |
+          flutter build linux --release
+
+      - name: Package for PortMaster
+        run: |
+          chmod +x portmaster/package.sh
+          cd portmaster
+          ./package.sh
+          mv roms_downloader.zip ../ROMs_Downloader_PortMaster_${{ matrix.arch }}.zip
+
+      - name: Upload PortMaster package (${{ matrix.arch }})
+        uses: actions/upload-artifact@v4
+        with:
+          name: portmaster-${{ matrix.arch }}
+          path: "ROMs_Downloader_PortMaster_${{ matrix.arch }}.zip"
+
+      - name: Create standard Linux AppImage (${{ matrix.arch }})
+        run: |
+          # Create AppDir structure
+          mkdir -p AppDir/usr/bin
+          mkdir -p AppDir/usr/lib
+          mkdir -p AppDir/usr/share/icons/hicolor/256x256/apps
+          mkdir -p AppDir/usr/share/applications
+          
+          # Copy Flutter build
+          cp -r build/linux/x64/release/bundle/* AppDir/usr/bin/
+          
+          # Copy icon if available
+          if [ -f "assets/icon.png" ]; then
+            cp assets/icon.png AppDir/usr/share/icons/hicolor/256x256/apps/roms_downloader.png
+          fi
+          
+          # Create desktop file
+          cat > AppDir/usr/share/applications/roms_downloader.desktop << 'EOF'
+          [Desktop Entry]
+          Name=ROMs Downloader
+          Exec=roms_downloader
+          Icon=roms_downloader
+          Type=Application
+          Categories=Utility;
+          EOF
+          
+          # Download appimagetool
+          wget -q "https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage"
+          chmod +x appimagetool-x86_64.AppImage
+          
+          # Create AppImage
+          ARCH=${{ matrix.arch }} ./appimagetool-x86_64.AppImage AppDir ROMs_Downloader_Linux_${{ matrix.arch }}.AppImage
+
+      - name: Upload Linux AppImage (${{ matrix.arch }})
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-appimage-${{ matrix.arch }}
+          path: "ROMs_Downloader_Linux_${{ matrix.arch }}.AppImage"
   
   generate-download-links:
-    needs: [build-android, build-macos, build-windows]
+    needs: [build-android, build-macos, build-windows, build-linux-portmaster]
     runs-on: ubuntu-latest
     steps:
       - name: Download all artifacts
@@ -223,20 +302,19 @@ jobs:
           echo "## 🐧 Linux & Embedded Devices" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
-          # Check for standard Linux AppImages
-          if ls ./artifacts/linux-appimage-* 1>/dev/null 2>&1; then
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "### 💻 Standard Linux Desktop" >> $GITHUB_STEP_SUMMARY
-            echo "| Architecture | AppImage | Size |" >> $GITHUB_STEP_SUMMARY
-            echo "|--------------|----------|------|" >> $GITHUB_STEP_SUMMARY
-            
-            for arch in x64 arm64; do
-              if [ -f "./artifacts/linux-appimage-${arch}/ROMs_Downloader_Linux_${arch}.AppImage" ]; then
-                appimage_size=$(du -h "./artifacts/linux-appimage-${arch}/ROMs_Downloader_Linux_${arch}.AppImage" | cut -f1)
-                echo "| ${arch} | [Download AppImage](https://nightly.link/${{ github.repository }}/actions/runs/${{ github.run_id }}/linux-appimage-${arch}.zip) | ${appimage_size} |" >> $GITHUB_STEP_SUMMARY
-              fi
-            done
-          fi
+          # Check for PortMaster packages
+          echo "### 🎮 PortMaster (Batocera, RockNix, JELOS)" >> $GITHUB_STEP_SUMMARY
+          echo "**Drop in /roms/ports folder - no other setup needed!**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Architecture | PortMaster Package | Size |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------------|-------------------|------|" >> $GITHUB_STEP_SUMMARY
+          
+          for arch in x64 arm64; do
+            if [ -f "./artifacts/portmaster-${arch}/ROMs_Downloader_PortMaster_${arch}.zip" ]; then
+              pm_size=$(du -h "./artifacts/portmaster-${arch}/ROMs_Downloader_PortMaster_${arch}.zip" | cut -f1)
+              echo "| ${arch} | [Download for PortMaster](https://nightly.link/${{ github.repository }}/actions/runs/${{ github.run_id }}/portmaster-${arch}.zip) | ${pm_size} |" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
           
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## 🪟 Windows" >> $GITHUB_STEP_SUMMARY
