@@ -7,8 +7,8 @@
   "items_opt": [],
   "attr": {
     "title": "ROMs Downloader",
-    "desc": "A tool to download ROM collections from custom indexes. Browse, search, and download files with parallel downloads, background support, and auto-extraction. Features boxart fetching, favorites management, and in-library detection.",
-    "inst": "Launch the app and configure your custom indexes via the settings menu. The app supports direct downloads with queue management and automatic extraction of compressed files.",
+    "desc": "A tool to download ROM collections from custom indexes. Browse, search, and download files with parallel downloads, background support, and auto-extraction. Features boxart fetching, favorites management, and in-library detection. REQUIRES: System OpenGL/Mesa libraries (libepoxy, libGL). May not work on all devices.",
+    "inst": "IMPORTANT: This requires OpenGL support. If it crashes immediately, your device may not have the required libraries. Launch the app and configure your custom indexes via the settings menu. Check /storage/roms/ports/roms_downloader/log.txt if it fails to start.",
     "genres": [
       "utility",
       "tools"
@@ -16,7 +16,10 @@
     "porter": [
       "rafaismyname"
     ],
-    "rtr": true,
-    "runtime": []
+    "rtr": false,
+    "runtime": [],
+    "reqs": [
+      "opengl"
+    ]
   }
 }

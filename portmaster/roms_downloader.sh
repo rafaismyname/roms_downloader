@@ -34,6 +34,21 @@ export PATH="$GAMEDIR:$PATH"
 # Set SDL environment for handhelds
 export SDL_GAMECONTROLLERCONFIG="$sdl_controllerconfig"
 
+# Try to find and export system OpenGL/EGL libraries
+if [ -d "/usr/lib" ]; then
+  export LD_LIBRARY_PATH="/usr/lib:$LD_LIBRARY_PATH"
+fi
+if [ -d "/usr/lib64" ]; then
+  export LD_LIBRARY_PATH="/usr/lib64:$LD_LIBRARY_PATH"
+fi
+if [ -d "/usr/lib/x86_64-linux-gnu" ]; then
+  export LD_LIBRARY_PATH="/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH"
+fi
+
+# Export OpenGL variables for software rendering fallback
+export LIBGL_ALWAYS_SOFTWARE=1
+export GALLIUM_DRIVER=llvmpipe
+
 # Navigate to game directory
 cd "$GAMEDIR" || exit 1
 
