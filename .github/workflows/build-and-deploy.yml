@@ -267,8 +267,15 @@ jobs:
           wget -q "https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage"
           chmod +x appimagetool-x86_64.AppImage
           
+          # Set correct ARCH for AppImage
+          if [ "${{ matrix.arch }}" = "x64" ]; then
+            export ARCH=x86_64
+          else
+            export ARCH=aarch64
+          fi
+          
           # Create AppImage using extract-and-run method (works in CI)
-          ARCH=${{ matrix.arch }} ./appimagetool-x86_64.AppImage --appimage-extract-and-run AppDir ROMs_Downloader_Linux_${{ matrix.arch }}.AppImage
+          ./appimagetool-x86_64.AppImage --appimage-extract-and-run AppDir ROMs_Downloader_Linux_${{ matrix.arch }}.AppImage
 
       - name: Upload Linux AppImage (${{ matrix.arch }})
         uses: actions/upload-artifact@v4
