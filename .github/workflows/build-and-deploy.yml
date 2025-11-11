@@ -211,6 +211,9 @@ jobs:
 
       - name: Create standard Linux AppImage (${{ matrix.arch }})
         run: |
+          # Install FUSE for AppImage creation
+          sudo apt-get install -y libfuse2
+          
           # Create AppDir structure
           mkdir -p AppDir/usr/bin
           mkdir -p AppDir/usr/lib
@@ -239,8 +242,8 @@ jobs:
           wget -q "https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage"
           chmod +x appimagetool-x86_64.AppImage
           
-          # Create AppImage
-          ARCH=${{ matrix.arch }} ./appimagetool-x86_64.AppImage AppDir ROMs_Downloader_Linux_${{ matrix.arch }}.AppImage
+          # Create AppImage using extract-and-run method (works in CI)
+          ARCH=${{ matrix.arch }} ./appimagetool-x86_64.AppImage --appimage-extract-and-run AppDir ROMs_Downloader_Linux_${{ matrix.arch }}.AppImage
 
       - name: Upload Linux AppImage (${{ matrix.arch }})
         uses: actions/upload-artifact@v4
