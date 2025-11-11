@@ -42,7 +42,7 @@ class NumberSetting extends ConsumerWidget {
           ? SizedBox(
               width: 80,
               child: DropdownButtonFormField<int>(
-                value: currentValue,
+                initialValue: currentValue,
                 isDense: true,
                 decoration: const InputDecoration(
                   border: OutlineInputBorder(),

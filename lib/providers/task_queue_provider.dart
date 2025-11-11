@@ -37,7 +37,6 @@ class TaskQueueNotifier extends StateNotifier<TaskQueueState> {
   }
 
   void updateTaskStatus(String taskId, TaskQueueStatus status, {String? error}) {
-    // TODO: change state.tasks to a map instead of a list for better performance
     final updatedTasks = state.tasks.map((currentTask) {
       if (currentTask.id == taskId) {
         return currentTask.copyWith(
