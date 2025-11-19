@@ -23,7 +23,7 @@ jobs:
             apt-get update
             # Install dependencies for Flutter and flutter-pi compilation
             # Split installation to avoid dpkg errors with python3
-            apt-get install -y curl git unzip xz-utils zip build-essential cmake pkg-config
+            apt-get install -y curl git unzip xz-utils zip build-essential cmake pkg-config ninja-build clang
             apt-get install -y libgl1-mesa-dev libgles2-mesa-dev libegl1-mesa-dev
             apt-get install -y libdrm-dev libgbm-dev fontconfig
             apt-get install -y libsystemd-dev libinput-dev libudev-dev libxkbcommon-dev
