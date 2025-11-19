@@ -75,11 +75,19 @@ jobs:
             cp build/linux/arm64/release/bundle/lib/libapp.so dist/ports/roms_downloader/flutter_assets/
             
             # 3. Engine
-            cp build/linux/arm64/release/bundle/lib/libflutter_engine.so dist/ports/roms_downloader/
+            # In newer Flutter versions, the engine might be in the root of the bundle or lib/
+            if [ -f build/linux/arm64/release/bundle/lib/libflutter_engine.so ]; then
+              cp build/linux/arm64/release/bundle/lib/libflutter_engine.so dist/ports/roms_downloader/
+            else
+              # Fallback for some versions where it might be in the root
+              find build/linux/arm64/release/bundle -name "libflutter_engine.so" -exec cp {} dist/ports/roms_downloader/ \;
+            fi
             
             # 4. ICU Data (if present)
             if [ -f build/linux/arm64/release/bundle/data/icudtl.dat ]; then
               cp build/linux/arm64/release/bundle/data/icudtl.dat dist/ports/roms_downloader/
+            else
+              find build/linux/arm64/release/bundle -name "icudtl.dat" -exec cp {} dist/ports/roms_downloader/ \;
             fi
             
             # Copy launch script
