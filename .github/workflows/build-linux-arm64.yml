@@ -46,7 +46,7 @@ jobs:
             cmake ..
             make -j$(nproc)
             # Save the binary for later
-            cp flutter-pi ../../
+            cp flutter-pi ../../flutter-pi-bin
             cd ../../
             
             # 4. Build the Flutter App (Assets + Engine)
@@ -60,7 +60,7 @@ jobs:
             mkdir -p dist/ports/roms_downloader/flutter_assets
             
             # Copy the flutter-pi binary
-            cp flutter-pi dist/ports/roms_downloader/
+            cp flutter-pi-bin dist/ports/roms_downloader/flutter-pi
             
             # Copy the build output
             # Source: build/linux/arm64/release/bundle/
