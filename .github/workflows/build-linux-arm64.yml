@@ -75,10 +75,20 @@ jobs:
             cp build/linux/arm64/release/bundle/lib/libapp.so dist/ports/roms_downloader/flutter_assets/
             
             # 3. Engine
-            # Robust search for the engine
+            # Robust search for the engine (Bundle -> Ephemeral -> Workspace)
             ENGINE_PATH=$(find build/linux/arm64/release/bundle -name "libflutter_engine.so" | head -n 1)
             if [ -z "$ENGINE_PATH" ]; then
-              echo "ERROR: libflutter_engine.so not found! Dumping build directory:"
+              echo "Engine not found in bundle. Searching in ephemeral..."
+              ENGINE_PATH=$(find linux/flutter/ephemeral -name "libflutter_engine.so" | head -n 1)
+            fi
+            
+            if [ -z "$ENGINE_PATH" ]; then
+               echo "Engine not found in ephemeral. Searching entire workspace..."
+               ENGINE_PATH=$(find . -name "libflutter_engine.so" | head -n 1)
+            fi
+
+            if [ -z "$ENGINE_PATH" ]; then
+              echo "ERROR: libflutter_engine.so not found anywhere! Dumping build directory:"
               ls -R build/linux/arm64/release/bundle
               exit 1
             fi
