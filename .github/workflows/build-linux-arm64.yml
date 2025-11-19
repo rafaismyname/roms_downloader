@@ -43,7 +43,8 @@ jobs:
             cd flutter-pi
             mkdir build && cd build
             cmake ..
-            make -j$(nproc)
+            # Reduce parallelism to avoid OOM/Segfault in QEMU
+            make -j2
             # Save the binary for later
             cp flutter-pi ../../flutter-pi-bin
             cd ../../
