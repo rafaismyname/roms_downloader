@@ -1,0 +1,83 @@
+name: Build Linux ARM64 (PortMaster/flutter-pi)
+
+on:
+  push:
+    branches: [ "arm64" ]
+  workflow_dispatch:
+
+jobs:
+  build-arm64:
+    name: Build Linux ARM64
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: uraimo/run-on-arch-action@v2
+        name: Build Artifact
+        id: build
+        with:
+          arch: aarch64
+          distro: ubuntu20.04
+          githubToken: ${{ github.token }}
+          install: |
+            apt-get update
+            # Install dependencies for Flutter and flutter-pi compilation
+            apt-get install -y \
+              curl git unzip xz-utils zip \
+              build-essential cmake pkg-config \
+              libgl1-mesa-dev libgles2-mesa-dev libegl1-mesa-dev \
+              libdrm-dev libgbm-dev fontconfig \
+              libsystemd-dev libinput-dev libudev-dev libxkbcommon-dev
+          run: |
+            # 1. Install Flutter
+            git clone https://github.com/flutter/flutter.git -b stable --depth 1
+            export PATH="$PATH:$PWD/flutter/bin"
+            git config --global --add safe.directory '*'
+            
+            # 2. Install flutterpi_tool
+            flutter pub global activate flutterpi_tool
+            export PATH="$PATH:$HOME/.pub-cache/bin"
+            
+            # 3. Build flutter-pi (The Embedder)
+            echo "Building flutter-pi..."
+            git clone https://github.com/ardera/flutter-pi.git
+            cd flutter-pi
+            mkdir build && cd build
+            cmake ..
+            make -j$(nproc)
+            # Save the binary for later
+            cp flutter-pi ../../
+            cd ../../
+            
+            # 4. Build the Flutter App (Assets + Engine)
+            echo "Building Flutter App..."
+            flutter pub get
+            # This builds the assets and downloads the correct libflutter_engine.so
+            flutterpi_tool build --arch=arm64 --release
+            
+            # 5. Package for PortMaster
+            echo "Packaging..."
+            mkdir -p dist/ports/roms_downloader
+            
+            # Copy the flutter-pi binary
+            cp flutter-pi dist/ports/roms_downloader/
+            
+            # Copy the build output (assets + engine)
+            # flutterpi_tool outputs to build/flutter_assets and puts the engine in build/
+            cp -r build/flutter_assets dist/ports/roms_downloader/
+            cp build/libflutter_engine.so dist/ports/roms_downloader/
+            
+            # Copy launch script
+            cp assets/scripts/roms_downloader.sh dist/ports/roms_downloader.sh
+            chmod +x dist/ports/roms_downloader.sh
+            chmod +x dist/ports/roms_downloader/flutter-pi
+            
+            # Create ZIP
+            cd dist
+            zip -r ../roms_downloader_portmaster.zip ports/
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: roms_downloader_portmaster
+          path: roms_downloader_portmaster.zip
