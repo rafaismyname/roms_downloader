@@ -27,7 +27,8 @@ jobs:
               build-essential cmake pkg-config \
               libgl1-mesa-dev libgles2-mesa-dev libegl1-mesa-dev \
               libdrm-dev libgbm-dev fontconfig \
-              libsystemd-dev libinput-dev libudev-dev libxkbcommon-dev
+              libsystemd-dev libinput-dev libudev-dev libxkbcommon-dev \
+              libgtk-3-dev
           run: |
             # 1. Install Flutter
             git clone https://github.com/flutter/flutter.git -b stable --depth 1
@@ -35,7 +36,8 @@ jobs:
             git config --global --add safe.directory '*'
             
             # 2. Install flutterpi_tool
-            flutter pub global activate flutterpi_tool
+            # Use git source to get the latest fixes for recent Flutter versions
+            flutter pub global activate --source git https://github.com/ardera/flutterpi_tool.git
             export PATH="$PATH:$HOME/.pub-cache/bin"
             
             # 3. Build flutter-pi (The Embedder)
