@@ -35,10 +35,8 @@ jobs:
             export PATH="$PATH:$PWD/flutter/bin"
             git config --global --add safe.directory '*'
             
-            # 2. Install flutterpi_tool
-            # Use git source to get the latest fixes for recent Flutter versions
-            flutter pub global activate --source git https://github.com/ardera/flutterpi_tool.git
-            export PATH="$PATH:$HOME/.pub-cache/bin"
+            # 2. Configure Flutter
+            flutter config --enable-linux-desktop
             
             # 3. Build flutter-pi (The Embedder)
             echo "Building flutter-pi..."
@@ -54,20 +52,32 @@ jobs:
             # 4. Build the Flutter App (Assets + Engine)
             echo "Building Flutter App..."
             flutter pub get
-            # This builds the assets and downloads the correct libflutter_engine.so
-            flutterpi_tool build --arch=arm64 --release
+            # Build standard Linux release (produces ARM64 AOT since we are on ARM64)
+            flutter build linux --release
             
             # 5. Package for PortMaster
             echo "Packaging..."
-            mkdir -p dist/ports/roms_downloader
+            mkdir -p dist/ports/roms_downloader/flutter_assets
             
             # Copy the flutter-pi binary
             cp flutter-pi dist/ports/roms_downloader/
             
-            # Copy the build output (assets + engine)
-            # flutterpi_tool outputs to build/flutter_assets and puts the engine in build/
-            cp -r build/flutter_assets dist/ports/roms_downloader/
-            cp build/libflutter_engine.so dist/ports/roms_downloader/
+            # Copy the build output
+            # Source: build/linux/arm64/release/bundle/
+            
+            # 1. Assets
+            cp -r build/linux/arm64/release/bundle/data/flutter_assets/* dist/ports/roms_downloader/flutter_assets/
+            
+            # 2. AOT Blob (app.so) - Must be inside flutter_assets for flutter-pi
+            cp build/linux/arm64/release/bundle/lib/libapp.so dist/ports/roms_downloader/flutter_assets/
+            
+            # 3. Engine
+            cp build/linux/arm64/release/bundle/lib/libflutter_engine.so dist/ports/roms_downloader/
+            
+            # 4. ICU Data (if present)
+            if [ -f build/linux/arm64/release/bundle/data/icudtl.dat ]; then
+              cp build/linux/arm64/release/bundle/data/icudtl.dat dist/ports/roms_downloader/
+            fi
             
             # Copy launch script
             cp assets/scripts/roms_downloader.sh dist/ports/roms_downloader.sh
