@@ -35,6 +35,39 @@ chmod +x ./flutter-pi
 export LD_LIBRARY_PATH="$GAMEDIR:$LD_LIBRARY_PATH"
 echo "LD_LIBRARY_PATH: $LD_LIBRARY_PATH"
 
+# Set XDG environment variables to keep data self-contained
+export XDG_DATA_HOME="$GAMEDIR/data"
+export XDG_CONFIG_HOME="$GAMEDIR/config"
+export XDG_CACHE_HOME="$GAMEDIR/cache"
+
+# Set HOME to the game directory to ensure path_provider has a fallback
+export HOME="$GAMEDIR"
+
+# Explicitly set XDG_DOCUMENTS_DIR for getApplicationDocumentsDirectory
+export XDG_DOCUMENTS_DIR="$GAMEDIR/Documents"
+
+# Create these directories if they don't exist
+mkdir -p "$XDG_DATA_HOME"
+mkdir -p "$XDG_CONFIG_HOME"
+mkdir -p "$XDG_CACHE_HOME"
+mkdir -p "$XDG_DOCUMENTS_DIR"
+
+# Generate user-dirs.dirs to satisfy GLib (which path_provider uses)
+# IMPORTANT: GLib only understands $HOME, not arbitrary variables like $GAMEDIR.
+# We must write literal '$HOME' into the file.
+echo 'XDG_DOCUMENTS_DIR="$HOME/Documents"' > "$XDG_CONFIG_HOME/user-dirs.dirs"
+echo 'XDG_DOWNLOAD_DIR="$HOME/Downloads"' >> "$XDG_CONFIG_HOME/user-dirs.dirs"
+echo 'XDG_DESKTOP_DIR="$HOME/Desktop"' >> "$XDG_CONFIG_HOME/user-dirs.dirs"
+echo 'XDG_MUSIC_DIR="$HOME/Music"' >> "$XDG_CONFIG_HOME/user-dirs.dirs"
+echo 'XDG_PICTURES_DIR="$HOME/Pictures"' >> "$XDG_CONFIG_HOME/user-dirs.dirs"
+echo 'XDG_VIDEOS_DIR="$HOME/Videos"' >> "$XDG_CONFIG_HOME/user-dirs.dirs"
+
+# Debug: Show content of generated file
+cat "$XDG_CONFIG_HOME/user-dirs.dirs"
+
+echo "XDG_DATA_HOME: $XDG_DATA_HOME"
+echo "HOME: $HOME"
+
 # Check for required files
 if [ ! -f "./flutter-pi" ]; then
     echo "ERROR: flutter-pi binary missing!"

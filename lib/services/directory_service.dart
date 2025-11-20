@@ -28,6 +28,14 @@ class DirectoryService {
       }
     }
 
+    if (Platform.isLinux) {
+      final dir = Directory('Downloads');
+      if (!await dir.exists()) {
+        await dir.create();
+      }
+      return dir.absolute.path;
+    }
+
     final downloadDir = await getDownloadsDirectory();
     if (downloadDir != null) {
       return downloadDir.path;
