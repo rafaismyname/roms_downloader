@@ -79,22 +79,22 @@ jobs:
             # The official Google artifact is Debug-only. We use Ardera's repo for Release binaries.
             echo "Downloading correct Release engine for ARM64..."
             
-            # Clone the community repo
-            git clone https://github.com/ardera/flutter-engine-binaries-for-arm.git engine-binaries
-            cd engine-binaries
-            # Checkout the tag matching Flutter 3.35.4 engine hash (c29809135135e262a912cf583b2c90deb9ded610)
-            git checkout engine_c29809135135e262a912cf583b2c90deb9ded610
-            cd ..
+            # Download ZIP
+            curl -L -o engine.zip https://github.com/ardera/flutter-engine-binaries-for-arm/archive/refs/tags/engine_c29809135135e262a912cf583b2c90deb9ded610.zip
+            unzip engine.zip
+            mv flutter-engine-binaries-for-arm-* engine-binaries
+            rm engine.zip
             
-            ENGINE_PATH="engine-binaries/arm64/libflutter_engine.so"
+            ENGINE_PATH="engine-binaries/arm64/libflutter_engine.so.release"
             if [ ! -f "$ENGINE_PATH" ]; then
-               echo "ERROR: libflutter_engine.so not found in community repo!"
+               echo "ERROR: libflutter_engine.so.release not found in community repo!"
                ls -R engine-binaries
                exit 1
             fi
             
             echo "Found engine at: $ENGINE_PATH"
-            cp "$ENGINE_PATH" dist/ports/roms_downloader/
+            # Copy and rename to libflutter_engine.so (remove .release suffix)
+            cp "$ENGINE_PATH" dist/ports/roms_downloader/libflutter_engine.so
             
             # Clean up engine repo
             rm -rf engine-binaries
