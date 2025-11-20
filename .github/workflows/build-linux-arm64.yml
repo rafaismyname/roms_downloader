@@ -32,8 +32,8 @@ jobs:
             # Install build tools for Flutter (clang, ninja)
             apt-get install -y ninja-build clang
           run: |
-            # 1. Install Flutter
-            git clone https://github.com/flutter/flutter.git -b stable --depth 1
+            # 1. Install Flutter (Pinned to 3.35.4 for compatible Release Engine)
+            git clone https://github.com/flutter/flutter.git -b 3.35.4 --depth 1
             export PATH="$PATH:$PWD/flutter/bin"
             git config --global --add safe.directory '*'
             
@@ -72,42 +72,48 @@ jobs:
             cp -r build/linux/arm64/release/bundle/data/flutter_assets/* dist/ports/roms_downloader/flutter_assets/
             
             # 2. AOT Blob (app.so) - Must be inside flutter_assets for flutter-pi
-            cp build/linux/arm64/release/bundle/lib/libapp.so dist/ports/roms_downloader/flutter_assets/
+            # flutter-pi typically expects 'app.so' for AOT snapshots
+            cp build/linux/arm64/release/bundle/lib/libapp.so dist/ports/roms_downloader/flutter_assets/app.so
             
-            # 3. Engine - MANUAL DOWNLOAD
-            # The standard flutter build linux does not provide the raw libflutter_engine.so for ARM64.
-            # We must download the embedder artifact from Google Storage.
-            echo "Downloading correct engine for ARM64..."
-            ENGINE_VERSION=$(cat flutter/bin/internal/engine.version | tr -d '[:space:]')
-            echo "Engine Version: $ENGINE_VERSION"
+            # 3. Engine - MANUAL DOWNLOAD (Community Release Binary)
+            # The official Google artifact is Debug-only. We use Ardera's repo for Release binaries.
+            echo "Downloading correct Release engine for ARM64..."
             
-            # Download flutter_embedder.zip
-            # Correct artifact name for Linux ARM64 is linux-arm64-embedder.zip
-            curl -L -o flutter_embedder.zip "https://storage.googleapis.com/flutter_infra_release/flutter/$ENGINE_VERSION/linux-arm64/linux-arm64-embedder.zip"
+            # Clone the community repo
+            git clone https://github.com/ardera/flutter-engine-binaries-for-arm.git engine-binaries
+            cd engine-binaries
+            # Checkout the tag matching Flutter 3.35.4 engine hash (c29809135135e262a912cf583b2c90deb9ded610)
+            git checkout engine_c29809135135e262a912cf583b2c90deb9ded610
+            cd ..
             
-            if [ ! -f flutter_embedder.zip ]; then
-               echo "ERROR: Failed to download flutter_embedder.zip"
-               exit 1
-            fi
-            
-            unzip -o flutter_embedder.zip -d flutter_engine
-            
-            ENGINE_PATH="flutter_engine/libflutter_engine.so"
+            ENGINE_PATH="engine-binaries/arm64/libflutter_engine.so"
             if [ ! -f "$ENGINE_PATH" ]; then
-               echo "ERROR: libflutter_engine.so not found in downloaded artifact!"
-               ls -R flutter_engine
+               echo "ERROR: libflutter_engine.so not found in community repo!"
+               ls -R engine-binaries
                exit 1
             fi
             
             echo "Found engine at: $ENGINE_PATH"
             cp "$ENGINE_PATH" dist/ports/roms_downloader/
             
-            # 4. ICU Data (if present)
-            if [ -f build/linux/arm64/release/bundle/data/icudtl.dat ]; then
-              cp build/linux/arm64/release/bundle/data/icudtl.dat dist/ports/roms_downloader/
-            else
-              find build/linux/arm64/release/bundle -name "icudtl.dat" -exec cp {} dist/ports/roms_downloader/ \;
+            # Clean up engine repo
+            rm -rf engine-binaries
+            
+            # 4. ICU Data
+            # flutter-pi expects icudtl.dat inside the flutter_assets directory
+            ICU_DATA_PATH=$(find build/linux/arm64/release/bundle -name "icudtl.dat" | head -n 1)
+            if [ -z "$ICU_DATA_PATH" ]; then
+               echo "ICU Data not found in bundle. Searching in Flutter cache..."
+               ICU_DATA_PATH=$(find flutter/bin/cache/artifacts/engine -name "icudtl.dat" | head -n 1)
             fi
+            
+            if [ -z "$ICU_DATA_PATH" ]; then
+               echo "ERROR: icudtl.dat not found!"
+               exit 1
+            fi
+            
+            echo "Found ICU data at: $ICU_DATA_PATH"
+            cp "$ICU_DATA_PATH" dist/ports/roms_downloader/flutter_assets/
             
             # Copy launch script
             cp assets/scripts/roms_downloader.sh dist/ports/roms_downloader.sh

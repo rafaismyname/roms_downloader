@@ -3,7 +3,7 @@ description: ROMs Downloader
 version: 1.0.18+46
 
 environment:
-  flutter: ">=3.35.7"
+  flutter: ">=3.35.4"
   sdk: ">=3.0.0 <4.0.0"
 
 dependencies:
