@@ -75,25 +75,42 @@ jobs:
             cp build/linux/arm64/release/bundle/lib/libapp.so dist/ports/roms_downloader/flutter_assets/
             
             # 3. Engine
-            # Robust search for the engine (Bundle -> Ephemeral -> Workspace)
-            ENGINE_PATH=$(find build/linux/arm64/release/bundle -name "libflutter_engine.so" | head -n 1)
+            echo "Searching for engine..."
+            ENGINE_PATH=""
+            
+            # 1. Try bundle (standard location)
             if [ -z "$ENGINE_PATH" ]; then
-              echo "Engine not found in bundle. Searching in ephemeral..."
-              ENGINE_PATH=$(find linux/flutter/ephemeral -name "libflutter_engine.so" | head -n 1)
+              ENGINE_PATH=$(find build/linux/arm64/release/bundle -name "libflutter_engine.so" | head -n 1)
             fi
             
+            # 2. Try Flutter Cache (Release directory, exact name)
             if [ -z "$ENGINE_PATH" ]; then
-               echo "Engine not found in ephemeral. Searching entire workspace..."
-               ENGINE_PATH=$(find . -name "libflutter_engine.so" | head -n 1)
+               echo "Engine not found in bundle. Searching in Flutter cache (Release dir)..."
+               ENGINE_PATH=$(find flutter/bin/cache/artifacts/engine -path "*linux-arm64-release*" -name "libflutter_engine.so" | head -n 1)
+            fi
+            
+            # 3. Try Flutter Cache (Release suffix)
+            if [ -z "$ENGINE_PATH" ]; then
+               echo "Searching for engine with .release suffix..."
+               ENGINE_PATH=$(find flutter/bin/cache/artifacts/engine -name "libflutter_engine.so.release" | head -n 1)
+            fi
+
+            # 4. Try Flutter Cache (Any libflutter_engine.so)
+            if [ -z "$ENGINE_PATH" ]; then
+               echo "Searching for any libflutter_engine.so in cache..."
+               ENGINE_PATH=$(find flutter/bin/cache/artifacts/engine -name "libflutter_engine.so" | head -n 1)
             fi
 
             if [ -z "$ENGINE_PATH" ]; then
-              echo "ERROR: libflutter_engine.so not found anywhere! Dumping build directory:"
-              ls -R build/linux/arm64/release/bundle
+              echo "ERROR: libflutter_engine.so not found anywhere! Dumping Flutter cache:"
+              find flutter/bin/cache/artifacts/engine -name "*engine*.so*"
+              ls -R flutter/bin/cache/artifacts/engine
               exit 1
             fi
+            
             echo "Found engine at: $ENGINE_PATH"
-            cp "$ENGINE_PATH" dist/ports/roms_downloader/
+            # Copy and rename to ensure it's named correctly for flutter-pi
+            cp "$ENGINE_PATH" dist/ports/roms_downloader/libflutter_engine.so
             
             # 4. ICU Data (if present)
             if [ -f build/linux/arm64/release/bundle/data/icudtl.dat ]; then
