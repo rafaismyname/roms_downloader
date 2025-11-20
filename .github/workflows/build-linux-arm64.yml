@@ -47,7 +47,7 @@ jobs:
             mkdir build && cd build
             cmake .. || (cat CMakeFiles/CMakeError.log && exit 1)
             # Reduce parallelism to avoid OOM/Segfault in QEMU
-            make -j3 || make -j2 || make -j1
+            make -j"$(nproc)" || make -j"$(( $(nproc) / 2 ))" || make -j1
             # Save the binary for later
             cp flutter-pi ../../flutter-pi-bin
             cd ../../
@@ -74,43 +74,33 @@ jobs:
             # 2. AOT Blob (app.so) - Must be inside flutter_assets for flutter-pi
             cp build/linux/arm64/release/bundle/lib/libapp.so dist/ports/roms_downloader/flutter_assets/
             
-            # 3. Engine
-            echo "Searching for engine..."
-            ENGINE_PATH=""
+            # 3. Engine - MANUAL DOWNLOAD
+            # The standard flutter build linux does not provide the raw libflutter_engine.so for ARM64.
+            # We must download the embedder artifact from Google Storage.
+            echo "Downloading correct engine for ARM64..."
+            ENGINE_VERSION=$(cat flutter/bin/internal/engine.version | tr -d '[:space:]')
+            echo "Engine Version: $ENGINE_VERSION"
             
-            # 1. Try bundle (standard location)
-            if [ -z "$ENGINE_PATH" ]; then
-              ENGINE_PATH=$(find build/linux/arm64/release/bundle -name "libflutter_engine.so" | head -n 1)
+            # Download flutter_embedder.zip
+            # Correct artifact name for Linux ARM64 is linux-arm64-embedder.zip
+            curl -L -o flutter_embedder.zip "https://storage.googleapis.com/flutter_infra_release/flutter/$ENGINE_VERSION/linux-arm64/linux-arm64-embedder.zip"
+            
+            if [ ! -f flutter_embedder.zip ]; then
+               echo "ERROR: Failed to download flutter_embedder.zip"
+               exit 1
             fi
             
-            # 2. Try Flutter Cache (Release directory, exact name)
-            if [ -z "$ENGINE_PATH" ]; then
-               echo "Engine not found in bundle. Searching in Flutter cache (Release dir)..."
-               ENGINE_PATH=$(find flutter/bin/cache/artifacts/engine -path "*linux-arm64-release*" -name "libflutter_engine.so" | head -n 1)
-            fi
+            unzip -o flutter_embedder.zip -d flutter_engine
             
-            # 3. Try Flutter Cache (Release suffix)
-            if [ -z "$ENGINE_PATH" ]; then
-               echo "Searching for engine with .release suffix..."
-               ENGINE_PATH=$(find flutter/bin/cache/artifacts/engine -name "libflutter_engine.so.release" | head -n 1)
-            fi
-
-            # 4. Try Flutter Cache (Any libflutter_engine.so)
-            if [ -z "$ENGINE_PATH" ]; then
-               echo "Searching for any libflutter_engine.so in cache..."
-               ENGINE_PATH=$(find flutter/bin/cache/artifacts/engine -name "libflutter_engine.so" | head -n 1)
-            fi
-
-            if [ -z "$ENGINE_PATH" ]; then
-              echo "ERROR: libflutter_engine.so not found anywhere! Dumping Flutter cache:"
-              find flutter/bin/cache/artifacts/engine -name "*engine*.so*"
-              ls -R flutter/bin/cache/artifacts/engine
-              exit 1
+            ENGINE_PATH="flutter_engine/libflutter_engine.so"
+            if [ ! -f "$ENGINE_PATH" ]; then
+               echo "ERROR: libflutter_engine.so not found in downloaded artifact!"
+               ls -R flutter_engine
+               exit 1
             fi
             
             echo "Found engine at: $ENGINE_PATH"
-            # Copy and rename to ensure it's named correctly for flutter-pi
-            cp "$ENGINE_PATH" dist/ports/roms_downloader/libflutter_engine.so
+            cp "$ENGINE_PATH" dist/ports/roms_downloader/
             
             # 4. ICU Data (if present)
             if [ -f build/linux/arm64/release/bundle/data/icudtl.dat ]; then
