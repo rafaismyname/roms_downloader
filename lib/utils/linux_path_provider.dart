@@ -70,4 +70,13 @@ class LinuxPathProvider extends PathProviderPlatform {
     }
     return dir.path;
   }
+
+  @override
+  Future<String?> getApplicationCachePath() async {
+    final dir = Directory('$_basePath/cache');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir.path;
+  }
 }
