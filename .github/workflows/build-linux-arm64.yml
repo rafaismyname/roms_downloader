@@ -44,7 +44,7 @@ jobs:
             echo "Downloading flutter-pi..."
             curl -L -o flutter-pi.zip https://github.com/ardera/flutter-pi/archive/refs/heads/master.zip
             unzip flutter-pi.zip
-            mv flutter-pi-main flutter-pi
+            mv flutter-pi-master flutter-pi
             cd flutter-pi
             mkdir build && cd build
             cmake .. || (cat CMakeFiles/CMakeError.log && exit 1)
