@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
@@ -13,7 +15,7 @@ class LinuxGamepadListener extends StatefulWidget {
 }
 
 class _LinuxGamepadListenerState extends State<LinuxGamepadListener> {
-  StreamSubscription<List<int>>? _subscription;
+  final List<StreamSubscription<List<int>>> _subscriptions = [];
   final List<int> _buffer = [];
   
   // Axis state to prevent multiple triggers
@@ -29,7 +31,7 @@ class _LinuxGamepadListenerState extends State<LinuxGamepadListener> {
   void initState() {
     super.initState();
     _checkArch();
-    _connectToGamepad();
+    _connectToGamepads();
   }
 
   void _checkArch() {
@@ -41,37 +43,44 @@ class _LinuxGamepadListenerState extends State<LinuxGamepadListener> {
     } else {
       _eventSize = 16;
     }
-    debugPrint('Detected architecture: $version, using event size: $_eventSize');
+    print('Detected architecture: $version, using event size: $_eventSize');
   }
 
-  Future<void> _connectToGamepad() async {
-    // 1. Try to find event device via /proc/bus/input/devices
-    String? eventPath = await _findGamepadDevice();
+  Future<void> _connectToGamepads() async {
+    // 1. Try to find event devices via /proc/bus/input/devices
+    final eventPaths = await _findAllGamepadDevices();
     
-    if (eventPath != null) {
-      debugPrint('Found gamepad at $eventPath');
-      await _connectToPath(eventPath, isEvdev: true);
+    if (eventPaths.isNotEmpty) {
+      print('Found gamepads at $eventPaths');
+      for (final path in eventPaths) {
+        _connectToPath(path, isEvdev: true);
+      }
       return;
     }
 
     // 2. Fallback: Try js0, js1, js2
-    debugPrint('No event device found, trying legacy js* devices...');
+    print('No event device found, trying legacy js* devices...');
+    bool foundLegacy = false;
     for (int i = 0; i < 4; i++) {
       final path = '/dev/input/js$i';
       if (await File(path).exists()) {
-        debugPrint('Found legacy gamepad at $path');
-        await _connectToPath(path, isEvdev: false);
-        return;
+        print('Found legacy gamepad at $path');
+        _connectToPath(path, isEvdev: false);
+        foundLegacy = true;
       }
     }
-    debugPrint('No gamepad found at /dev/input/js* or event*');
+    
+    if (!foundLegacy) {
+      print('No gamepad found at /dev/input/js* or event*');
+    }
   }
 
-  Future<String?> _findGamepadDevice() async {
+  Future<List<String>> _findAllGamepadDevices() async {
+    final paths = <String>[];
     try {
       final file = File('/proc/bus/input/devices');
       if (!await file.exists()) {
-        return null;
+        return paths;
       }
 
       final content = await file.readAsString();
@@ -87,14 +96,14 @@ class _LinuxGamepadListenerState extends State<LinuxGamepadListener> {
           // Extract eventX
           final match = RegExp(r'event(\d+)').firstMatch(handlersLine);
           if (match != null) {
-            return '/dev/input/event${match.group(1)}';
+            paths.add('/dev/input/event${match.group(1)}');
           }
         }
       }
     } catch (e) {
-      debugPrint('Error scanning /proc/bus/input/devices: $e');
+      print('Error scanning /proc/bus/input/devices: $e');
     }
-    return null;
+    return paths;
   }
 
   bool _isGamepadBlock(String block) {
@@ -103,15 +112,26 @@ class _LinuxGamepadListenerState extends State<LinuxGamepadListener> {
       orElse: () => '',
     ).toLowerCase();
     
+    final handlersLine = block.split('\n').firstWhere(
+      (line) => line.startsWith('H: Handlers='),
+      orElse: () => '',
+    ).toLowerCase();
+
+    // 1. Check for 'js' handler (strongest indicator of a joystick/gamepad)
+    if (handlersLine.contains('js')) {
+      return true;
+    }
+    
     if (nameLine.isEmpty) {
       return false;
     }
 
-    // Keywords for gamepads
+    // 2. Check keywords in name
     const keywords = [
       'gamepad', 'controller', 'joystick', 'pad', 
       'xbox', 'playstation', 'nintendo', 'switch',
-      'retro', '8bitdo'
+      'retro', '8bitdo', 'odin', 'android', 'aw869a',
+      'input'
     ];
 
     return keywords.any((k) => nameLine.contains(k));
@@ -120,20 +140,23 @@ class _LinuxGamepadListenerState extends State<LinuxGamepadListener> {
   Future<void> _connectToPath(String path, {required bool isEvdev}) async {
     try {
       final file = File(path);
-      _subscription = file.openRead().listen(
+      final subscription = file.openRead().listen(
         (data) => _onData(data, isEvdev),
-        onError: (e) => debugPrint('Error reading $path: $e'),
+        onError: (e) => print('Error reading $path: $e'),
         cancelOnError: true,
       );
-      debugPrint('Connected to $path');
+      _subscriptions.add(subscription);
+      print('Connected to $path');
     } catch (e) {
-      debugPrint('Failed to open $path: $e');
+      print('Failed to open $path: $e');
     }
   }
 
   @override
   void dispose() {
-    _subscription?.cancel();
+    for (final sub in _subscriptions) {
+      sub.cancel();
+    }
     super.dispose();
   }
 

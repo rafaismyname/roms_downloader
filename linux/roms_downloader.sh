@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# PortMaster/Rocknix Launch Script for Flutter App (via flutter-pi)
+# PortMaster/Rocknix/Batocera Launch Script for Flutter App (via flutter-pi)
 
 # Get the absolute path of the script's directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -93,8 +93,8 @@ if command -v openvt >/dev/null 2>&1; then
     # -s: switch to the new VT
     # -w: wait for command to complete
     # --: end of openvt options
-    # -d "110,62": Force ~5-inch screen dimensions
-    openvt -s -w -- ./flutter-pi --release -d "110,62" ./flutter_assets
+    # -d "150,85": Force ~6-inch screen dimensions (makes UI larger)
+    openvt -s -w -- ./flutter-pi --release -d "150,85" ./flutter_assets
     EXIT_CODE=$?
 else
     echo "openvt not found, falling back to manual VT switch..."
@@ -121,8 +121,8 @@ else
 
     echo "Launching flutter-pi..."
     # Run flutter-pi
-    # -d "110,62": Force ~5-inch screen dimensions
-    ./flutter-pi --release -d "110,62" ./flutter_assets
+    # -d "150,85": Force ~6-inch screen dimensions (makes UI larger)
+    ./flutter-pi --release -d "150,85" ./flutter_assets
     EXIT_CODE=$?
 
     # Switch back to original VT
@@ -131,4 +131,3 @@ else
 fi
 
 echo "flutter-pi exited with code $EXIT_CODE"
-

@@ -106,6 +106,7 @@ class _AboutScreenState extends State<AboutScreen> {
               title: 'Built with',
                 items: [
                 InfoItem('flutter', 'flutter.dev', 'https://flutter.dev'),
+                InfoItem('flutter-pi', 'github.com/ardera/flutter-pi', 'https://github.com/ardera/flutter-pi'),
                 InfoItem('file_picker', 'pub.dev/packages/file_picker', 'https://pub.dev/packages/file_picker'),
                 InfoItem('background_downloader', 'pub.dev/packages/background_downloader', 'https://pub.dev/packages/background_downloader'),
                 InfoItem('flutter_riverpod', 'pub.dev/packages/flutter_riverpod', 'https://pub.dev/packages/flutter_riverpod'),

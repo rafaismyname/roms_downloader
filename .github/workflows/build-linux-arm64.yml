@@ -121,7 +121,7 @@ jobs:
             cp "$ICU_DATA_PATH" dist/ports/roms_downloader/flutter_assets/
             
             # Copy launch script
-            cp assets/scripts/roms_downloader.sh dist/ports/roms_downloader.sh
+            cp linux/roms_downloader.sh dist/ports/roms_downloader.sh
             chmod +x dist/ports/roms_downloader.sh
             chmod +x dist/ports/roms_downloader/flutter-pi
             
