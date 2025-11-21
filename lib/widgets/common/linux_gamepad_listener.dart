@@ -45,14 +45,14 @@ class _LinuxGamepadListenerState extends State<LinuxGamepadListener> {
     try {
       final result = await Process.run('uname', ['-m']);
       final arch = result.stdout.toString().trim().toLowerCase();
-      debugPrint('System architecture: $arch');
+      print('System architecture: $arch');
       
       // 32-bit architectures
       if (arch.contains('armv7') || arch == 'arm' || arch.contains('i386') || arch.contains('i686')) {
         _eventSize = 16;
       }
     } catch (e) {
-      debugPrint('Failed to check architecture via uname: $e');
+      print('Failed to check architecture via uname: $e');
       // Fallback to Platform.version
       final version = Platform.version.toLowerCase();
       if (!version.contains('64')) {
@@ -60,7 +60,7 @@ class _LinuxGamepadListenerState extends State<LinuxGamepadListener> {
       }
     }
     
-    debugPrint('Using event size: $_eventSize bytes');
+    print('Using event size: $_eventSize bytes');
   }
 
   Future<void> _connectToGamepads() async {
@@ -116,7 +116,7 @@ class _LinuxGamepadListenerState extends State<LinuxGamepadListener> {
                 final match = RegExp(r'event(\d+)').firstMatch(currentHandlers);
                 if (match != null) {
                   final path = '/dev/input/event${match.group(1)}';
-                  debugPrint('Found gamepad candidate: "$currentName" at $path');
+                  print('Found gamepad candidate: "$currentName" at $path');
                   paths.add(path);
                 }
              }
@@ -140,14 +140,14 @@ class _LinuxGamepadListenerState extends State<LinuxGamepadListener> {
             final match = RegExp(r'event(\d+)').firstMatch(currentHandlers);
             if (match != null) {
               final path = '/dev/input/event${match.group(1)}';
-              debugPrint('Found gamepad candidate: "$currentName" at $path');
+              print('Found gamepad candidate: "$currentName" at $path');
               paths.add(path);
             }
          }
       }
 
     } catch (e) {
-      debugPrint('Error scanning /proc/bus/input/devices: $e');
+      print('Error scanning /proc/bus/input/devices: $e');
     }
     return paths;
   }
@@ -242,7 +242,7 @@ class _LinuxGamepadListenerState extends State<LinuxGamepadListener> {
 
     // Debug log for every event
     if (type != 0) { // Ignore EV_SYN
-      debugPrint('EV: type=$type, code=$code, value=$value');
+      print('EV: type=$type, code=$code, value=$value');
     }
 
     // EV_KEY = 0x01, EV_ABS = 0x03
@@ -252,6 +252,13 @@ class _LinuxGamepadListenerState extends State<LinuxGamepadListener> {
       // BTN_EAST (B) = 305 -> 1
       // BTN_NORTH (X) = 307 -> 2
       // BTN_WEST (Y) = 308 -> 3
+      // BTN_TL (L1) = 310
+      // BTN_TR (R1) = 311
+      // BTN_SELECT = 314
+      // BTN_START = 315
+      // BTN_MODE (Home) = 316
+      // BTN_THUMBL (L3) = 317
+      // BTN_THUMBR (R3) = 318
       
       int? btnNumber;
       if (code == 304) {
@@ -262,6 +269,14 @@ class _LinuxGamepadListenerState extends State<LinuxGamepadListener> {
         btnNumber = 2; // X
       } else if (code == 308) {
         btnNumber = 3; // Y
+      } else if (code == 310) {
+        btnNumber = 4; // L1
+      } else if (code == 311) {
+        btnNumber = 5; // R1
+      } else if (code == 314) {
+        btnNumber = 8; // Select
+      } else if (code == 315) {
+        btnNumber = 9; // Start
       }
       
       if (btnNumber != null) {
@@ -304,12 +319,16 @@ class _LinuxGamepadListenerState extends State<LinuxGamepadListener> {
     }
     _lastButtonTime = now;
 
+    print('Handling button press: $number');
+
     // Mapping (Generic Xbox/Linux)
     // 0: A, 1: B, 2: X, 3: Y
     if (number == 0) { // A
       _activateFocus();
     } else if (number == 1) { // B
       // Optional: Back
+    } else if (number == 6 || number == 7) { // D-Pad (if mapped as buttons)
+       // Handled by axis usually, but some controllers map dpad as buttons
     }
   }
 
@@ -319,6 +338,8 @@ class _LinuxGamepadListenerState extends State<LinuxGamepadListener> {
     
     final lastValue = _axisState[number] ?? 0;
     _axisState[number] = value;
+
+    print('Handling axis: $number, value: $value');
 
     // Check for crossing threshold
     if (value.abs() > _axisThreshold && lastValue.abs() <= _axisThreshold) {
