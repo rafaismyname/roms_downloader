@@ -26,19 +26,22 @@ class GameActionButtons extends ConsumerWidget {
     return Center(
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: Platform.isAndroid ? 0 : 8),
-              child: _buildFavoriteButton(context, ref, isFavorite),
-            ),
-            ..._buildActionButtons(context, ref)
-                .map((button) => Padding(
-                      padding: EdgeInsets.symmetric(horizontal: Platform.isAndroid ? 0 : 8),
-                      child: button,
-                    )),
-          ],
+        child: FocusTraversalGroup(
+          descendantsAreFocusable: true,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: Platform.isAndroid ? 0 : 8),
+                child: _buildFavoriteButton(context, ref, isFavorite),
+              ),
+              ..._buildActionButtons(context, ref)
+                  .map((button) => Padding(
+                        padding: EdgeInsets.symmetric(horizontal: Platform.isAndroid ? 0 : 8),
+                        child: button,
+                      )),
+            ],
+          ),
         ),
       ),
     );
@@ -49,16 +52,13 @@ class GameActionButtons extends ConsumerWidget {
     
     return Tooltip(
       message: isFavorite ? 'Remove from favorites' : 'Add to favorites',
-      child: IconButton(
+      child: _FocusableIconButton(
         icon: Icon(
           isFavorite ? Icons.favorite : Icons.favorite_border,
           size: buttonSize,
           color: isFavorite ? Colors.red : null,
         ),
         onPressed: () => ref.read(favoritesProvider.notifier).toggleFavorite(game.gameId),
-        constraints: BoxConstraints(minWidth: 18, minHeight: 18),
-        padding: EdgeInsets.zero,
-        visualDensity: VisualDensity.compact,
       ),
     );
   }
@@ -66,7 +66,6 @@ class GameActionButtons extends ConsumerWidget {
   List<Widget> _buildActionButtons(BuildContext context, WidgetRef ref) {
     final List<Widget> buttons = [];
     final buttonSize = isNarrow ? 18.0 : 24.0;
-    final buttonConstraints = BoxConstraints(minWidth: 18, minHeight: 18);
 
     for (final action in gameState.availableActions) {
       switch (action) {
@@ -74,12 +73,9 @@ class GameActionButtons extends ConsumerWidget {
           buttons.add(
             Tooltip(
               message: 'Download',
-              child: IconButton(
+              child: _FocusableIconButton(
                 icon: Icon(Icons.download, size: buttonSize),
                 onPressed: () => TaskQueueService.startDownloads(ref, [game], game.consoleId),
-                constraints: buttonConstraints,
-                padding: EdgeInsets.zero,
-                visualDensity: VisualDensity.compact,
               ),
             ),
           );
@@ -88,12 +84,9 @@ class GameActionButtons extends ConsumerWidget {
           buttons.add(
             Tooltip(
               message: 'Pause',
-              child: IconButton(
+              child: _FocusableIconButton(
                 icon: Icon(Icons.pause, size: buttonSize),
                 onPressed: () => TaskQueueService.pauseDownloadTask(ref, game.gameId),
-                constraints: buttonConstraints,
-                padding: EdgeInsets.zero,
-                visualDensity: VisualDensity.compact,
               ),
             ),
           );
@@ -102,12 +95,9 @@ class GameActionButtons extends ConsumerWidget {
           buttons.add(
             Tooltip(
               message: 'Resume',
-              child: IconButton(
+              child: _FocusableIconButton(
                 icon: Icon(Icons.play_arrow, size: buttonSize),
                 onPressed: () => TaskQueueService.resumeDownloadTask(ref, game.gameId),
-                constraints: buttonConstraints,
-                padding: EdgeInsets.zero,
-                visualDensity: VisualDensity.compact,
               ),
             ),
           );
@@ -116,12 +106,9 @@ class GameActionButtons extends ConsumerWidget {
           buttons.add(
             Tooltip(
               message: 'Cancel',
-              child: IconButton(
+              child: _FocusableIconButton(
                 icon: Icon(Icons.close, size: buttonSize),
                 onPressed: () => TaskQueueService.cancelTask(ref, game, gameState),
-                constraints: buttonConstraints,
-                padding: EdgeInsets.zero,
-                visualDensity: VisualDensity.compact,
               ),
             ),
           );
@@ -130,12 +117,9 @@ class GameActionButtons extends ConsumerWidget {
           buttons.add(
             Tooltip(
               message: 'Extract',
-              child: IconButton(
+              child: _FocusableIconButton(
                 icon: Icon(Icons.archive, size: buttonSize),
                 onPressed: () => TaskQueueService.startExtraction(ref, game.gameId),
-                constraints: buttonConstraints,
-                padding: EdgeInsets.zero,
-                visualDensity: VisualDensity.compact,
               ),
             ),
           );
@@ -144,12 +128,9 @@ class GameActionButtons extends ConsumerWidget {
           buttons.add(
             Tooltip(
               message: 'Retry Download',
-              child: IconButton(
+              child: _FocusableIconButton(
                 icon: Icon(Icons.refresh, size: buttonSize),
                 onPressed: () => TaskQueueService.startDownloads(ref, [game], game.consoleId),
-                constraints: buttonConstraints,
-                padding: EdgeInsets.zero,
-                visualDensity: VisualDensity.compact,
               ),
             ),
           );
@@ -158,12 +139,9 @@ class GameActionButtons extends ConsumerWidget {
           buttons.add(
             Tooltip(
               message: 'Retry Extraction',
-              child: IconButton(
+              child: _FocusableIconButton(
                 icon: Icon(Icons.refresh, size: buttonSize),
                 onPressed: () => TaskQueueService.startExtraction(ref, game.gameId),
-                constraints: buttonConstraints,
-                padding: EdgeInsets.zero,
-                visualDensity: VisualDensity.compact,
               ),
             ),
           );
@@ -192,5 +170,43 @@ class GameActionButtons extends ConsumerWidget {
     }
 
     return buttons;
+  }
+}
+
+class _FocusableIconButton extends StatefulWidget {
+  final Widget icon;
+  final VoidCallback onPressed;
+
+  const _FocusableIconButton({
+    required this.icon,
+    required this.onPressed,
+  });
+
+  @override
+  State<_FocusableIconButton> createState() => _FocusableIconButtonState();
+}
+
+class _FocusableIconButtonState extends State<_FocusableIconButton> {
+  bool _hasFocus = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onFocusChange: (value) => setState(() => _hasFocus = value),
+      child: Container(
+        decoration: BoxDecoration(
+          color: _hasFocus ? Theme.of(context).colorScheme.primary : Colors.transparent,
+          shape: BoxShape.circle,
+        ),
+        child: IconButton(
+          icon: widget.icon,
+          color: _hasFocus ? Theme.of(context).colorScheme.onPrimary : null,
+          onPressed: widget.onPressed,
+          constraints: BoxConstraints(minWidth: 18, minHeight: 18),
+          padding: EdgeInsets.zero,
+          visualDensity: VisualDensity.compact,
+        ),
+      ),
+    );
   }
 }

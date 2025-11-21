@@ -3,7 +3,7 @@ import 'package:photo_view/photo_view.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:roms_downloader/models/game_model.dart';
 
-class GameBoxart extends StatelessWidget {
+class GameBoxart extends StatefulWidget {
   final Game game;
   final double size;
   final Widget? placeholder;
@@ -16,26 +16,35 @@ class GameBoxart extends StatelessWidget {
   });
 
   @override
+  State<GameBoxart> createState() => _GameBoxartState();
+}
+
+class _GameBoxartState extends State<GameBoxart> {
+  bool _hasFocus = false;
+
+  @override
   Widget build(BuildContext context) {
-    final boxart = game.boxart;
+    final boxart = widget.game.boxart;
 
     if (boxart == null) {
-      return placeholder ?? _DefaultPlaceholder(size: size);
+      return widget.placeholder ?? _DefaultPlaceholder(size: widget.size);
     }
 
     return Container(
-      key: ValueKey('boxart_${game.gameId}'),
-      width: size,
-      height: size,
+      key: ValueKey('boxart_${widget.game.gameId}'),
+      width: widget.size,
+      height: widget.size,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(2),
         border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
-          width: 1,
+          color: _hasFocus
+              ? Theme.of(context).colorScheme.primary
+              : Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+          width: _hasFocus ? 2 : 1,
         ),
       ),
-      child: GestureDetector(
-        behavior: HitTestBehavior.translucent,
+      child: InkWell(
+        onFocusChange: (value) => setState(() => _hasFocus = value),
         onTap: () {
           showDialog(
             context: context,
@@ -56,19 +65,19 @@ class GameBoxart extends StatelessWidget {
           borderRadius: BorderRadius.circular(1),
           child: CachedNetworkImage(
             imageUrl: boxart,
-            width: size,
-            height: size,
+            width: widget.size,
+            height: widget.size,
             fit: BoxFit.cover,
-            errorWidget: (context, url, error) => _DefaultPlaceholder(size: size),
+            errorWidget: (context, url, error) => _DefaultPlaceholder(size: widget.size),
             errorListener: (value) => debugPrint('Error loading boxart: $value'),
             progressIndicatorBuilder: (context, url, downloadProgress) => Container(
-              width: size,
-              height: size,
+              width: widget.size,
+              height: widget.size,
               color: Theme.of(context).colorScheme.surface,
               child: Center(
                 child: SizedBox(
-                  width: size * 0.4,
-                  height: size * 0.4,
+                  width: widget.size * 0.4,
+                  height: widget.size * 0.4,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
                     value: downloadProgress.progress,

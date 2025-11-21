@@ -1,5 +1,3 @@
-// ignore_for_file: avoid_print
-
 import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
@@ -56,14 +54,14 @@ class _LinuxGamepadListenerState extends State<LinuxGamepadListener> {
     try {
       final result = await Process.run('uname', ['-m']);
       final arch = result.stdout.toString().trim().toLowerCase();
-      print('System architecture: $arch');
+      debugPrint('System architecture: $arch');
       
       // 32-bit architectures
       if (arch.contains('armv7') || arch == 'arm' || arch.contains('i386') || arch.contains('i686')) {
         _eventSize = 16;
       }
     } catch (e) {
-      print('Failed to check architecture via uname: $e');
+      debugPrint('Failed to check architecture via uname: $e');
       // Fallback to Platform.version
       final version = Platform.version.toLowerCase();
       if (!version.contains('64')) {
@@ -71,7 +69,7 @@ class _LinuxGamepadListenerState extends State<LinuxGamepadListener> {
       }
     }
     
-    print('Using event size: $_eventSize bytes');
+    debugPrint('Using event size: $_eventSize bytes');
   }
 
   Future<void> _connectToGamepads() async {
@@ -79,7 +77,7 @@ class _LinuxGamepadListenerState extends State<LinuxGamepadListener> {
     final eventPaths = await _findAllGamepadDevices();
     
     if (eventPaths.isNotEmpty) {
-      print('Found gamepads at $eventPaths');
+      debugPrint('Found gamepads at $eventPaths');
       for (final path in eventPaths) {
         _connectToPath(path, isEvdev: true);
       }
@@ -87,19 +85,19 @@ class _LinuxGamepadListenerState extends State<LinuxGamepadListener> {
     }
 
     // 2. Fallback: Try js0, js1, js2
-    print('No event device found, trying legacy js* devices...');
+    debugPrint('No event device found, trying legacy js* devices...');
     bool foundLegacy = false;
     for (int i = 0; i < 4; i++) {
       final path = '/dev/input/js$i';
       if (await File(path).exists()) {
-        print('Found legacy gamepad at $path');
+        debugPrint('Found legacy gamepad at $path');
         _connectToPath(path, isEvdev: false);
         foundLegacy = true;
       }
     }
     
     if (!foundLegacy) {
-      print('No gamepad found at /dev/input/js* or event*');
+      debugPrint('No gamepad found at /dev/input/js* or event*');
     }
   }
 
@@ -127,7 +125,7 @@ class _LinuxGamepadListenerState extends State<LinuxGamepadListener> {
                 final match = RegExp(r'event(\d+)').firstMatch(currentHandlers);
                 if (match != null) {
                   final path = '/dev/input/event${match.group(1)}';
-                  print('Found gamepad candidate: "$currentName" at $path');
+                  debugPrint('Found gamepad candidate: "$currentName" at $path');
                   paths.add(path);
                 }
              }
@@ -151,14 +149,14 @@ class _LinuxGamepadListenerState extends State<LinuxGamepadListener> {
             final match = RegExp(r'event(\d+)').firstMatch(currentHandlers);
             if (match != null) {
               final path = '/dev/input/event${match.group(1)}';
-              print('Found gamepad candidate: "$currentName" at $path');
+              debugPrint('Found gamepad candidate: "$currentName" at $path');
               paths.add(path);
             }
          }
       }
 
     } catch (e) {
-      print('Error scanning /proc/bus/input/devices: $e');
+      debugPrint('Error scanning /proc/bus/input/devices: $e');
     }
     return paths;
   }
@@ -183,13 +181,13 @@ class _LinuxGamepadListenerState extends State<LinuxGamepadListener> {
       final file = File(path);
       final subscription = file.openRead().listen(
         (data) => _onData(data, isEvdev),
-        onError: (e) => print('Error reading $path: $e'),
+        onError: (e) => debugPrint('Error reading $path: $e'),
         cancelOnError: true,
       );
       _subscriptions.add(subscription);
-      print('Connected to $path');
+      debugPrint('Connected to $path');
     } catch (e) {
-      print('Failed to open $path: $e');
+      debugPrint('Failed to open $path: $e');
     }
   }
 
@@ -276,7 +274,7 @@ class _LinuxGamepadListenerState extends State<LinuxGamepadListener> {
 
     // Debug log for every event
     if (type != 0) { // Ignore EV_SYN
-      print('EV: type=$type, code=$code, value=$value');
+      debugPrint('EV: type=$type, code=$code, value=$value');
     }
 
     // EV_KEY = 0x01, EV_ABS = 0x03
@@ -369,7 +367,7 @@ class _LinuxGamepadListenerState extends State<LinuxGamepadListener> {
       _lastButtonTime = now;
     }
 
-    print('Handling button press: $button');
+    debugPrint('Handling button press: $button');
     
     _processButton(button);
     _startRepeat(button);
@@ -425,7 +423,7 @@ class _LinuxGamepadListenerState extends State<LinuxGamepadListener> {
     final lastValue = _axisState[number] ?? 0;
     _axisState[number] = value;
 
-    print('Handling axis: $number, value: $value');
+    debugPrint('Handling axis: $number, value: $value');
 
     // Check for crossing threshold
     if (value.abs() > _axisThreshold && lastValue.abs() <= _axisThreshold) {
@@ -455,7 +453,7 @@ class _LinuxGamepadListenerState extends State<LinuxGamepadListener> {
       final intent = DirectionalFocusIntent(direction);
       final action = Actions.maybeFind<DirectionalFocusIntent>(primaryFocus.context!);
       if (action != null) {
-        print('Moving focus via Actions: $direction');
+        debugPrint('Moving focus via Actions: $direction');
         Actions.invoke(primaryFocus.context!, intent);
         return;
       }
@@ -463,7 +461,7 @@ class _LinuxGamepadListenerState extends State<LinuxGamepadListener> {
     
     // Fallback to direct focus manager manipulation
     if (primaryFocus != null) {
-      print('Moving focus via FocusManager: $direction');
+      debugPrint('Moving focus via FocusManager: $direction');
       primaryFocus.focusInDirection(direction);
     }
   }

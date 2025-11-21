@@ -59,21 +59,31 @@ class NumberSetting extends ConsumerWidget {
             )
           : SizedBox(
               width: 80,
-              child: TextFormField(
-                initialValue: currentValue.toString(),
-                textAlign: TextAlign.center,
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                ),
-                onChanged: (value) {
-                  final intValue = int.tryParse(value);
-                  if (intValue != null && intValue >= min && intValue <= max) {
-                    settingsNotifier.setSetting(settingKey, intValue, console?.id);
-                  }
+              child: Actions(
+                actions: {
+                  DirectionalFocusIntent: CallbackAction<DirectionalFocusIntent>(
+                    onInvoke: (intent) {
+                      FocusManager.instance.primaryFocus?.focusInDirection(intent.direction);
+                      return null;
+                    },
+                  ),
                 },
+                child: TextFormField(
+                  initialValue: currentValue.toString(),
+                  textAlign: TextAlign.center,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  decoration: InputDecoration(
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                  ),
+                  onChanged: (value) {
+                    final intValue = int.tryParse(value);
+                    if (intValue != null && intValue >= min && intValue <= max) {
+                      settingsNotifier.setSetting(settingKey, intValue, console?.id);
+                    }
+                  },
+                ),
               ),
             ),
     );

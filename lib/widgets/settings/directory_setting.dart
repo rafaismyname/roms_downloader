@@ -26,8 +26,22 @@ class DirectorySetting extends StatelessWidget {
     final currentDir = consoleSpecificDir ?? generalDir;
     final isUsingGeneral = console != null && consoleSpecificDir == null && generalDir.isNotEmpty;
     final hasConsoleSpecific = console != null && consoleSpecificDir != null;
+    
+    // ignore: prefer_function_declarations_over_variables
+    final onAction = () async {
+      final newDir = await settingsNotifier.selectDownloadDirectory(context);
+
+        if (newDir != null) {
+          if (console == null) {
+            await settingsNotifier.setGeneralSetting(settingKey, newDir);
+          } else {
+            await settingsNotifier.setConsoleSetting(console!.id, settingKey, newDir);
+          }
+        }
+    };
 
     return ListTile(
+      onTap: onAction,
       leading: Icon(icon),
       title: Text(title),
       subtitle: Column(
@@ -69,17 +83,7 @@ class DirectorySetting extends StatelessWidget {
               tooltip: 'Use general setting',
             ),
           IconButton(
-            onPressed: () async {
-              final newDir = await settingsNotifier.selectDownloadDirectory(context);
-
-              if (newDir != null) {
-                if (console == null) {
-                  await settingsNotifier.setGeneralSetting(settingKey, newDir);
-                } else {
-                  await settingsNotifier.setConsoleSetting(console!.id, settingKey, newDir);
-                }
-              }
-            },
+            onPressed: onAction,
             icon: const Icon(Icons.folder_open),
             tooltip: 'Choose directory',
           ),

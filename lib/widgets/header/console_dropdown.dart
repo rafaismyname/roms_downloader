@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:roms_downloader/models/console_model.dart';
 
-class ConsoleDropdown extends StatelessWidget {
+class ConsoleDropdown extends StatefulWidget {
   final List<Console> consoles;
   final Console? selectedConsole;
   final bool isInteractive;
@@ -16,6 +16,34 @@ class ConsoleDropdown extends StatelessWidget {
   });
 
   @override
+  State<ConsoleDropdown> createState() => _ConsoleDropdownState();
+}
+
+class _ConsoleDropdownState extends State<ConsoleDropdown> {
+  late FocusNode _focusNode;
+  bool _hasFocus = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode = FocusNode();
+    _focusNode.addListener(_onFocusChange);
+  }
+
+  @override
+  void dispose() {
+    _focusNode.removeListener(_onFocusChange);
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  void _onFocusChange() {
+    setState(() {
+      _hasFocus = _focusNode.hasFocus;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Container(
       height: 50,
@@ -23,16 +51,18 @@ class ConsoleDropdown extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.1),
-            Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.05),
+            Theme.of(context).colorScheme.primaryContainer.withValues(alpha: _hasFocus ? 0.2 : 0.1),
+            Theme.of(context).colorScheme.primaryContainer.withValues(alpha: _hasFocus ? 0.1 : 0.05),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
-          width: 1,
+          color: _hasFocus
+              ? Theme.of(context).colorScheme.primary
+              : Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+          width: _hasFocus ? 2 : 1,
         ),
       ),
       child: Row(
@@ -46,8 +76,9 @@ class ConsoleDropdown extends StatelessWidget {
           Expanded(
             child: DropdownButtonHideUnderline(
               child: DropdownButton<String>(
+                focusNode: _focusNode,
                 isExpanded: true,
-                value: selectedConsole?.id,
+                value: widget.selectedConsole?.id,
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.onSurface,
                   fontWeight: FontWeight.w500,
@@ -57,15 +88,15 @@ class ConsoleDropdown extends StatelessWidget {
                   Icons.keyboard_arrow_down_rounded,
                   color: Theme.of(context).colorScheme.primary,
                 ),
-                onChanged: isInteractive
+                onChanged: widget.isInteractive
                     ? (value) {
                         if (value != null) {
-                          final console = consoles.firstWhere((c) => c.id == value);
-                          onConsoleSelect(console);
+                          final console = widget.consoles.firstWhere((c) => c.id == value);
+                          widget.onConsoleSelect(console);
                         }
                       }
                     : null,
-                items: consoles.map((console) {
+                items: widget.consoles.map((console) {
                   return DropdownMenuItem<String>(
                     value: console.id,
                     child: Text(

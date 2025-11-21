@@ -43,23 +43,24 @@ class Footer extends ConsumerWidget {
           duration: Duration(milliseconds: 200),
           height: hasActiveTasks ? 50 : 40,
           child: GestureDetector(
-            onTap: () => TaskPanelModal.show(context),
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: hasActiveTasks
-                    ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.1)
-                    : Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                border: Border(
-                  top: BorderSide(
-                    color: hasActiveTasks
-                        ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.4)
-                        : Theme.of(context).colorScheme.outline,
-                    width: hasActiveTasks ? 1.5 : 0.5,
+            child: InkWell(
+              onTap: () => TaskPanelModal.show(context),
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: hasActiveTasks
+                      ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.1)
+                      : Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                  border: Border(
+                    top: BorderSide(
+                      color: hasActiveTasks
+                          ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.4)
+                          : Theme.of(context).colorScheme.outline,
+                      width: hasActiveTasks ? 1.5 : 0.5,
+                    ),
                   ),
                 ),
-              ),
-              child: OverflowBox(
+                child: OverflowBox(
                 maxHeight: double.infinity,
                 child: Row(
                   children: [
@@ -146,6 +147,7 @@ class Footer extends ConsumerWidget {
             ),
           ),
         ),
+      ),
         Center(
           child: GestureDetector(
             onTap: () => TaskPanelModal.show(context),

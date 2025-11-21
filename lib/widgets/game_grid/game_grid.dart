@@ -89,56 +89,74 @@ class _GameGridState extends ConsumerState<GameGrid> {
 
     const loadMoreThresholdPx = 500.0;
 
-    return Padding(
-      padding: EdgeInsets.only(left: 6, right: 6, top: 6, bottom: 3),
-      child: NotificationListener<ScrollNotification>(
-        onNotification: (notification) {
-          final isScroll = notification is ScrollUpdateNotification;
-          final isNearBottom = notification.metrics.pixels >= notification.metrics.maxScrollExtent - loadMoreThresholdPx;
-          final isVerticalScroll = notification.metrics.axis == Axis.vertical;
-          final shouldLoadMore = isScroll && isVerticalScroll && isNearBottom && !catalogState.loadingMore && catalogState.hasMoreItems;
-          if (shouldLoadMore) ref.read(catalogProvider.notifier).loadMoreItems();
-          return false;
-        },
-        child: GridView.builder(
-          key: PageStorageKey('game-grid-$selectedConsoleId'),
-          padding: EdgeInsets.zero,
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: crossAxisCount,
-            childAspectRatio: _aspectRatio,
-            crossAxisSpacing: 6,
-            mainAxisSpacing: 6,
+    return FocusTraversalGroup(
+      policy: OrderedTraversalPolicy(),
+      child: Column(
+        children: [
+          FocusTraversalOrder(
+            order: const NumericFocusOrder(-1),
+            child: Focus(
+              child: const SizedBox(width: double.infinity, height: 1),
+            ),
           ),
-          itemCount: games.length + (loadingMore ? crossAxisCount : 0),
-          itemBuilder: (context, index) {
-            if (index >= games.length) {
-              return Container(
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(
-                    color: Theme.of(context).dividerColor.withValues(alpha: 0.2),
-                    width: 1,
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(left: 6, right: 6, top: 6, bottom: 3),
+              child: NotificationListener<ScrollNotification>(
+                onNotification: (notification) {
+                  final isScroll = notification is ScrollUpdateNotification;
+                  final isNearBottom = notification.metrics.pixels >= notification.metrics.maxScrollExtent - loadMoreThresholdPx;
+                  final isVerticalScroll = notification.metrics.axis == Axis.vertical;
+                  final shouldLoadMore = isScroll && isVerticalScroll && isNearBottom && !catalogState.loadingMore && catalogState.hasMoreItems;
+                  if (shouldLoadMore) ref.read(catalogProvider.notifier).loadMoreItems();
+                  return false;
+                },
+                child: GridView.builder(
+                  key: PageStorageKey('game-grid-$selectedConsoleId'),
+                  padding: EdgeInsets.zero,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: crossAxisCount,
+                    childAspectRatio: _aspectRatio,
+                    crossAxisSpacing: 6,
+                    mainAxisSpacing: 6,
                   ),
-                ),
-                child: Center(
-                  child: SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                ),
-              );
-            }
+                  itemCount: games.length + (loadingMore ? crossAxisCount : 0),
+                  itemBuilder: (context, index) {
+                    if (index >= games.length) {
+                      return Container(
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.5),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                            color: Theme.of(context).dividerColor.withValues(alpha: 0.2),
+                            width: 1,
+                          ),
+                        ),
+                        child: Center(
+                          child: SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        ),
+                      );
+                    }
 
-            final game = games[index];
-            return GameGridItem(
-              key: ValueKey(game.gameId),
-              game: game,
-              aspectRatio: _aspectRatio,
-            );
-          },
-        ),
+                    final game = games[index];
+                    return FocusTraversalOrder(
+                      order: NumericFocusOrder(index.toDouble()),
+                      child: GameGridItem(
+                        key: ValueKey(game.gameId),
+                        game: game,
+                        aspectRatio: _aspectRatio,
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

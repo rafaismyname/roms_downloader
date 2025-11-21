@@ -98,12 +98,18 @@ class _HeaderState extends ConsumerState<Header> {
                           ),
                         ),
                         SizedBox(width: 8),
-                        ..._buildActionWidgets(
-                          context: context,
-                          appState: appState,
-                          catalogState: catalogState,
-                          canDownload: canDownload,
-                          canAccessSettings: canAccessSettings,
+                        FocusTraversalGroup(
+                          descendantsAreFocusable: true,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: _buildActionWidgets(
+                              context: context,
+                              appState: appState,
+                              catalogState: catalogState,
+                              canDownload: canDownload,
+                              canAccessSettings: canAccessSettings,
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -134,12 +140,18 @@ class _HeaderState extends ConsumerState<Header> {
                       ),
                     ),
                     SizedBox(width: 8),
-                    ..._buildActionWidgets(
-                      context: context,
-                      appState: appState,
-                      catalogState: catalogState,
-                      canDownload: canDownload,
-                      canAccessSettings: canAccessSettings,
+                    FocusTraversalGroup(
+                      descendantsAreFocusable: true,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: _buildActionWidgets(
+                          context: context,
+                          appState: appState,
+                          catalogState: catalogState,
+                          canDownload: canDownload,
+                          canAccessSettings: canAccessSettings,
+                        ),
+                      ),
                     ),
                   ],
                 ),
