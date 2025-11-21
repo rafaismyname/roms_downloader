@@ -32,8 +32,8 @@ jobs:
             # Install build tools for Flutter (clang, ninja)
             apt-get install -y ninja-build clang
           run: |
-            # 1. Install Flutter (Pinned to 3.29.2 for compatible Release Engine)
-            git clone https://github.com/flutter/flutter.git -b 3.29.2 --depth 1
+            # 1. Install Flutter (Pinned to 3.35.4 for compatible Release Engine)
+            git clone https://github.com/flutter/flutter.git -b 3.35.4 --depth 1
             export PATH="$PATH:$PWD/flutter/bin"
             git config --global --add safe.directory '*'
             
@@ -82,7 +82,7 @@ jobs:
             echo "Downloading correct Release engine for ARM64..."
             
             # Download ZIP
-            curl -L -o engine.zip https://github.com/ardera/flutter-engine-binaries-for-arm/archive/refs/tags/engine_18b71d647a292a980abb405ac7d16fe1f0b20434.zip
+            curl -L -o engine.zip https://github.com/ardera/flutter-engine-binaries-for-arm/archive/refs/tags/engine_c29809135135e262a912cf583b2c90deb9ded610.zip
             unzip engine.zip
             mv flutter-engine-binaries-for-arm-* engine-binaries
             rm engine.zip
