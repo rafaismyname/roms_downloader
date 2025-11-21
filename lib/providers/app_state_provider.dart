@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:roms_downloader/models/app_state_model.dart';
@@ -9,6 +10,7 @@ import 'package:roms_downloader/services/permission_service.dart';
 
 const _viewModeKey = 'view_mode';
 const _selectedConsoleKey = 'selected_console';
+const _themeModeKey = 'theme_mode';
 
 final appStateProvider = StateNotifierProvider<AppStateNotifier, AppState>((ref) {
   final catalogService = CatalogService();
@@ -31,6 +33,9 @@ class AppStateNotifier extends StateNotifier<AppState> {
     final prefs = await SharedPreferences.getInstance();
     final viewModeKey = prefs.getString(_viewModeKey) ?? 'grid';
     final savedViewMode = viewModeKey == 'list' ? ViewMode.list : ViewMode.grid;
+    
+    final themeModeIndex = prefs.getInt(_themeModeKey) ?? ThemeMode.system.index;
+    final savedThemeMode = ThemeMode.values[themeModeIndex];
 
     final consoles = await catalogService.getConsoles();
     
@@ -43,6 +48,7 @@ class AppStateNotifier extends StateNotifier<AppState> {
       consoles: consoles,
       selectedConsole: selectedConsole,
       viewMode: savedViewMode,
+      themeMode: savedThemeMode,
     );
 
     _listenToLoadingNotifications();
@@ -77,5 +83,11 @@ class AppStateNotifier extends StateNotifier<AppState> {
   void setViewMode(ViewMode mode) {
     state = state.copyWith(viewMode: mode);
     SharedPreferences.getInstance().then((prefs) => prefs.setString(_viewModeKey, mode.name));
+  }
+
+  void toggleThemeMode() {
+    final newMode = state.themeMode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
+    state = state.copyWith(themeMode: newMode);
+    SharedPreferences.getInstance().then((prefs) => prefs.setInt(_themeModeKey, newMode.index));
   }
 }

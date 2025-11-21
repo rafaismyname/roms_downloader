@@ -5,6 +5,14 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 
+enum GamepadButton {
+  a, b, x, y,
+  l1, r1,
+  select, start,
+  dpadUp, dpadDown, dpadLeft, dpadRight,
+  unknown
+}
+
 class LinuxGamepadListener extends StatefulWidget {
   final Widget child;
 
@@ -24,6 +32,9 @@ class _LinuxGamepadListenerState extends State<LinuxGamepadListener> {
   
   // Debounce for buttons
   DateTime _lastButtonTime = DateTime.now();
+  
+  // Auto-repeat for navigation
+  Timer? _repeatTimer;
 
   int _eventSize = 24; // Default to 64-bit (24 bytes)
 
@@ -184,6 +195,7 @@ class _LinuxGamepadListenerState extends State<LinuxGamepadListener> {
 
   @override
   void dispose() {
+    _stopRepeat();
     for (final sub in _subscriptions) {
       sub.cancel();
     }
@@ -219,7 +231,29 @@ class _LinuxGamepadListenerState extends State<LinuxGamepadListener> {
     }
 
     if (type == 0x01) { // Button
-      _handleButton(number, value);
+      // Simple mapping for legacy JS interface
+      GamepadButton? button;
+      if (number == 0) {
+        button = GamepadButton.a;
+      } else if (number == 1) {
+        button = GamepadButton.b;
+      } else if (number == 2) {
+        button = GamepadButton.x;
+      } else if (number == 3) {
+        button = GamepadButton.y;
+      } else if (number == 4) {
+        button = GamepadButton.l1;
+      } else if (number == 5) {
+        button = GamepadButton.r1;
+      } else if (number == 6) {
+        button = GamepadButton.select;
+      } else if (number == 7) {
+        button = GamepadButton.start;
+      }
+      
+      if (button != null) {
+        _handleButton(button, value);
+      }
     } else if (type == 0x02) { // Axis
       _handleAxis(number, value);
     }
@@ -259,28 +293,40 @@ class _LinuxGamepadListenerState extends State<LinuxGamepadListener> {
       // BTN_MODE (Home) = 316
       // BTN_THUMBL (L3) = 317
       // BTN_THUMBR (R3) = 318
+      // BTN_DPAD_UP = 544
+      // BTN_DPAD_DOWN = 545
+      // BTN_DPAD_LEFT = 546
+      // BTN_DPAD_RIGHT = 547
       
-      int? btnNumber;
+      GamepadButton? button;
       if (code == 304) {
-        btnNumber = 0; // A
+        button = GamepadButton.a;
       } else if (code == 305) {
-        btnNumber = 1; // B
+        button = GamepadButton.b;
       } else if (code == 307) {
-        btnNumber = 2; // X
+        button = GamepadButton.x;
       } else if (code == 308) {
-        btnNumber = 3; // Y
+        button = GamepadButton.y;
       } else if (code == 310) {
-        btnNumber = 4; // L1
+        button = GamepadButton.l1;
       } else if (code == 311) {
-        btnNumber = 5; // R1
+        button = GamepadButton.r1;
       } else if (code == 314) {
-        btnNumber = 8; // Select
+        button = GamepadButton.select;
       } else if (code == 315) {
-        btnNumber = 9; // Start
+        button = GamepadButton.start;
+      } else if (code == 544) {
+        button = GamepadButton.dpadUp;
+      } else if (code == 545) {
+        button = GamepadButton.dpadDown;
+      } else if (code == 546) {
+        button = GamepadButton.dpadLeft;
+      } else if (code == 547) {
+        button = GamepadButton.dpadRight;
       }
       
-      if (btnNumber != null) {
-        _handleButton(btnNumber, value); // value 1=press, 0=release
+      if (button != null) {
+        _handleButton(button, value); // value 1=press, 0=release
       }
     } else if (type == 0x03) { // Absolute Axis
       // ABS_X = 0x00, ABS_Y = 0x01
@@ -307,28 +353,68 @@ class _LinuxGamepadListenerState extends State<LinuxGamepadListener> {
     }
   }
 
-  void _handleButton(int number, int value) {
+  void _handleButton(GamepadButton button, int value) {
     if (value == 0) {
+      _stopRepeat();
       return; // Button release
     }
 
-    // Debounce
+    // Debounce logic
     final now = DateTime.now();
-    if (now.difference(_lastButtonTime).inMilliseconds < 200) {
-      return;
+    // Only debounce non-navigation buttons or use a shorter debounce for them
+    if (![GamepadButton.dpadUp, GamepadButton.dpadDown, GamepadButton.dpadLeft, GamepadButton.dpadRight].contains(button)) {
+      if (now.difference(_lastButtonTime).inMilliseconds < 200) {
+        return;
+      }
+      _lastButtonTime = now;
     }
-    _lastButtonTime = now;
 
-    print('Handling button press: $number');
+    print('Handling button press: $button');
+    
+    _processButton(button);
+    _startRepeat(button);
+  }
 
-    // Mapping (Generic Xbox/Linux)
-    // 0: A, 1: B, 2: X, 3: Y
-    if (number == 0) { // A
-      _activateFocus();
-    } else if (number == 1) { // B
-      // Optional: Back
-    } else if (number == 6 || number == 7) { // D-Pad (if mapped as buttons)
-       // Handled by axis usually, but some controllers map dpad as buttons
+  void _startRepeat(GamepadButton button) {
+    _stopRepeat();
+    // Only repeat navigation buttons
+    if ([GamepadButton.dpadUp, GamepadButton.dpadDown, GamepadButton.dpadLeft, GamepadButton.dpadRight].contains(button)) {
+      // Initial delay before repeat
+      _repeatTimer = Timer(const Duration(milliseconds: 400), () {
+        _repeatTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+           _processButton(button);
+        });
+      });
+    }
+  }
+  
+  void _stopRepeat() {
+    _repeatTimer?.cancel();
+    _repeatTimer = null;
+  }
+
+  void _processButton(GamepadButton button) {
+    switch (button) {
+      case GamepadButton.a:
+        _activateFocus();
+        break;
+      case GamepadButton.b:
+        // Optional: Back
+        break;
+      case GamepadButton.dpadUp:
+        _moveFocus(TraversalDirection.up);
+        break;
+      case GamepadButton.dpadDown:
+        _moveFocus(TraversalDirection.down);
+        break;
+      case GamepadButton.dpadLeft:
+        _moveFocus(TraversalDirection.left);
+        break;
+      case GamepadButton.dpadRight:
+        _moveFocus(TraversalDirection.right);
+        break;
+      default:
+        break;
     }
   }
 
@@ -363,7 +449,21 @@ class _LinuxGamepadListenerState extends State<LinuxGamepadListener> {
   void _moveFocus(TraversalDirection direction) {
     final focusManager = FocusManager.instance;
     final primaryFocus = focusManager.primaryFocus;
+    
+    // Try to use Actions to simulate keyboard navigation which is more robust
+    if (primaryFocus != null && primaryFocus.context != null) {
+      final intent = DirectionalFocusIntent(direction);
+      final action = Actions.maybeFind<DirectionalFocusIntent>(primaryFocus.context!);
+      if (action != null) {
+        print('Moving focus via Actions: $direction');
+        Actions.invoke(primaryFocus.context!, intent);
+        return;
+      }
+    }
+    
+    // Fallback to direct focus manager manipulation
     if (primaryFocus != null) {
+      print('Moving focus via FocusManager: $direction');
       primaryFocus.focusInDirection(direction);
     }
   }

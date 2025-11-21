@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:roms_downloader/providers/app_state_provider.dart';
 import 'package:roms_downloader/screens/home_screen.dart';
 import 'package:roms_downloader/widgets/common/gamepad_listener.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
-class RomsDownloaderApp extends StatelessWidget {
+class RomsDownloaderApp extends ConsumerWidget {
   const RomsDownloaderApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(appStateProvider.select((s) => s.themeMode));
+    
     return GamepadListener(
       child: MaterialApp(
         navigatorKey: navigatorKey,
@@ -35,7 +39,7 @@ class RomsDownloaderApp extends StatelessWidget {
           useMaterial3: true,
           scaffoldBackgroundColor: const Color(0xFF1A1A1A),
         ),
-        themeMode: ThemeMode.system,
+        themeMode: themeMode,
         home: const HomeScreen(),
       ),
     );

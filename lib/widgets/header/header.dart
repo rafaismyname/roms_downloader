@@ -203,6 +203,9 @@ class _HeaderState extends ConsumerState<Header> {
                 ),
               );
               break;
+            case 'theme':
+              appStateNotifier.toggleThemeMode();
+              break;
             case 'about':
               Navigator.push(
                 context,
@@ -216,6 +219,19 @@ class _HeaderState extends ConsumerState<Header> {
           }
         },
         itemBuilder: (context) => [
+          PopupMenuItem(
+            value: 'theme',
+            child: Row(
+              children: [
+                Icon(
+                  appState.themeMode == ThemeMode.dark ? Icons.light_mode : Icons.dark_mode,
+                  size: 18,
+                ),
+                SizedBox(width: 12),
+                Text(appState.themeMode == ThemeMode.dark ? 'Light Mode' : 'Dark Mode'),
+              ],
+            ),
+          ),
           PopupMenuItem(
             value: 'settings',
             enabled: canAccessSettings,
