@@ -7,15 +7,12 @@
 #include "generated_plugin_registrant.h"
 
 #include <disk_space_2/disk_space_2_plugin.h>
-#include <gamepads_windows/gamepads_windows_plugin_c_api.h>
 #include <permission_handler_windows/permission_handler_windows_plugin.h>
 #include <url_launcher_windows/url_launcher_windows.h>
 
 void RegisterPlugins(flutter::PluginRegistry* registry) {
   DiskSpace_2PluginRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("DiskSpace_2Plugin"));
-  GamepadsWindowsPluginCApiRegisterWithRegistrar(
-      registry->GetRegistrarForPlugin("GamepadsWindowsPluginCApi"));
   PermissionHandlerWindowsPluginRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("PermissionHandlerWindowsPlugin"));
   UrlLauncherWindowsRegisterWithRegistrar(

@@ -93,7 +93,8 @@ if command -v openvt >/dev/null 2>&1; then
     # -s: switch to the new VT
     # -w: wait for command to complete
     # --: end of openvt options
-    openvt -s -w -- ./flutter-pi --release ./flutter_assets
+    # -d "177,100": Force ~8-inch screen dimensions
+    openvt -s -w -- ./flutter-pi --release -d "177,100" ./flutter_assets
     EXIT_CODE=$?
 else
     echo "openvt not found, falling back to manual VT switch..."
