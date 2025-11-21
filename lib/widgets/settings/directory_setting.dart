@@ -70,7 +70,8 @@ class DirectorySetting extends StatelessWidget {
             ),
           IconButton(
             onPressed: () async {
-              final newDir = await settingsNotifier.selectDownloadDirectory();
+              final newDir = await settingsNotifier.selectDownloadDirectory(context);
+
               if (newDir != null) {
                 if (console == null) {
                   await settingsNotifier.setGeneralSetting(settingKey, newDir);

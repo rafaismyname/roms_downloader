@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:roms_downloader/models/settings_model.dart';
 import 'package:roms_downloader/services/settings_service.dart';
@@ -97,7 +98,7 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
     return getGeneralSetting(AppSettings.maxParallelExtractions) ?? 2;
   }
 
-  Future<String?> selectDownloadDirectory() async {
-    return await _settingsService.selectDownloadDirectory();
+  Future<String?> selectDownloadDirectory([BuildContext? context]) async {
+    return await _settingsService.selectDownloadDirectory(context);
   }
 }

@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:roms_downloader/models/catalog_model.dart';
@@ -210,6 +211,8 @@ class _HeaderState extends ConsumerState<Header> {
                 ),
               );
               break;
+            case 'exit':
+              exit(0);
           }
         },
         itemBuilder: (context) => [
@@ -234,6 +237,17 @@ class _HeaderState extends ConsumerState<Header> {
               ],
             ),
           ),
+          if (Platform.isLinux)
+            PopupMenuItem(
+              value: 'exit',
+              child: Row(
+                children: [
+                  Icon(Icons.exit_to_app, size: 18, color: Theme.of(context).colorScheme.error),
+                  SizedBox(width: 12),
+                  Text('Exit', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                ],
+              ),
+            ),
         ],
       ),
     ];

@@ -4,6 +4,7 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   disk_space_2
+  gamepads_linux
   url_launcher_linux
 )
 

@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:roms_downloader/models/settings_model.dart';
 import 'package:roms_downloader/services/directory_service.dart';
@@ -55,7 +55,7 @@ class SettingsService {
     return getGeneralSetting<T>(settings, key);
   }
 
-  Future<String?> selectDownloadDirectory() async {
-    return await _directoryService.selectDownloadDirectory();
+  Future<String?> selectDownloadDirectory([BuildContext? context]) async {
+    return await _directoryService.selectDownloadDirectory(context);
   }
 }

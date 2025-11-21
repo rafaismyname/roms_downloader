@@ -120,7 +120,8 @@ else
 
     echo "Launching flutter-pi..."
     # Run flutter-pi
-    ./flutter-pi --release ./flutter_assets
+    # -d "177,100": Force ~8-inch screen dimensions (intermediate size)
+    ./flutter-pi --release -d "177,100" ./flutter_assets
     EXIT_CODE=$?
 
     # Switch back to original VT

@@ -1,7 +1,8 @@
 import 'dart:io';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:filesystem_picker/filesystem_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:disk_space_2/disk_space_2.dart';
@@ -45,9 +46,22 @@ class DirectoryService {
     return appDocDir.path;
   }
 
-  Future<String?> selectDownloadDirectory() async {
+  Future<String?> selectDownloadDirectory([BuildContext? context]) async {
     try {
-      final selectedDirectory = await FilePicker.platform.getDirectoryPath();
+      String? selectedDirectory;
+      if (Platform.isLinux && context != null) {
+        selectedDirectory = await FilesystemPicker.open(
+          title: 'Select Directory',
+          context: context,
+          rootDirectory: Directory('/'),
+          fsType: FilesystemType.folder,
+          pickText: 'Select this folder',
+          folderIconColor: Theme.of(context).colorScheme.primary,
+        );
+      } else {
+        selectedDirectory = await FilePicker.platform.getDirectoryPath();
+      }
+
       if (selectedDirectory == null) {
         return null;
       }
@@ -85,7 +99,7 @@ class DirectoryService {
   }
 
   static Future<int> getFreeSpace(String dirPath) async {
-    if (Platform.isMacOS) {
+    if (Platform.isMacOS || Platform.isLinux) {
       try {
         final result = await Process.run('df', ['-k', dirPath]);
         if (result.exitCode != 0) return 0;

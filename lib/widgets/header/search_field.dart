@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'dart:io';
+import 'package:virtual_keyboard_multi_language/virtual_keyboard_multi_language.dart';
 
 class SearchField extends StatefulWidget {
   final String initialText;
@@ -52,6 +54,37 @@ class _SearchFieldState extends State<SearchField> {
     });
   }
 
+  void _showVirtualKeyboard() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        color: Theme.of(context).colorScheme.surface,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              color: Theme.of(context).colorScheme.surfaceContainer,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Done'),
+                  ),
+                ],
+              ),
+            ),
+            VirtualKeyboard(
+              type: VirtualKeyboardType.Alphanumeric,
+              textController: _controller,
+              textColor: Theme.of(context).colorScheme.onSurface,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return SizedBox(
@@ -59,6 +92,8 @@ class _SearchFieldState extends State<SearchField> {
       child: TextField(
         controller: _controller,
         focusNode: _focusNode,
+        readOnly: Platform.isLinux,
+        onTap: Platform.isLinux ? _showVirtualKeyboard : null,
         onSubmitted: (_) => _focusNode.unfocus(),
         decoration: InputDecoration(
           hintText: 'Search games...',
