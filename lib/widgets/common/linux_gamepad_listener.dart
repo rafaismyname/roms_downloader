@@ -30,20 +30,37 @@ class _LinuxGamepadListenerState extends State<LinuxGamepadListener> {
   @override
   void initState() {
     super.initState();
-    _checkArch();
-    _connectToGamepads();
+    _init();
   }
 
-  void _checkArch() {
-    // Simple heuristic for 64-bit vs 32-bit based on Platform.version
-    // This affects input_event struct size (timeval size)
-    final version = Platform.version.toLowerCase();
-    if (version.contains('aarch64') || version.contains('x86_64') || version.contains('arm64')) {
-      _eventSize = 24;
-    } else {
-      _eventSize = 16;
+  Future<void> _init() async {
+    await _checkArch();
+    await _connectToGamepads();
+  }
+
+  Future<void> _checkArch() async {
+    // Default to 64-bit (24 bytes)
+    _eventSize = 24;
+    
+    try {
+      final result = await Process.run('uname', ['-m']);
+      final arch = result.stdout.toString().trim().toLowerCase();
+      debugPrint('System architecture: $arch');
+      
+      // 32-bit architectures
+      if (arch.contains('armv7') || arch == 'arm' || arch.contains('i386') || arch.contains('i686')) {
+        _eventSize = 16;
+      }
+    } catch (e) {
+      debugPrint('Failed to check architecture via uname: $e');
+      // Fallback to Platform.version
+      final version = Platform.version.toLowerCase();
+      if (!version.contains('64')) {
+         _eventSize = 16;
+      }
     }
-    print('Detected architecture: $version, using event size: $_eventSize');
+    
+    debugPrint('Using event size: $_eventSize bytes');
   }
 
   Future<void> _connectToGamepads() async {
@@ -84,57 +101,70 @@ class _LinuxGamepadListenerState extends State<LinuxGamepadListener> {
       }
 
       final content = await file.readAsString();
-      final blocks = content.split('\n\n');
+      final lines = content.split('\n');
+      
+      String? currentName;
+      String? currentHandlers;
 
-      for (final block in blocks) {
-        if (_isGamepadBlock(block)) {
-          final handlersLine = block.split('\n').firstWhere(
-            (line) => line.startsWith('H: Handlers='),
-            orElse: () => '',
-          );
-          
-          // Extract eventX
-          final match = RegExp(r'event(\d+)').firstMatch(handlersLine);
-          if (match != null) {
-            paths.add('/dev/input/event${match.group(1)}');
+      for (final line in lines) {
+        if (line.trim().isEmpty) {
+          // End of block, process what we found
+          if (currentName != null && currentHandlers != null) {
+             // Check if it's a gamepad
+             if (_isGamepadName(currentName) || _isGamepadHandler(currentHandlers)) {
+                // Extract eventX
+                final match = RegExp(r'event(\d+)').firstMatch(currentHandlers);
+                if (match != null) {
+                  final path = '/dev/input/event${match.group(1)}';
+                  debugPrint('Found gamepad candidate: "$currentName" at $path');
+                  paths.add(path);
+                }
+             }
           }
+          // Reset for next block
+          currentName = null;
+          currentHandlers = null;
+          continue;
+        }
+
+        if (line.startsWith('N: Name=')) {
+          currentName = line.substring(8).replaceAll('"', '').trim();
+        } else if (line.startsWith('H: Handlers=')) {
+          currentHandlers = line.substring(12).trim();
         }
       }
+      
+      // Process last block if file doesn't end with newline
+      if (currentName != null && currentHandlers != null) {
+         if (_isGamepadName(currentName) || _isGamepadHandler(currentHandlers)) {
+            final match = RegExp(r'event(\d+)').firstMatch(currentHandlers);
+            if (match != null) {
+              final path = '/dev/input/event${match.group(1)}';
+              debugPrint('Found gamepad candidate: "$currentName" at $path');
+              paths.add(path);
+            }
+         }
+      }
+
     } catch (e) {
-      print('Error scanning /proc/bus/input/devices: $e');
+      debugPrint('Error scanning /proc/bus/input/devices: $e');
     }
     return paths;
   }
 
-  bool _isGamepadBlock(String block) {
-    final nameLine = block.split('\n').firstWhere(
-      (line) => line.startsWith('N: Name='),
-      orElse: () => '',
-    ).toLowerCase();
-    
-    final handlersLine = block.split('\n').firstWhere(
-      (line) => line.startsWith('H: Handlers='),
-      orElse: () => '',
-    ).toLowerCase();
-
-    // 1. Check for 'js' handler (strongest indicator of a joystick/gamepad)
-    if (handlersLine.contains('js')) {
-      return true;
-    }
-    
-    if (nameLine.isEmpty) {
-      return false;
-    }
-
-    // 2. Check keywords in name
+  bool _isGamepadName(String name) {
+    final lowerName = name.toLowerCase();
     const keywords = [
       'gamepad', 'controller', 'joystick', 'pad', 
       'xbox', 'playstation', 'nintendo', 'switch',
       'retro', '8bitdo', 'odin', 'android', 'aw869a',
-      'input'
+      'ayn' // Added AYN specifically
     ];
+    return keywords.any((k) => lowerName.contains(k));
+  }
 
-    return keywords.any((k) => nameLine.contains(k));
+  bool _isGamepadHandler(String handlers) {
+    return handlers.contains('js');
   }
 
   Future<void> _connectToPath(String path, {required bool isEvdev}) async {
@@ -209,6 +239,11 @@ class _LinuxGamepadListenerState extends State<LinuxGamepadListener> {
     final type = view.getUint16(offset, Endian.little);
     final code = view.getUint16(offset + 2, Endian.little);
     final value = view.getInt32(offset + 4, Endian.little);
+
+    // Debug log for every event
+    if (type != 0) { // Ignore EV_SYN
+      debugPrint('EV: type=$type, code=$code, value=$value');
+    }
 
     // EV_KEY = 0x01, EV_ABS = 0x03
     if (type == 0x01) { // Key/Button
