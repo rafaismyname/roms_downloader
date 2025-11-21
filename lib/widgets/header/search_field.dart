@@ -29,6 +29,11 @@ class _SearchFieldState extends State<SearchField> {
     super.initState();
     _controller = TextEditingController(text: widget.initialText);
     _focusNode = FocusNode();
+    if (Platform.isLinux) {
+      _controller.addListener(() {
+        _onSearchChanged(_controller.text);
+      });
+    }
   }
 
   @override
