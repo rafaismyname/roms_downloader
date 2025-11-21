@@ -85,10 +85,48 @@ if [ ! -d "./flutter_assets" ]; then
     exit 1
 fi
 
-echo "Launching flutter-pi..."
-# Run flutter-pi
-./flutter-pi --release ./flutter_assets
+echo "Attempting to launch on a new Virtual Terminal (VT)..."
 
-EXIT_CODE=$?
+# Try using openvt first (cleaner method)
+if command -v openvt >/dev/null 2>&1; then
+    echo "Using openvt to launch flutter-pi..."
+    # -s: switch to the new VT
+    # -w: wait for command to complete
+    # --: end of openvt options
+    openvt -s -w -- ./flutter-pi --release ./flutter_assets
+    EXIT_CODE=$?
+else
+    echo "openvt not found, falling back to manual VT switch..."
+    
+    # Get current VT
+    if command -v fgconsole >/dev/null 2>&1; then
+        CURRENT_VT=$(fgconsole)
+    else
+        CURRENT_VT=1
+    fi
+
+    # Determine target VT (swap between 1 and 2)
+    if [ "$CURRENT_VT" = "1" ]; then
+        TARGET_VT=2
+    else
+        TARGET_VT=1
+    fi
+
+    echo "Switching from VT $CURRENT_VT to VT $TARGET_VT"
+    chvt $TARGET_VT
+
+    # Wait for switch to complete and ES to release master
+    sleep 2
+
+    echo "Launching flutter-pi..."
+    # Run flutter-pi
+    ./flutter-pi --release ./flutter_assets
+    EXIT_CODE=$?
+
+    # Switch back to original VT
+    echo "Switching back to VT $CURRENT_VT"
+    chvt $CURRENT_VT
+fi
+
 echo "flutter-pi exited with code $EXIT_CODE"
 
