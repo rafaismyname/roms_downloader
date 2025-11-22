@@ -84,8 +84,19 @@ jobs:
             # We place them in a 'bundled_libs' folder so the launch script can selectively use them
             echo "Bundling shared libraries..."
             mkdir -p dist/ports/roms_downloader/bundled_libs
-            for LIB in libdrm.so.2 libgbm.so.1; do
-                PATH_TO_LIB=$(find /usr/lib/aarch64-linux-gnu -name "$LIB" | head -n 1)
+            
+            # List of potential missing libs on minimal distros (Knulli, Batocera, etc.)
+            LIBS_TO_BUNDLE="libdrm.so.2 libgbm.so.1 \
+                            libinput.so.10 libevdev.so.2 libmtdev.so.1 \
+                            libxkbcommon.so.0 \
+                            libsystemd.so.0 libudev.so.1 \
+                            libcap.so.2 libgcrypt.so.20 libgpg-error.so.0 \
+                            liblz4.so.1 liblzma.so.5 libzstd.so.1 \
+                            libfontconfig.so.1 libfreetype.so.6 libssl.so.1.1 libcrypto.so.1.1"
+            
+            for LIB in $LIBS_TO_BUNDLE; do
+                # Search in common library paths
+                PATH_TO_LIB=$(find /usr/lib/aarch64-linux-gnu /lib/aarch64-linux-gnu /usr/lib /lib -name "$LIB" 2>/dev/null | head -n 1)
                 if [ -n "$PATH_TO_LIB" ]; then
                     echo "Bundling $LIB from $PATH_TO_LIB"
                     cp "$PATH_TO_LIB" dist/ports/roms_downloader/bundled_libs/

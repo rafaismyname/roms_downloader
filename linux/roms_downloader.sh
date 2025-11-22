@@ -61,7 +61,7 @@ check_and_link_lib() {
     else
         echo "System $libname NOT found. Using bundled version."
         if [ -f "$GAMEDIR/bundled_libs/$libname" ]; then
-            ln -sf "$GAMEDIR/bundled_libs/$libname" "$GAMEDIR/runtime_libs/$libname"
+            cp "$GAMEDIR/bundled_libs/$libname" "$GAMEDIR/runtime_libs/$libname"
         else
             echo "WARNING: Bundled $libname also missing!"
         fi
@@ -71,6 +71,22 @@ check_and_link_lib() {
 # Check for problematic libraries
 check_and_link_lib "libdrm.so.2"
 check_and_link_lib "libgbm.so.1"
+check_and_link_lib "libinput.so.10"
+check_and_link_lib "libevdev.so.2"
+check_and_link_lib "libmtdev.so.1"
+check_and_link_lib "libxkbcommon.so.0"
+check_and_link_lib "libsystemd.so.0"
+check_and_link_lib "libudev.so.1"
+check_and_link_lib "libcap.so.2"
+check_and_link_lib "libgcrypt.so.20"
+check_and_link_lib "libgpg-error.so.0"
+check_and_link_lib "liblz4.so.1"
+check_and_link_lib "liblzma.so.5"
+check_and_link_lib "libzstd.so.1"
+check_and_link_lib "libfontconfig.so.1"
+check_and_link_lib "libfreetype.so.6"
+check_and_link_lib "libssl.so.1.1"
+check_and_link_lib "libcrypto.so.1.1"
 
 # Add runtime_libs and current directory to library path
 export LD_LIBRARY_PATH="$GAMEDIR/runtime_libs:$GAMEDIR:$LD_LIBRARY_PATH"
