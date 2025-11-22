@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 enum GamepadButton {
   a, b, x, y,
@@ -394,22 +395,34 @@ class _LinuxGamepadListenerState extends State<LinuxGamepadListener> {
   void _processButton(GamepadButton button) {
     switch (button) {
       case GamepadButton.a:
-        _handleSelect();
+        _simulateKey(LogicalKeyboardKey.enter);
         break;
       case GamepadButton.b:
-        _handleBack();
+        _simulateKey(LogicalKeyboardKey.escape);
+        break;
+      case GamepadButton.x:
+        _simulateKey(LogicalKeyboardKey.backspace);
+        break;
+      case GamepadButton.y:
+        _simulateKey(LogicalKeyboardKey.tab);
+        break;
+      case GamepadButton.l1:
+        _simulateShiftTab();
+        break;
+      case GamepadButton.r1:
+        _simulateKey(LogicalKeyboardKey.tab);
         break;
       case GamepadButton.dpadUp:
-        _moveFocus(TraversalDirection.up);
+        _simulateKey(LogicalKeyboardKey.arrowUp);
         break;
       case GamepadButton.dpadDown:
-        _moveFocus(TraversalDirection.down);
+        _simulateKey(LogicalKeyboardKey.arrowDown);
         break;
       case GamepadButton.dpadLeft:
-        _moveFocus(TraversalDirection.left);
+        _simulateKey(LogicalKeyboardKey.arrowLeft);
         break;
       case GamepadButton.dpadRight:
-        _moveFocus(TraversalDirection.right);
+        _simulateKey(LogicalKeyboardKey.arrowRight);
         break;
       default:
         break;
@@ -430,72 +443,99 @@ class _LinuxGamepadListenerState extends State<LinuxGamepadListener> {
       // Trigger direction
       if (number == 6 || number == 0) { // X Axis
         if (value < 0) {
-          _moveFocus(TraversalDirection.left);
+          _simulateKey(LogicalKeyboardKey.arrowLeft);
         } else {
-          _moveFocus(TraversalDirection.right);
+          _simulateKey(LogicalKeyboardKey.arrowRight);
         }
       } else if (number == 7 || number == 1) { // Y Axis
         if (value < 0) {
-          _moveFocus(TraversalDirection.up);
+          _simulateKey(LogicalKeyboardKey.arrowUp);
         } else {
-          _moveFocus(TraversalDirection.down);
+          _simulateKey(LogicalKeyboardKey.arrowDown);
         }
       }
     }
   }
 
-  void _moveFocus(TraversalDirection direction) {
-    final focusManager = FocusManager.instance;
-    final primaryFocus = focusManager.primaryFocus;
+  void _simulateKey(LogicalKeyboardKey key) {
+    final physicalKey = _getPhysicalKey(key);
+    final now = Duration(milliseconds: DateTime.now().millisecondsSinceEpoch);
     
-    // Try to use Actions to simulate keyboard navigation which is more robust
-    if (primaryFocus != null && primaryFocus.context != null) {
-      final intent = DirectionalFocusIntent(direction);
-      final action = Actions.maybeFind<DirectionalFocusIntent>(primaryFocus.context!);
-      if (action != null) {
-        debugPrint('Moving focus via Actions: $direction');
-        Actions.invoke(primaryFocus.context!, intent);
-        return;
+    final downEvent = KeyDownEvent(
+      physicalKey: physicalKey,
+      logicalKey: key,
+      timeStamp: now,
+    );
+    
+    _dispatchKey(downEvent);
+    
+    final upEvent = KeyUpEvent(
+      physicalKey: physicalKey,
+      logicalKey: key,
+      timeStamp: now,
+    );
+    
+    _dispatchKey(upEvent);
+  }
+
+  void _simulateShiftTab() {
+    final shiftPhysical = PhysicalKeyboardKey.shiftLeft;
+    final shiftLogical = LogicalKeyboardKey.shiftLeft;
+    final tabPhysical = PhysicalKeyboardKey.tab;
+    final tabLogical = LogicalKeyboardKey.tab;
+    
+    final now = Duration(milliseconds: DateTime.now().millisecondsSinceEpoch);
+
+    _dispatchKey(KeyDownEvent(
+      physicalKey: shiftPhysical,
+      logicalKey: shiftLogical,
+      timeStamp: now,
+    ));
+
+    _dispatchKey(KeyDownEvent(
+      physicalKey: tabPhysical,
+      logicalKey: tabLogical,
+      timeStamp: now,
+    ));
+
+    _dispatchKey(KeyUpEvent(
+      physicalKey: tabPhysical,
+      logicalKey: tabLogical,
+      timeStamp: now,
+    ));
+
+    _dispatchKey(KeyUpEvent(
+      physicalKey: shiftPhysical,
+      logicalKey: shiftLogical,
+      timeStamp: now,
+    ));
+  }
+
+  void _dispatchKey(KeyEvent event) {
+    FocusNode? node = FocusManager.instance.primaryFocus;
+    KeyEventResult result = KeyEventResult.ignored;
+    
+    while (node != null && result == KeyEventResult.ignored) {
+      if (node.onKeyEvent != null) {
+        result = node.onKeyEvent!(node, event);
       }
-    }
-    
-    // Fallback to direct focus manager manipulation
-    if (primaryFocus != null) {
-      debugPrint('Moving focus via FocusManager: $direction');
-      primaryFocus.focusInDirection(direction);
+      if (result == KeyEventResult.ignored) {
+        node = node.parent;
+      }
     }
   }
 
-  void _handleSelect() {
-    final focusManager = FocusManager.instance;
-    final primaryFocus = focusManager.primaryFocus;
-    if (primaryFocus != null) {
-      final context = primaryFocus.context;
-      if (context != null) {
-        final action = Actions.maybeFind<ActivateIntent>(context);
-        if (action != null) {
-          Actions.invoke(context, const ActivateIntent());
-        }
-      }
-    }
-  }
-
-  void _handleBack() {
-    final focusManager = FocusManager.instance;
-    final primaryFocus = focusManager.primaryFocus;
-
-    if (primaryFocus != null && primaryFocus.context != null) {
-      final action = Actions.maybeFind<DismissIntent>(primaryFocus.context!);
-      if (action != null) {
-        Actions.invoke(primaryFocus.context!, const DismissIntent());
-        return;
-      }
-    }
-
-    if (primaryFocus != null && primaryFocus.parent != null) {
-       primaryFocus.unfocus();
-       return;
-    }
+  PhysicalKeyboardKey _getPhysicalKey(LogicalKeyboardKey logical) {
+    if (logical == LogicalKeyboardKey.arrowUp) return PhysicalKeyboardKey.arrowUp;
+    if (logical == LogicalKeyboardKey.arrowDown) return PhysicalKeyboardKey.arrowDown;
+    if (logical == LogicalKeyboardKey.arrowLeft) return PhysicalKeyboardKey.arrowLeft;
+    if (logical == LogicalKeyboardKey.arrowRight) return PhysicalKeyboardKey.arrowRight;
+    if (logical == LogicalKeyboardKey.enter) return PhysicalKeyboardKey.enter;
+    if (logical == LogicalKeyboardKey.escape) return PhysicalKeyboardKey.escape;
+    if (logical == LogicalKeyboardKey.tab) return PhysicalKeyboardKey.tab;
+    if (logical == LogicalKeyboardKey.backspace) return PhysicalKeyboardKey.backspace;
+    if (logical == LogicalKeyboardKey.shiftLeft) return PhysicalKeyboardKey.shiftLeft;
+    return PhysicalKeyboardKey.f1; // Fallback
   }
 
   @override
