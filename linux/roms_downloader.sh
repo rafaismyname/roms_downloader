@@ -31,8 +31,49 @@ cd "$GAMEDIR"
 # Ensure permissions
 chmod +x ./flutter-pi
 
-# Add current directory to library path so it finds libflutter_engine.so
-export LD_LIBRARY_PATH="$GAMEDIR:$LD_LIBRARY_PATH"
+# Prepare runtime libs folder to selectively provide missing libraries
+mkdir -p "$GAMEDIR/runtime_libs"
+# Clean up previous links
+rm -f "$GAMEDIR/runtime_libs"/*
+
+# Function to check and link library if missing from system
+check_and_link_lib() {
+    local libname="$1"
+    local found=0
+    
+    # Check common system locations
+    if [ -f "/usr/lib/$libname" ] || \
+       [ -f "/usr/lib64/$libname" ] || \
+       [ -f "/lib/$libname" ] || \
+       [ -f "/usr/lib/aarch64-linux-gnu/$libname" ]; then
+        found=1
+    fi
+    
+    # Also check if ldconfig knows about it (if ldconfig exists)
+    if [ $found -eq 0 ] && command -v ldconfig >/dev/null 2>&1; then
+        if ldconfig -p | grep -q "$libname"; then
+            found=1
+        fi
+    fi
+    
+    if [ $found -eq 1 ]; then
+        echo "System $libname found. Skipping bundled version."
+    else
+        echo "System $libname NOT found. Using bundled version."
+        if [ -f "$GAMEDIR/bundled_libs/$libname" ]; then
+            ln -sf "$GAMEDIR/bundled_libs/$libname" "$GAMEDIR/runtime_libs/$libname"
+        else
+            echo "WARNING: Bundled $libname also missing!"
+        fi
+    fi
+}
+
+# Check for problematic libraries
+check_and_link_lib "libdrm.so.2"
+check_and_link_lib "libgbm.so.1"
+
+# Add runtime_libs and current directory to library path
+export LD_LIBRARY_PATH="$GAMEDIR/runtime_libs:$GAMEDIR:$LD_LIBRARY_PATH"
 echo "LD_LIBRARY_PATH: $LD_LIBRARY_PATH"
 
 # Set XDG environment variables to keep data self-contained
