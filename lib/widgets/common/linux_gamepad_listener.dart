@@ -394,10 +394,10 @@ class _LinuxGamepadListenerState extends State<LinuxGamepadListener> {
   void _processButton(GamepadButton button) {
     switch (button) {
       case GamepadButton.a:
-        _activateFocus();
+        _handleSelect();
         break;
       case GamepadButton.b:
-        // Optional: Back
+        _handleBack();
         break;
       case GamepadButton.dpadUp:
         _moveFocus(TraversalDirection.up);
@@ -466,7 +466,7 @@ class _LinuxGamepadListenerState extends State<LinuxGamepadListener> {
     }
   }
 
-  void _activateFocus() {
+  void _handleSelect() {
     final focusManager = FocusManager.instance;
     final primaryFocus = focusManager.primaryFocus;
     if (primaryFocus != null) {
@@ -477,6 +477,24 @@ class _LinuxGamepadListenerState extends State<LinuxGamepadListener> {
           Actions.invoke(context, const ActivateIntent());
         }
       }
+    }
+  }
+
+  void _handleBack() {
+    final focusManager = FocusManager.instance;
+    final primaryFocus = focusManager.primaryFocus;
+
+    if (primaryFocus != null && primaryFocus.context != null) {
+      final action = Actions.maybeFind<DismissIntent>(primaryFocus.context!);
+      if (action != null) {
+        Actions.invoke(primaryFocus.context!, const DismissIntent());
+        return;
+      }
+    }
+
+    if (primaryFocus != null && primaryFocus.parent != null) {
+       primaryFocus.unfocus();
+       return;
     }
   }
 

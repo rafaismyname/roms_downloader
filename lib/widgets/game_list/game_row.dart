@@ -87,9 +87,23 @@ class _GameRowState extends ConsumerState<GameRow> {
               DirectionalFocusIntent: CallbackAction<DirectionalFocusIntent>(
                 onInvoke: (intent) {
                   if (intent.direction == TraversalDirection.up) {
-                    return FocusScope.of(context).previousFocus();
+                    final moved = FocusScope.of(context).previousFocus();
+                    if (!moved) {
+                      FocusManager.instance.primaryFocus?.focusInDirection(TraversalDirection.up);
+                    }
+                    return null;
                   } else if (intent.direction == TraversalDirection.down) {
-                    return FocusScope.of(context).nextFocus();
+                    final moved = FocusScope.of(context).nextFocus();
+                    if (!moved) {
+                      FocusManager.instance.primaryFocus?.focusInDirection(TraversalDirection.down);
+                    }
+                    return null;
+                  } else if (intent.direction == TraversalDirection.left) {
+                    _node.previousFocus();
+                    return null;
+                  } else if (intent.direction == TraversalDirection.right) {
+                    _node.nextFocus();
+                    return null;
                   }
                   return null;
                 },

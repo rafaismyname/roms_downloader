@@ -80,9 +80,9 @@ jobs:
             # flutter-pi typically expects 'app.so' for AOT snapshots
             cp build/linux/arm64/release/bundle/lib/libapp.so dist/ports/roms_downloader/flutter_assets/app.so
             
-            # Bundle shared libraries that might be missing on target (e.g. RG35xxSP)
+            # Bundle shared libraries that might be missing on target (e.g. RG35xxSP) for now only libdrm
             echo "Bundling shared libraries..."
-            for LIB in libdrm.so.2 libgbm.so.1; do
+            for LIB in libdrm.so.2; do
                 PATH_TO_LIB=$(find /usr/lib/aarch64-linux-gnu -name "$LIB" | head -n 1)
                 if [ -n "$PATH_TO_LIB" ]; then
                     echo "Bundling $LIB from $PATH_TO_LIB"
