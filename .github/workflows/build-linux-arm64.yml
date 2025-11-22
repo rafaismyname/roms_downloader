@@ -92,7 +92,8 @@ jobs:
                             libsystemd.so.0 libudev.so.1 \
                             libcap.so.2 libgcrypt.so.20 libgpg-error.so.0 \
                             liblz4.so.1 liblzma.so.5 libzstd.so.1 \
-                            libfontconfig.so.1 libfreetype.so.6 libssl.so.1.1 libcrypto.so.1.1"
+                            libfontconfig.so.1 libfreetype.so.6 libssl.so.1.1 libcrypto.so.1.1 \
+                            libwayland-server.so.0 libwayland-client.so.0 libwayland-cursor.so.0 libwayland-egl.so.1 libffi.so.7"
             
             for LIB in $LIBS_TO_BUNDLE; do
                 # Search in common library paths

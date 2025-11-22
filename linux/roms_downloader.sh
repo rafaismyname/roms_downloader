@@ -87,6 +87,11 @@ check_and_link_lib "libfontconfig.so.1"
 check_and_link_lib "libfreetype.so.6"
 check_and_link_lib "libssl.so.1.1"
 check_and_link_lib "libcrypto.so.1.1"
+check_and_link_lib "libwayland-server.so.0"
+check_and_link_lib "libwayland-client.so.0"
+check_and_link_lib "libwayland-cursor.so.0"
+check_and_link_lib "libwayland-egl.so.1"
+check_and_link_lib "libffi.so.7"
 
 # Add runtime_libs and current directory to library path
 export LD_LIBRARY_PATH="$GAMEDIR/runtime_libs:$GAMEDIR:$LD_LIBRARY_PATH"

@@ -273,11 +273,6 @@ class _LinuxGamepadListenerState extends State<LinuxGamepadListener> {
     final code = view.getUint16(offset + 2, Endian.little);
     final value = view.getInt32(offset + 4, Endian.little);
 
-    // Debug log for every event
-    if (type != 0) { // Ignore EV_SYN
-      debugPrint('EV: type=$type, code=$code, value=$value');
-    }
-
     // EV_KEY = 0x01, EV_ABS = 0x03
     if (type == 0x01) { // Key/Button
       // Map Linux key codes to our internal button numbers
@@ -367,8 +362,6 @@ class _LinuxGamepadListenerState extends State<LinuxGamepadListener> {
       }
       _lastButtonTime = now;
     }
-
-    debugPrint('Handling button press: $button');
     
     _processButton(button);
     _startRepeat(button);
@@ -435,8 +428,6 @@ class _LinuxGamepadListenerState extends State<LinuxGamepadListener> {
     
     final lastValue = _axisState[number] ?? 0;
     _axisState[number] = value;
-
-    debugPrint('Handling axis: $number, value: $value');
 
     // Check for crossing threshold
     if (value.abs() > _axisThreshold && lastValue.abs() <= _axisThreshold) {
