@@ -62,7 +62,7 @@ class _ConsoleDropdownState extends State<ConsoleDropdown> {
           color: _hasFocus
               ? Theme.of(context).colorScheme.primary
               : Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
-          width: _hasFocus ? 2 : 1,
+          width: _hasFocus ? 3 : 1,
         ),
       ),
       child: Row(

@@ -149,16 +149,14 @@ class Footer extends ConsumerWidget {
         ),
       ),
         Center(
-          child: GestureDetector(
-            onTap: () => TaskPanelModal.show(context),
-            child: Container(
-              padding: EdgeInsets.all(8),
-              child: Icon(
-                Icons.keyboard_arrow_up,
-                size: 24,
-                color: hasActiveTasks ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-              ),
+          child: IconButton(
+            onPressed: () => TaskPanelModal.show(context),
+            icon: Icon(
+              Icons.keyboard_arrow_up,
+              size: 24,
+              color: hasActiveTasks ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
             ),
+            tooltip: 'Show Tasks',
           ),
         ),
       ],

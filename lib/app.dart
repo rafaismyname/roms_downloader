@@ -30,6 +30,13 @@ class RomsDownloaderApp extends ConsumerWidget {
             foregroundColor: Color(0xFF213547),
             elevation: 0,
           ),
+          focusColor: Colors.blueAccent.withValues(alpha: 0.2),
+          highlightColor: Colors.blueAccent.withValues(alpha: 0.1),
+          hoverColor: Colors.blueAccent.withValues(alpha: 0.05),
+          listTileTheme: ListTileThemeData(
+            selectedColor: const Color(0xFF646CFF),
+            selectedTileColor: const Color(0xFF646CFF).withValues(alpha: 0.1),
+          ),
         ),
         darkTheme: ThemeData(
           colorScheme: ColorScheme.fromSeed(
@@ -38,6 +45,13 @@ class RomsDownloaderApp extends ConsumerWidget {
           ),
           useMaterial3: true,
           scaffoldBackgroundColor: const Color(0xFF1A1A1A),
+          focusColor: Colors.blueAccent.withValues(alpha: 0.4),
+          highlightColor: Colors.blueAccent.withValues(alpha: 0.2),
+          hoverColor: Colors.blueAccent.withValues(alpha: 0.1),
+          listTileTheme: ListTileThemeData(
+            selectedColor: const Color(0xFF747BFF),
+            selectedTileColor: const Color(0xFF747BFF).withValues(alpha: 0.1),
+          ),
         ),
         themeMode: themeMode,
         home: const HomeScreen(),

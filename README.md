@@ -41,7 +41,8 @@ I'm currently not relying on releases **JUST BECAUSE**. Meanwhile you can access
 - [ ] List sorting
 - [x] Info/About page
 - [x] Android, Mac, and Windows support
-- [ ] Linux and handheld Linux support (untested)
+- [x] Linux arm64 support (Tested on Odin2 Pro Mini via Rocknix)
+- [ ] Linux x86_64 support
 - [ ] ~~iOS support~~ No iOS support for now, *cry about it*.
 
 ## Technologies

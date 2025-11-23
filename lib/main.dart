@@ -13,6 +13,7 @@ void main() {
 
   ExtractionService.initialize();
   WidgetsFlutterBinding.ensureInitialized();
+  FocusManager.instance.highlightStrategy = FocusHighlightStrategy.alwaysTraditional;
   runApp(
     const ProviderScope(
       child: RomsDownloaderApp(),

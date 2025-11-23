@@ -69,7 +69,6 @@ check_and_link_lib() {
 }
 
 # Check for problematic libraries
-# Graphics
 check_and_link_lib "libdrm.so.2"
 check_and_link_lib "libgbm.so.1"
 check_and_link_lib "libexpat.so.1"

@@ -48,6 +48,10 @@ class _SearchFieldState extends State<SearchField> {
             FocusManager.instance.primaryFocus?.focusInDirection(TraversalDirection.right);
             return KeyEventResult.handled;
           }
+          if (event.logicalKey == LogicalKeyboardKey.enter || event.logicalKey == LogicalKeyboardKey.space) {
+            _showVirtualKeyboard();
+            return KeyEventResult.handled;
+          }
         }
         return KeyEventResult.ignored;
       },
