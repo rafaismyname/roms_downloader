@@ -69,29 +69,53 @@ check_and_link_lib() {
 }
 
 # Check for problematic libraries
+# Graphics
 check_and_link_lib "libdrm.so.2"
 check_and_link_lib "libgbm.so.1"
+check_and_link_lib "libexpat.so.1"
+
+# Input & Wacom Stack (The "libwacom" fix)
 check_and_link_lib "libinput.so.10"
 check_and_link_lib "libevdev.so.2"
 check_and_link_lib "libmtdev.so.1"
-check_and_link_lib "libxkbcommon.so.0"
-check_and_link_lib "libsystemd.so.0"
+check_and_link_lib "libwacom.so.2"
+check_and_link_lib "libgudev-1.0.so.0"
 check_and_link_lib "libudev.so.1"
+
+# GLib / GObject Stack (Dependencies of libwacom)
+check_and_link_lib "libgobject-2.0.so.0"
+check_and_link_lib "libglib-2.0.so.0"
+check_and_link_lib "libffi.so.7"
+check_and_link_lib "libpcre.so.3"
+check_and_link_lib "libxkbcommon.so.0"
+
+# Systemd & Compression Stack
+check_and_link_lib "libsystemd.so.0"
 check_and_link_lib "libcap.so.2"
 check_and_link_lib "libgcrypt.so.20"
 check_and_link_lib "libgpg-error.so.0"
 check_and_link_lib "liblz4.so.1"
 check_and_link_lib "liblzma.so.5"
 check_and_link_lib "libzstd.so.1"
+
+# Mount & SELinux Stack (Dependencies of libsystemd)
+check_and_link_lib "libmount.so.1"
+check_and_link_lib "libblkid.so.1"
+check_and_link_lib "libuuid.so.1"
+check_and_link_lib "libselinux.so.1"
+check_and_link_lib "libpcre2-8.so.0"
+
+# Fonts & SSL
 check_and_link_lib "libfontconfig.so.1"
 check_and_link_lib "libfreetype.so.6"
 check_and_link_lib "libssl.so.1.1"
 check_and_link_lib "libcrypto.so.1.1"
+
+# Wayland
 check_and_link_lib "libwayland-server.so.0"
 check_and_link_lib "libwayland-client.so.0"
 check_and_link_lib "libwayland-cursor.so.0"
 check_and_link_lib "libwayland-egl.so.1"
-check_and_link_lib "libffi.so.7"
 
 # Add runtime_libs and current directory to library path
 export LD_LIBRARY_PATH="$GAMEDIR/runtime_libs:$GAMEDIR:$LD_LIBRARY_PATH"

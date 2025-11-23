@@ -85,15 +85,19 @@ jobs:
             echo "Bundling shared libraries..."
             mkdir -p dist/ports/roms_downloader/bundled_libs
             
-            # List of potential missing libs on minimal distros (Knulli, Batocera, etc.)
-            LIBS_TO_BUNDLE="libdrm.so.2 libgbm.so.1 \
+            # Comprehensive list of potential missing libs on minimal distros (Knulli, Batocera, etc.)
+            # Based on Ubuntu 20.04 dependency tree for libinput, libsystemd, and libgbm
+            LIBS_TO_BUNDLE="libdrm.so.2 libgbm.so.1 libexpat.so.1 \
                             libinput.so.10 libevdev.so.2 libmtdev.so.1 \
+                            libwacom.so.2 libgudev-1.0.so.0 libudev.so.1 \
+                            libgobject-2.0.so.0 libglib-2.0.so.0 libffi.so.7 libpcre.so.3 \
                             libxkbcommon.so.0 \
-                            libsystemd.so.0 libudev.so.1 \
+                            libsystemd.so.0 \
                             libcap.so.2 libgcrypt.so.20 libgpg-error.so.0 \
                             liblz4.so.1 liblzma.so.5 libzstd.so.1 \
+                            libmount.so.1 libblkid.so.1 libuuid.so.1 libselinux.so.1 libpcre2-8.so.0 \
                             libfontconfig.so.1 libfreetype.so.6 libssl.so.1.1 libcrypto.so.1.1 \
-                            libwayland-server.so.0 libwayland-client.so.0 libwayland-cursor.so.0 libwayland-egl.so.1 libffi.so.7"
+                            libwayland-server.so.0 libwayland-client.so.0 libwayland-cursor.so.0 libwayland-egl.so.1"
             
             for LIB in $LIBS_TO_BUNDLE; do
                 # Search in common library paths
