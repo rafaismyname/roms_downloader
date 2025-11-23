@@ -43,19 +43,14 @@ jobs:
             # 2. Configure Flutter
             flutter config --enable-linux-desktop
             
-            # 3. Download and extract flutter-pi (The Embedder)
-            echo "Downloading flutter-pi..."
-            curl -L -o flutter-pi.zip https://github.com/ardera/flutter-pi/archive/refs/heads/master.zip
-            unzip flutter-pi.zip
-            mv flutter-pi-master flutter-pi
-            cd flutter-pi
-            mkdir build && cd build
-            cmake .. || (cat CMakeFiles/CMakeError.log && exit 1)
-            # Reduce parallelism to avoid OOM/Segfault in QEMU
-            make -j"$(nproc)" || make -j"$(( $(nproc) / 2 ))" || make -j1
+            # 3. Build flutter-pi (The Embedder)
+            echo "Building flutter-pi with minimal dependencies..."
+            chmod +x linux/compile_flutter_pi_knulli.sh
+            ./linux/compile_flutter_pi_knulli.sh
+            
             # Save the binary for later
-            cp flutter-pi ../../flutter-pi-bin
-            cd ../../
+            # The script builds in build_knulli/flutter-pi/build/flutter-pi
+            cp build_knulli/flutter-pi/build/flutter-pi flutter-pi-bin
             
             # 4. Build the Flutter App (Assets + Engine)
             echo "Building Flutter App..."
@@ -89,15 +84,13 @@ jobs:
             # Based on Ubuntu 20.04 dependency tree for libinput, libsystemd, and libgbm
             LIBS_TO_BUNDLE="libdrm.so.2 libgbm.so.1 libexpat.so.1 \
                             libinput.so.10 libevdev.so.2 libmtdev.so.1 \
-                            libwacom.so.2 libgudev-1.0.so.0 libudev.so.1 \
+                            libgudev-1.0.so.0 libudev.so.1 \
                             libgobject-2.0.so.0 libglib-2.0.so.0 libffi.so.7 libpcre.so.3 \
                             libxkbcommon.so.0 \
-                            libsystemd.so.0 \
                             libcap.so.2 libgcrypt.so.20 libgpg-error.so.0 \
                             liblz4.so.1 liblzma.so.5 libzstd.so.1 \
                             libmount.so.1 libblkid.so.1 libuuid.so.1 libselinux.so.1 libpcre2-8.so.0 \
-                            libfontconfig.so.1 libfreetype.so.6 libssl.so.1.1 libcrypto.so.1.1 \
-                            libwayland-server.so.0 libwayland-client.so.0 libwayland-cursor.so.0 libwayland-egl.so.1"
+                            libfontconfig.so.1 libfreetype.so.6 libssl.so.1.1 libcrypto.so.1.1"
             
             for LIB in $LIBS_TO_BUNDLE; do
                 # Search in common library paths
