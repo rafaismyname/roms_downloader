@@ -99,7 +99,8 @@ class DirectoryService {
   }
 
   static Future<int> getFreeSpace(String dirPath) async {
-    if (Platform.isMacOS || Platform.isLinux) {
+    if (Platform.isMacOS || Platform.isWindows) return 0x7FFFFFFFFFFFFFFF;
+    if (Platform.isLinux) {
       try {
         final result = await Process.run('df', ['-k', dirPath]);
         if (result.exitCode != 0) return 0;

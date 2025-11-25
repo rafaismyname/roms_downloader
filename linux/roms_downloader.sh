@@ -39,25 +39,23 @@ rm -f "$GAMEDIR/runtime_libs"/*
 # Function to check and link library if missing from system
 check_and_link_lib() {
     local libname="$1"
-    local found=0
+    local found_path=""
     
     # Check common system locations
-    if [ -f "/usr/lib/$libname" ] || \
-       [ -f "/usr/lib64/$libname" ] || \
-       [ -f "/lib/$libname" ] || \
-       [ -f "/usr/lib/aarch64-linux-gnu/$libname" ]; then
-        found=1
-    fi
-    
-    # Also check if ldconfig knows about it (if ldconfig exists)
-    if [ $found -eq 0 ] && command -v ldconfig >/dev/null 2>&1; then
-        if ldconfig -p | grep -q "$libname"; then
-            found=1
+    for path in "/usr/lib/$libname" \
+                "/usr/lib64/$libname" \
+                "/lib/$libname" \
+                "/usr/lib/aarch64-linux-gnu/$libname" \
+                "/usr/local/lib/$libname"; do
+        if [ -f "$path" ]; then
+            found_path="$path"
+            break
         fi
-    fi
+    done
     
-    if [ $found -eq 1 ]; then
-        echo "System $libname found. Skipping bundled version."
+    if [ -n "$found_path" ]; then
+        echo "System $libname found at $found_path. Copying..."
+        cp "$found_path" "$GAMEDIR/runtime_libs/$libname"
     else
         echo "System $libname NOT found. Using bundled version."
         if [ -f "$GAMEDIR/bundled_libs/$libname" ]; then

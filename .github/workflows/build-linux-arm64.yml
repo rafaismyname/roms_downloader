@@ -45,12 +45,12 @@ jobs:
             
             # 3. Build flutter-pi (The Embedder)
             echo "Building flutter-pi with minimal dependencies..."
-            chmod +x linux/compile_flutter_pi_knulli.sh
-            ./linux/compile_flutter_pi_knulli.sh
+            chmod +x linux/compile_flutter_pi.sh
+            ./linux/compile_flutter_pi.sh
             
             # Save the binary for later
-            # The script builds in build_knulli/flutter-pi/build/flutter-pi
-            cp build_knulli/flutter-pi/build/flutter-pi flutter-pi-bin
+            # The script builds in build_flutter/flutter-pi/build/flutter-pi
+            cp build_flutter/flutter-pi/build/flutter-pi flutter-pi-bin
             
             # 4. Build the Flutter App (Assets + Engine)
             echo "Building Flutter App..."
@@ -75,7 +75,7 @@ jobs:
             # flutter-pi typically expects 'app.so' for AOT snapshots
             cp build/linux/arm64/release/bundle/lib/libapp.so dist/ports/roms_downloader/flutter_assets/app.so
             
-            # Bundle shared libraries that might be missing on target (e.g. RG35xxSP)
+            # Bundle shared libraries that might be missing on target
             # We place them in a 'bundled_libs' folder so the launch script can selectively use them
             echo "Bundling shared libraries..."
             mkdir -p dist/ports/roms_downloader/bundled_libs

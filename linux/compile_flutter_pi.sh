@@ -2,7 +2,7 @@
 set -e
 
 # Directory setup
-BUILD_DIR="build_knulli"
+BUILD_DIR="build_flutter"
 mkdir -p $BUILD_DIR
 cd $BUILD_DIR
 
@@ -18,7 +18,7 @@ cd flutter-pi
 mkdir -p build
 cd build
 
-# CONFIGURE CMAKE FOR KNULLI/BUILDROOT
+# CONFIGURE CMAKE
 # Key changes:
 # - ENABLE_SESSION_SWITCHING=OFF: Disables libsystemd/libseat requirement (run as root/single user)
 # - BUILD_TEXT_INPUT_PLUGIN=ON: Keep this
