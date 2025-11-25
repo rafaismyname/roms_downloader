@@ -67,7 +67,7 @@ cmake .. \
   -DENABLE_WAYLAND=OFF \
   -DENABLE_TESTS=OFF \
   -DENABLE_SYSTEMD=OFF \
-  -DENABLE_DBUS=OFF
+  -DENABLE_DBUS=OFF \
   || (cat CMakeFiles/CMakeError.log && exit 1)
 
 # Build
