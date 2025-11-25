@@ -80,20 +80,20 @@ cd build
 
 # CONFIGURE CMAKE FOR SOFTWARE RENDERING
 # - ENABLE_SOFTWARE=ON: Enables software rendering support
-# - ENABLE_OPENGL=OFF: We are using pure software backend now
-# - ENABLE_SESSION_SWITCHING=OFF: Keep disabled for Knulli
+# - ENABLE_OPENGL=ON: Required to satisfy CMake build requirements (even if we don't use it)
+# - ENABLE_KMS=ON: Required to satisfy CMake build requirements (linked but not used due to patch)
 echo "Configuring CMake for Software Rendering..."
 cmake .. \
   -DCMAKE_BUILD_TYPE=Release \
   -DENABLE_SESSION_SWITCHING=OFF \
   -DENABLE_VULKAN=OFF \
-  -DENABLE_OPENGL=OFF \
-  -DENABLE_EGL=OFF \
-  -DENABLE_GLES=OFF \
+  -DENABLE_OPENGL=ON \
+  -DENABLE_EGL=ON \
+  -DENABLE_GLES=ON \
   -DENABLE_SOFTWARE=ON \
   -DENABLE_LIBINPUT=ON \
   -DENABLE_UDEV=ON \
-  -DENABLE_KMS=OFF \
+  -DENABLE_KMS=ON \
   -DENABLE_X11=OFF \
   -DENABLE_WAYLAND=OFF \
   -DENABLE_TESTS=OFF \
