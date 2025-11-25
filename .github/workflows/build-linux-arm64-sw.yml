@@ -45,7 +45,7 @@ jobs:
             # 3. Build flutter-pi (The Embedder) - SOFTWARE MODE
             echo "Building flutter-pi with software rendering support..."
             chmod +x linux/compile_flutter_pi_software.sh
-            # No patch file needed, script uses sed
+            # No patch file needed, script uses python
             ./linux/compile_flutter_pi_software.sh
             
             # Save the binary for later
