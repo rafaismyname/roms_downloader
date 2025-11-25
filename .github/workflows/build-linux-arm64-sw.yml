@@ -35,11 +35,7 @@ jobs:
             apt-get install -y ninja-build clang
           run: |
             # 1. Install Flutter (Pinned to 3.35.4 for compatible Release Engine)
-            if [ ! -d "flutter" ]; then
-                curl -L -o flutter.zip https://github.com/flutter/flutter/archive/refs/tags/3.35.4.zip
-                unzip flutter.zip
-                mv flutter-3.35.4 flutter
-            fi
+            git clone https://github.com/flutter/flutter.git -b 3.35.4 --depth 1
             export PATH="$PATH:$PWD/flutter/bin"
             git config --global --add safe.directory '*'
             
