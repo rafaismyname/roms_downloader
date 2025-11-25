@@ -87,6 +87,7 @@ jobs:
                             libwacom.so.2 libgudev-1.0.so.0 libudev.so.1 \
                             libgobject-2.0.so.0 libglib-2.0.so.0 libffi.so.7 libpcre.so.3 \
                             libxkbcommon.so.0 \
+                            libwayland-server.so.0 libwayland-client.so.0 libwayland-cursor.so.0 libwayland-egl.so.1 \
                             libsystemd.so.0 \
                             libcap.so.2 libgcrypt.so.20 libgpg-error.so.0 \
                             liblz4.so.1 liblzma.so.5 libzstd.so.1 \
