@@ -35,7 +35,11 @@ jobs:
             apt-get install -y ninja-build clang
           run: |
             # 1. Install Flutter (Pinned to 3.35.4 for compatible Release Engine)
-            git clone https://github.com/flutter/flutter.git -b 3.35.4 --depth 1
+            if [ ! -d "flutter" ]; then
+                curl -L -o flutter.zip https://github.com/flutter/flutter/archive/refs/tags/3.35.4.zip
+                unzip flutter.zip
+                mv flutter-3.35.4 flutter
+            fi
             export PATH="$PATH:$PWD/flutter/bin"
             git config --global --add safe.directory '*'
             
@@ -45,8 +49,7 @@ jobs:
             # 3. Build flutter-pi (The Embedder) - SOFTWARE MODE
             echo "Building flutter-pi with software rendering support..."
             chmod +x linux/compile_flutter_pi_software.sh
-            # Ensure patch is available
-            cp linux/flutter_pi_fbdev.patch .
+            # No patch file needed, script uses sed
             ./linux/compile_flutter_pi_software.sh
             
             # Save the binary for later
