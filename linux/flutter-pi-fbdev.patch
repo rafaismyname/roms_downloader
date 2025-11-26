@@ -1,5 +1,5 @@
 diff --git a/src/egl_gbm_render_surface.c b/src/egl_gbm_render_surface.c
-index abc352a..211ad7d 100644
+index abc352a..addc91b 100644
 --- a/src/egl_gbm_render_surface.c
 +++ b/src/egl_gbm_render_surface.c
 @@ -156,13 +156,13 @@ static int egl_gbm_render_surface_init(
@@ -78,7 +78,7 @@ index ad7f028..f6f59ad 100644
 +
 +void egl_gbm_render_surface_read_pixels(struct egl_gbm_render_surface *s, void *buffer, size_t buffer_size);
 diff --git a/src/flutter-pi.c b/src/flutter-pi.c
-index 877ef49..6d0a25d 100644
+index 877ef49..2426a2c 100644
 --- a/src/flutter-pi.c
 +++ b/src/flutter-pi.c
 @@ -1860,6 +1860,7 @@ bool flutterpi_parse_cmdline_args(int argc, char **argv, struct flutterpi_cmdlin
@@ -142,16 +142,18 @@ index 877ef49..6d0a25d 100644
      } else {
          if(cmd_args.has_drm_fd){
              /* --drm-fd is passed, we don't want flutter-pi to handle the DRM choice */
-@@ -2508,7 +2516,7 @@ struct flutterpi *flutterpi_new_from_args(int argc, char **argv) {
+@@ -2508,7 +2516,9 @@ struct flutterpi *flutterpi_new_from_args(int argc, char **argv) {
      } else if (renderer_type == kOpenGL_RendererType) {
  #ifdef HAVE_EGL_GLES2
          vk_renderer = NULL;
 -        gl_renderer = gl_renderer_new_from_gbm_device(tracer, gbm_device, cmd_args.has_pixel_format, cmd_args.pixel_format);
++        fprintf(stderr, "[flutter-pi] DEBUG: Creating GL renderer...\n");
 +        gl_renderer = gl_renderer_new_from_gbm_device(tracer, gbm_device, cmd_args.has_pixel_format, cmd_args.pixel_format, cmd_args.use_fbdev);
++        fprintf(stderr, "[flutter-pi] DEBUG: GL renderer created: %p\n", gl_renderer);
          if (gl_renderer == NULL) {
              LOG_ERROR("Couldn't create EGL/OpenGL renderer.\n");
              ok = EIO;
-@@ -2536,7 +2544,7 @@ struct flutterpi *flutterpi_new_from_args(int argc, char **argv) {
+@@ -2536,7 +2546,7 @@ struct flutterpi *flutterpi_new_from_args(int argc, char **argv) {
          goto fail_unref_scheduler;
      }
  
@@ -160,7 +162,7 @@ index 877ef49..6d0a25d 100644
          window = dummy_window_new(
              tracer,
              scheduler,
-@@ -2547,7 +2555,8 @@ struct flutterpi *flutterpi_new_from_args(int argc, char **argv) {
+@@ -2547,7 +2557,8 @@ struct flutterpi *flutterpi_new_from_args(int argc, char **argv) {
              cmd_args.has_physical_dimensions,
              cmd_args.physical_dimensions.x,
              cmd_args.physical_dimensions.y,
@@ -170,7 +172,7 @@ index 877ef49..6d0a25d 100644
          );
      } else {
          window = kms_window_new(
-@@ -2583,7 +2592,7 @@ struct flutterpi *flutterpi_new_from_args(int argc, char **argv) {
+@@ -2583,7 +2594,7 @@ struct flutterpi *flutterpi_new_from_args(int argc, char **argv) {
      }
  
      /// TODO: Do we really need the window after this?
@@ -179,7 +181,7 @@ index 877ef49..6d0a25d 100644
          ok = sd_event_add_io(event_loop, NULL, drmdev_get_event_fd(drmdev), EPOLLIN | EPOLLHUP | EPOLLPRI, on_drmdev_ready, drmdev);
          if (ok < 0) {
              LOG_ERROR("Could not add DRM pageflip event listener. sd_event_add_io: %s\n", strerror(-ok));
-@@ -2781,7 +2790,7 @@ fail_unref_tracer:
+@@ -2781,7 +2792,7 @@ fail_unref_tracer:
      tracer_unref(tracer);
  
  fail_destroy_drmdev:
@@ -201,10 +203,30 @@ index b2b3dc1..b642134 100644
  
      bool has_drm_fd;
 diff --git a/src/gl_renderer.c b/src/gl_renderer.c
-index 58b25ea..55de50f 100644
+index 58b25ea..9533230 100644
 --- a/src/gl_renderer.c
 +++ b/src/gl_renderer.c
-@@ -136,7 +136,8 @@ struct gl_renderer *gl_renderer_new_from_gbm_device(
+@@ -100,7 +100,9 @@ static ATTR_PURE EGLConfig choose_config_with_pixel_format(EGLDisplay display, c
+     LOG_DEBUG("Choosing EGL config with pixel format %s...\n", get_pixfmt_info(pixel_format)->name);
+ 
+     n_matched = 0;
++    fprintf(stderr, "[flutter-pi] DEBUG: Calling eglChooseConfig (query)...\n");
+     egl_ok = eglChooseConfig(display, attrib_list, NULL, 0, &n_matched);
++    fprintf(stderr, "[flutter-pi] DEBUG: eglChooseConfig (query) returned %d, n_matched=%d\n", egl_ok, n_matched);
+     if (egl_ok != EGL_TRUE) {
+         LOG_EGL_ERROR(eglGetError(), "Could not query number of EGL framebuffer configurations with fitting attributes. eglChooseConfig");
+         return EGL_NO_CONFIG_KHR;
+@@ -108,7 +110,9 @@ static ATTR_PURE EGLConfig choose_config_with_pixel_format(EGLDisplay display, c
+ 
+     matching = alloca(n_matched * sizeof *matching);
+ 
++    fprintf(stderr, "[flutter-pi] DEBUG: Calling eglChooseConfig (get)...\n");
+     egl_ok = eglChooseConfig(display, attrib_list, matching, n_matched, &n_matched);
++    fprintf(stderr, "[flutter-pi] DEBUG: eglChooseConfig (get) returned %d\n", egl_ok);
+     if (egl_ok != EGL_TRUE) {
+         LOG_EGL_ERROR(eglGetError(), "Could not query EGL framebuffer configurations with fitting attributes. eglChooseConfig");
+         return EGL_NO_CONFIG_KHR;
+@@ -136,7 +140,8 @@ struct gl_renderer *gl_renderer_new_from_gbm_device(
      struct tracer *tracer,
      struct gbm_device *gbm_device,
      bool has_forced_pixel_format,
@@ -214,7 +236,7 @@ index 58b25ea..55de50f 100644
  ) {
      struct gl_renderer *renderer;
      const char *egl_client_exts, *egl_display_exts;
-@@ -221,7 +222,7 @@ struct gl_renderer *gl_renderer_new_from_gbm_device(
+@@ -221,7 +226,7 @@ struct gl_renderer *gl_renderer_new_from_gbm_device(
      PFNEGLCREATEPLATFORMWINDOWSURFACEPROC egl_create_platform_window_surface = try_get_proc_address("eglCreatePlatformWindowSurface");
  
      if (egl_display == EGL_NO_DISPLAY && egl_get_platform_display != NULL) {
@@ -223,7 +245,7 @@ index 58b25ea..55de50f 100644
          if (egl_display == EGL_NO_DISPLAY) {
              LOG_EGL_ERROR(eglGetError(), "Could not get EGL display from GBM device. eglGetPlatformDisplay");
              failed_before = true;
-@@ -235,7 +236,7 @@ struct gl_renderer *gl_renderer_new_from_gbm_device(
+@@ -235,7 +240,7 @@ struct gl_renderer *gl_renderer_new_from_gbm_device(
              LOG_DEBUG("Attempting eglGetPlatformDisplayEXT...\n");
          }
  
@@ -232,20 +254,42 @@ index 58b25ea..55de50f 100644
          if (egl_display == EGL_NO_DISPLAY) {
              LOG_EGL_ERROR(eglGetError(), "Could not get EGL display from GBM device. eglGetPlatformDisplayEXT");
              failed_before = true;
-@@ -248,7 +249,12 @@ struct gl_renderer *gl_renderer_new_from_gbm_device(
+@@ -248,7 +253,14 @@ struct gl_renderer *gl_renderer_new_from_gbm_device(
              LOG_DEBUG("Attempting eglGetDisplay...\n");
          }
  
 -        egl_display = eglGetDisplay((void *) gbm_device);
-+        if (gbm_device) {
++                if (gbm_device) {
 +            egl_display = eglGetDisplay((void *) gbm_device);
 +        } else {
 +            fprintf(stderr, "[flutter-pi] FBDEV: Using EGL_DEFAULT_DISPLAY\n");
++            fprintf(stderr, "[flutter-pi] DEBUG: Calling eglGetDisplay(EGL_DEFAULT_DISPLAY)...\n");
 +            egl_display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
++            fprintf(stderr, "[flutter-pi] DEBUG: eglGetDisplay returned %p\n", egl_display);
 +        }
          if (egl_display == EGL_NO_DISPLAY) {
              LOG_EGL_ERROR(eglGetError(), "Could not get EGL display from GBM device. eglGetDisplay");
          }
+@@ -259,7 +271,9 @@ struct gl_renderer *gl_renderer_new_from_gbm_device(
+         goto fail_free_renderer;
+     }
+ 
++    fprintf(stderr, "[flutter-pi] DEBUG: Calling eglInitialize...\n");
+     egl_ok = eglInitialize(egl_display, &major, &minor);
++    fprintf(stderr, "[flutter-pi] DEBUG: eglInitialize returned %d\n", egl_ok);
+     if (egl_ok != EGL_TRUE) {
+         LOG_EGL_ERROR(eglGetError(), "Failed to initialize EGL! eglInitialize:");
+         goto fail_free_renderer;
+@@ -305,7 +319,9 @@ struct gl_renderer *gl_renderer_new_from_gbm_device(
+         }
+     }
+ 
++    fprintf(stderr, "[flutter-pi] DEBUG: Calling eglCreateContext (root)...\n");
+     root_context = eglCreateContext(egl_display, forced_egl_config, EGL_NO_CONTEXT, context_attribs);
++    fprintf(stderr, "[flutter-pi] DEBUG: eglCreateContext (root) returned %p\n", root_context);
+     if (root_context == EGL_NO_CONTEXT) {
+         LOG_EGL_ERROR(eglGetError(), "Could not create EGL context for OpenGL ES. eglCreateContext");
+         goto fail_terminate_display;
 diff --git a/src/gl_renderer.h b/src/gl_renderer.h
 index d6c8160..d5da2df 100644
 --- a/src/gl_renderer.h
@@ -261,10 +305,10 @@ index d6c8160..d5da2df 100644
  
  void gl_renderer_destroy(struct gl_renderer *renderer);
 diff --git a/src/window.c b/src/window.c
-index b13fd82..885d322 100644
+index b13fd82..d01c65a 100644
 --- a/src/window.c
 +++ b/src/window.c
-@@ -11,6 +11,10 @@
+@@ -11,6 +11,11 @@
  #include "window.h"
  
  #include <errno.h>
@@ -272,10 +316,11 @@ index b13fd82..885d322 100644
 +#include <sys/ioctl.h>
 +#include <sys/mman.h>
 +#include <unistd.h>
++#include <linux/fb.h>
  #include <stdlib.h>
  
  #include <pthread.h>
-@@ -226,6 +230,12 @@ struct window {
+@@ -226,6 +231,12 @@ struct window {
       */
      struct vec2i cursor_pos;
  
@@ -288,7 +333,7 @@ index b13fd82..885d322 100644
      int (*push_composition)(struct window *window, struct fl_layer_composition *composition);
      struct render_surface *(*get_render_surface)(struct window *window, struct vec2i size);
  
-@@ -1632,7 +1642,8 @@ MUST_CHECK struct window *dummy_window_new(
+@@ -1632,7 +1643,8 @@ MUST_CHECK struct window *dummy_window_new(
      struct vk_renderer *vk_renderer,
      struct vec2i size,
      bool has_explicit_dimensions, int width_mm, int height_mm,
@@ -298,7 +343,7 @@ index b13fd82..885d322 100644
      // clang-format on
  ) {
      struct window *window;
-@@ -1641,6 +1652,52 @@ MUST_CHECK struct window *dummy_window_new(
+@@ -1641,6 +1653,52 @@ MUST_CHECK struct window *dummy_window_new(
      if (window == NULL) {
          return NULL;
      }
@@ -351,11 +396,10 @@ index b13fd82..885d322 100644
  
      window_init(
          // clang-format off
-@@ -1688,7 +1745,31 @@ static int dummy_window_push_composition(struct window *window, struct fl_layer_
+@@ -1688,6 +1746,31 @@ static int dummy_window_push_composition(struct window *window, struct fl_layer_
      window_lock(window);
  
      /// TODO: Maybe allow to export the layer composition as an image, for testing purposes.
--    (void) composition;
 +    if (window->use_fbdev && window->render_surface != NULL) {
 +        struct egl_gbm_render_surface *egl_surface = CAST_EGL_GBM_RENDER_SURFACE(window->render_surface);
 +        
@@ -381,10 +425,10 @@ index b13fd82..885d322 100644
 +             fprintf(stderr, "[flutter-pi] FBDEV: Failed to allocate buffer for pixel read.\n");
 +        }
 +    }
+     (void) composition;
  
      window_unlock(window);
- 
-@@ -1801,6 +1882,17 @@ static void dummy_window_deinit(struct window *window) {
+@@ -1801,6 +1884,17 @@ static void dummy_window_deinit(struct window *window) {
          UNREACHABLE();
  #endif
      }
