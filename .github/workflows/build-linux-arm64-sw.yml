@@ -2,7 +2,7 @@ name: Build Linux ARM64 FB (PortMaster/flutter-pi)
 
 on:
   push:
-    branches: [ "arm64" ]
+    branches: [ "arm64-sw" ]
   workflow_dispatch:
 
 jobs:
