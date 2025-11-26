@@ -1,13 +1,13 @@
-name: Build Linux ARM64 SW (PortMaster/flutter-pi Software)
+name: Build Linux ARM64 FB (PortMaster/flutter-pi)
 
 on:
   push:
-    branches: [ "arm64-sw" ]
+    branches: [ "arm64" ]
   workflow_dispatch:
 
 jobs:
-  build-arm64-sw:
-    name: Build Linux ARM64 (Software)
+  build-arm64-fb:
+    name: Build Linux ARM64 FB
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -24,14 +24,12 @@ jobs:
           githubToken: ${{ github.token }}
           install: |
             apt-get update
-            # Install dependencies for Flutter and flutter-pi compilation
             apt-get install -y curl git unzip xz-utils zip build-essential cmake pkg-config
             apt-get install -y libc6-dev
             apt-get install -y libgl1-mesa-dev libgles2-mesa-dev libegl1-mesa-dev
             apt-get install -y libdrm-dev libgbm-dev fontconfig
             apt-get install -y libsystemd-dev libinput-dev libudev-dev libxkbcommon-dev
             apt-get install -y libgtk-3-dev
-            # Install build tools for Flutter (clang, ninja)
             apt-get install -y ninja-build clang
           run: |
             # 1. Install Flutter (Pinned to 3.35.4 for compatible Release Engine)
@@ -42,20 +40,49 @@ jobs:
             # 2. Configure Flutter
             flutter config --enable-linux-desktop
             
-            # 3. Build flutter-pi (The Embedder) - SOFTWARE MODE
-            echo "Building flutter-pi with software rendering support..."
-            chmod +x linux/compile_flutter_pi_software.sh
-            # No patch file needed, script uses python
-            ./linux/compile_flutter_pi_software.sh
+            # 3. Build flutter-pi (Patched for FB)
+            echo "Building flutter-pi with FB patch..."
+            mkdir -p build_flutter
+            cd build_flutter
             
-            # Save the binary for later
-            # The script builds in build_sw/flutter-pi/build/flutter-pi
-            cp build_sw/flutter-pi/build/flutter-pi flutter-pi-bin
+            # Clone flutter-pi
+            git clone https://github.com/ardera/flutter-pi.git
+            cd flutter-pi
+            
+            # Apply Patch
+            echo "Applying FB patch..."
+            patch -p1 < ../../linux/flutter-pi-fb.patch
+            
+            # Build
+            mkdir -p build
+            cd build
+            cmake .. \
+                -DCMAKE_BUILD_TYPE=Release \
+                -DENABLE_SESSION_SWITCHING=OFF \
+                -DENABLE_VULKAN=OFF \
+                -DENABLE_OPENGL=ON \
+                -DENABLE_EGL=ON \
+                -DENABLE_GLES=ON \
+                -DENABLE_LIBINPUT=ON \
+                -DENABLE_UDEV=ON \
+                -DENABLE_KMS=ON \
+                -DENABLE_X11=OFF \
+                -DENABLE_WAYLAND=OFF \
+                -DENABLE_TESTS=OFF \
+                -DENABLE_SYSTEMD=OFF \
+                -DENABLE_DBUS=OFF  \
+                || (cat CMakeFiles/CMakeError.log && exit 1)
+            
+            make -j$(nproc) || make -j1
+            
+            # Copy binary back to root
+            cd ../../..
+            cp build_flutter/flutter-pi/build/flutter-pi flutter-pi-bin
             
             # 4. Build the Flutter App (Assets + Engine)
             echo "Building Flutter App..."
             flutter pub get
-            # Build standard Linux release
+            # Build standard Linux release (produces ARM64 AOT since we are on ARM64)
             flutter build linux --release
             
             # 5. Package for PortMaster
@@ -66,22 +93,24 @@ jobs:
             cp flutter-pi-bin dist/ports/roms_downloader/flutter-pi
             
             # Copy the build output
+            # Source: build/linux/arm64/release/bundle/
+            
+            # 1. Assets
             cp -r build/linux/arm64/release/bundle/data/flutter_assets/* dist/ports/roms_downloader/flutter_assets/
+            
+            # 2. AOT Blob (app.so) - Must be inside flutter_assets for flutter-pi
             cp build/linux/arm64/release/bundle/lib/libapp.so dist/ports/roms_downloader/flutter_assets/app.so
             
             # Bundle shared libraries
             echo "Bundling shared libraries..."
             mkdir -p dist/ports/roms_downloader/bundled_libs
             
-            # Same bundle list as before, plus maybe Mesa swrast if we could find it?
-            # For now, keeping the robust list we made.
             LIBS_TO_BUNDLE="libdrm.so.2 libgbm.so.1 libexpat.so.1 \
                             libinput.so.10 libevdev.so.2 libmtdev.so.1 \
                             libwacom.so.2 libgudev-1.0.so.0 libudev.so.1 \
                             libgobject-2.0.so.0 libglib-2.0.so.0 libffi.so.7 libpcre.so.3 \
                             libxkbcommon.so.0 \
                             libwayland-server.so.0 libwayland-client.so.0 libwayland-cursor.so.0 libwayland-egl.so.1 \
-                            libEGL.so.1 libGLESv2.so.2 \
                             libsystemd.so.0 \
                             libcap.so.2 libgcrypt.so.20 libgpg-error.so.0 \
                             liblz4.so.1 liblzma.so.5 libzstd.so.1 \
@@ -100,6 +129,7 @@ jobs:
             
             # 3. Engine - MANUAL DOWNLOAD (Community Release Binary)
             echo "Downloading correct Release engine for ARM64..."
+            
             curl -L -o engine.zip https://github.com/ardera/flutter-engine-binaries-for-arm/archive/refs/tags/engine_c29809135135e262a912cf583b2c90deb9ded610.zip
             unzip engine.zip
             mv flutter-engine-binaries-for-arm-* engine-binaries
@@ -107,17 +137,29 @@ jobs:
             
             ENGINE_PATH="engine-binaries/arm64/libflutter_engine.so.release"
             if [ ! -f "$ENGINE_PATH" ]; then
-               echo "ERROR: libflutter_engine.so.release not found!"
+               echo "ERROR: libflutter_engine.so.release not found in community repo!"
+               ls -R engine-binaries
                exit 1
             fi
+            
+            echo "Found engine at: $ENGINE_PATH"
             cp "$ENGINE_PATH" dist/ports/roms_downloader/libflutter_engine.so
+            
             rm -rf engine-binaries
             
             # 4. ICU Data
             ICU_DATA_PATH=$(find build/linux/arm64/release/bundle -name "icudtl.dat" | head -n 1)
             if [ -z "$ICU_DATA_PATH" ]; then
+               echo "ICU Data not found in bundle. Searching in Flutter cache..."
                ICU_DATA_PATH=$(find flutter/bin/cache/artifacts/engine -name "icudtl.dat" | head -n 1)
             fi
+            
+            if [ -z "$ICU_DATA_PATH" ]; then
+               echo "ERROR: icudtl.dat not found!"
+               exit 1
+            fi
+            
+            echo "Found ICU data at: $ICU_DATA_PATH"
             cp "$ICU_DATA_PATH" dist/ports/roms_downloader/flutter_assets/
             
             # Copy launch script
@@ -127,10 +169,10 @@ jobs:
             
             # Create ZIP
             cd dist
-            zip -r ../roms_downloader_portmaster_sw.zip ports/
+            zip -r ../roms_downloader_portmaster_fb.zip ports/
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: roms_downloader_portmaster_sw
-          path: roms_downloader_portmaster_sw.zip
+          name: roms_downloader_portmaster_fb
+          path: roms_downloader_portmaster_fb.zip
