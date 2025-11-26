@@ -32,7 +32,7 @@ index abc352a..addc91b 100644
      }
  
 -    egl_surface = gl_renderer_create_gbm_window_surface(renderer, egl_config, gbm_surface, NULL, NULL);
-+    if (gbm_surface != NULL) {
++        if (gbm_surface != NULL) {
 +        egl_surface = gl_renderer_create_gbm_window_surface(renderer, egl_config, gbm_surface, NULL, NULL);
 +    } else {
 +        fprintf(stderr, "[flutter-pi] FBDEV: Creating Pbuffer surface (fallback)...\n");
@@ -78,7 +78,7 @@ index ad7f028..f6f59ad 100644
 +
 +void egl_gbm_render_surface_read_pixels(struct egl_gbm_render_surface *s, void *buffer, size_t buffer_size);
 diff --git a/src/flutter-pi.c b/src/flutter-pi.c
-index 877ef49..2426a2c 100644
+index 877ef49..340dd50 100644
 --- a/src/flutter-pi.c
 +++ b/src/flutter-pi.c
 @@ -1860,6 +1860,7 @@ bool flutterpi_parse_cmdline_args(int argc, char **argv, struct flutterpi_cmdlin
@@ -162,17 +162,7 @@ index 877ef49..2426a2c 100644
          window = dummy_window_new(
              tracer,
              scheduler,
-@@ -2547,7 +2557,8 @@ struct flutterpi *flutterpi_new_from_args(int argc, char **argv) {
-             cmd_args.has_physical_dimensions,
-             cmd_args.physical_dimensions.x,
-             cmd_args.physical_dimensions.y,
--            60.0
-+            60.0,
-+            cmd_args.use_fbdev
-         );
-     } else {
-         window = kms_window_new(
-@@ -2583,7 +2594,7 @@ struct flutterpi *flutterpi_new_from_args(int argc, char **argv) {
+@@ -2583,7 +2593,7 @@ struct flutterpi *flutterpi_new_from_args(int argc, char **argv) {
      }
  
      /// TODO: Do we really need the window after this?
@@ -181,7 +171,7 @@ index 877ef49..2426a2c 100644
          ok = sd_event_add_io(event_loop, NULL, drmdev_get_event_fd(drmdev), EPOLLIN | EPOLLHUP | EPOLLPRI, on_drmdev_ready, drmdev);
          if (ok < 0) {
              LOG_ERROR("Could not add DRM pageflip event listener. sd_event_add_io: %s\n", strerror(-ok));
-@@ -2781,7 +2792,7 @@ fail_unref_tracer:
+@@ -2781,7 +2791,7 @@ fail_unref_tracer:
      tracer_unref(tracer);
  
  fail_destroy_drmdev:
