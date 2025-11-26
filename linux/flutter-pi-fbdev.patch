@@ -261,7 +261,7 @@ index d6c8160..d5da2df 100644
  
  void gl_renderer_destroy(struct gl_renderer *renderer);
 diff --git a/src/window.c b/src/window.c
-index b13fd82..3e89242 100644
+index b13fd82..885d322 100644
 --- a/src/window.c
 +++ b/src/window.c
 @@ -11,6 +11,10 @@
@@ -288,167 +288,17 @@ index b13fd82..3e89242 100644
      int (*push_composition)(struct window *window, struct fl_layer_composition *composition);
      struct render_surface *(*get_render_surface)(struct window *window, struct vec2i size);
  
-@@ -932,6 +942,52 @@ MUST_CHECK struct window *kms_window_new(
-     if (window == NULL) {
-         return NULL;
-     }
-+    
-+    window->use_fbdev = use_fbdev;
-+    window->fb_fd = -1;
-+    window->fb_mem = MAP_FAILED;
-+    window->fb_screensize = 0;
-+
-+    if (use_fbdev) {
-+        fprintf(stderr, "[flutter-pi] FBDEV: Opening /dev/fb0...\n");
-+        int fb_fd = open("/dev/fb0", O_RDWR);
-+        if (fb_fd == -1) {
-+            LOG_ERROR("Error: cannot open framebuffer device. open: %s\n", strerror(errno));
-+            free(window);
-+            return NULL;
-+        }
-+        
-+        struct fb_var_screeninfo vinfo;
-+        if (ioctl(fb_fd, FBIOGET_VSCREENINFO, &vinfo)) {
-+            LOG_ERROR("Error reading variable information. ioctl: %s\n", strerror(errno));
-+            close(fb_fd);
-+            free(window);
-+            return NULL;
-+        }
-+        
-+        size.x = vinfo.xres;
-+        size.y = vinfo.yres;
-+        
-+        window->fb_fd = fb_fd;
-+        window->fb_vinfo = vinfo;
-+        window->fb_screensize = vinfo.yres_virtual * vinfo.xres_virtual * vinfo.bits_per_pixel / 8;
-+        window->fb_mem = mmap(0, window->fb_screensize, PROT_READ | PROT_WRITE, MAP_SHARED, fb_fd, 0);
-+        
-+        if (window->fb_mem == MAP_FAILED) {
-+            LOG_ERROR("Error: failed to map framebuffer device to memory. mmap: %s\n", strerror(errno));
-+            close(fb_fd);
-+            free(window);
-+            return NULL;
-+        }
-+        
-+        fprintf(stderr, "[flutter-pi] FBDEV: Initialized: %dx%d, %dbpp, mem: %p\n", vinfo.xres, vinfo.yres, vinfo.bits_per_pixel, window->fb_mem);
-+        
-+        if (!has_explicit_dimensions) {
-+             width_mm = size.x * 25.4 / 160;
-+             height_mm = size.y * 25.4 / 160;
-+             has_explicit_dimensions = true;
-+        }
-+    }
- 
-     ok = select_mode(drmdev, &selected_connector, &selected_encoder, &selected_crtc, &selected_mode, desired_videomode);
-     if (ok != 0) {
-@@ -1008,12 +1064,34 @@ MUST_CHECK struct window *kms_window_new(
-         UNREACHABLE();
- #endif
-     }
-+    
-+    if (window->use_fbdev) {
-+        if (window->fb_mem != MAP_FAILED) {
-+            munmap(window->fb_mem, window->fb_screensize);
-+            window->fb_mem = MAP_FAILED;
-+        }
-+        if (window->fb_fd != -1) {
-+            close(window->fb_fd);
-+            window->fb_fd = -1;
-+        }
-+    }
-     if (vk_renderer != NULL) {
- #ifdef HAVE_VULKAN
-         window->vk_renderer = vk_renderer_ref(vk_renderer);
- #else
-         UNREACHABLE();
- #endif
-+    }
-+    
-+    if (window->use_fbdev) {
-+        if (window->fb_mem != MAP_FAILED) {
-+            munmap(window->fb_mem, window->fb_screensize);
-+            window->fb_mem = MAP_FAILED;
-+        }
-+        if (window->fb_fd != -1) {
-+            close(window->fb_fd);
-+            window->fb_fd = -1;
-+        }
-     } else {
-         window->vk_renderer = NULL;
-     }
-@@ -1070,6 +1148,17 @@ void kms_window_deinit(struct window *window) {
-         UNREACHABLE();
- #endif
-     }
-+    
-+    if (window->use_fbdev) {
-+        if (window->fb_mem != MAP_FAILED) {
-+            munmap(window->fb_mem, window->fb_screensize);
-+            window->fb_mem = MAP_FAILED;
-+        }
-+        if (window->fb_fd != -1) {
-+            close(window->fb_fd);
-+            window->fb_fd = -1;
-+        }
-+    }
-     if (window->vk_renderer != NULL) {
- #ifdef HAVE_VULKAN
-         vk_renderer_unref(window->vk_renderer);
-@@ -1077,6 +1166,17 @@ void kms_window_deinit(struct window *window) {
-         UNREACHABLE();
- #endif
-     }
-+    
-+    if (window->use_fbdev) {
-+        if (window->fb_mem != MAP_FAILED) {
-+            munmap(window->fb_mem, window->fb_screensize);
-+            window->fb_mem = MAP_FAILED;
-+        }
-+        if (window->fb_fd != -1) {
-+            close(window->fb_fd);
-+            window->fb_fd = -1;
-+        }
-+    }
-     drmdev_unref(window->kms.drmdev);
-     window_deinit(window);
- }
-@@ -1473,6 +1573,17 @@ static struct render_surface *kms_window_get_render_surface_internal(struct wind
- #else
-         UNREACHABLE();
- #endif
-+    }
-+    
-+    if (window->use_fbdev) {
-+        if (window->fb_mem != MAP_FAILED) {
-+            munmap(window->fb_mem, window->fb_screensize);
-+            window->fb_mem = MAP_FAILED;
-+        }
-+        if (window->fb_fd != -1) {
-+            close(window->fb_fd);
-+            window->fb_fd = -1;
-+        }
-     } else {
-         ASSUME(window->renderer_type == kVulkan_RendererType);
- 
-@@ -1490,6 +1601,17 @@ static struct render_surface *kms_window_get_render_surface_internal(struct wind
-         UNREACHABLE();
- #endif
-     }
-+    
-+    if (window->use_fbdev) {
-+        if (window->fb_mem != MAP_FAILED) {
-+            munmap(window->fb_mem, window->fb_screensize);
-+            window->fb_mem = MAP_FAILED;
-+        }
-+        if (window->fb_fd != -1) {
-+            close(window->fb_fd);
-+            window->fb_fd = -1;
-+        }
-+    }
- 
-     if (allowed_modifiers != NULL) {
-         free(allowed_modifiers);
-@@ -1641,6 +1763,52 @@ MUST_CHECK struct window *dummy_window_new(
+@@ -1632,7 +1642,8 @@ MUST_CHECK struct window *dummy_window_new(
+     struct vk_renderer *vk_renderer,
+     struct vec2i size,
+     bool has_explicit_dimensions, int width_mm, int height_mm,
+-    double refresh_rate
++    double refresh_rate,
++    bool use_fbdev
+     // clang-format on
+ ) {
+     struct window *window;
+@@ -1641,6 +1652,52 @@ MUST_CHECK struct window *dummy_window_new(
      if (window == NULL) {
          return NULL;
      }
@@ -501,42 +351,7 @@ index b13fd82..3e89242 100644
  
      window_init(
          // clang-format off
-@@ -1664,12 +1832,34 @@ MUST_CHECK struct window *dummy_window_new(
-         UNREACHABLE();
- #endif
-     }
-+    
-+    if (window->use_fbdev) {
-+        if (window->fb_mem != MAP_FAILED) {
-+            munmap(window->fb_mem, window->fb_screensize);
-+            window->fb_mem = MAP_FAILED;
-+        }
-+        if (window->fb_fd != -1) {
-+            close(window->fb_fd);
-+            window->fb_fd = -1;
-+        }
-+    }
-     if (vk_renderer != NULL) {
- #ifdef HAVE_VULKAN
-         window->vk_renderer = vk_renderer_ref(vk_renderer);
- #else
-         UNREACHABLE();
- #endif
-+    }
-+    
-+    if (window->use_fbdev) {
-+        if (window->fb_mem != MAP_FAILED) {
-+            munmap(window->fb_mem, window->fb_screensize);
-+            window->fb_mem = MAP_FAILED;
-+        }
-+        if (window->fb_fd != -1) {
-+            close(window->fb_fd);
-+            window->fb_fd = -1;
-+        }
-     } else {
-         window->vk_renderer = NULL;
-     }
-@@ -1688,7 +1878,31 @@ static int dummy_window_push_composition(struct window *window, struct fl_layer_
+@@ -1688,7 +1745,31 @@ static int dummy_window_push_composition(struct window *window, struct fl_layer_
      window_lock(window);
  
      /// TODO: Maybe allow to export the layer composition as an image, for testing purposes.
@@ -569,61 +384,7 @@ index b13fd82..3e89242 100644
  
      window_unlock(window);
  
-@@ -1736,6 +1950,17 @@ static struct render_surface *dummy_window_get_render_surface_internal(struct wi
- #else
-         UNREACHABLE();
- #endif
-+    }
-+    
-+    if (window->use_fbdev) {
-+        if (window->fb_mem != MAP_FAILED) {
-+            munmap(window->fb_mem, window->fb_screensize);
-+            window->fb_mem = MAP_FAILED;
-+        }
-+        if (window->fb_fd != -1) {
-+            close(window->fb_fd);
-+            window->fb_fd = -1;
-+        }
-     } else {
-         ASSUME(window->renderer_type == kVulkan_RendererType);
- 
-@@ -1746,6 +1971,17 @@ static struct render_surface *dummy_window_get_render_surface_internal(struct wi
-         UNREACHABLE();
- #endif
-     }
-+    
-+    if (window->use_fbdev) {
-+        if (window->fb_mem != MAP_FAILED) {
-+            munmap(window->fb_mem, window->fb_screensize);
-+            window->fb_mem = MAP_FAILED;
-+        }
-+        if (window->fb_fd != -1) {
-+            close(window->fb_fd);
-+            window->fb_fd = -1;
-+        }
-+    }
- 
-     window->render_surface = render_surface;
-     return render_surface;
-@@ -1793,6 +2029,17 @@ static void dummy_window_deinit(struct window *window) {
-         UNREACHABLE();
- #endif
-     }
-+    
-+    if (window->use_fbdev) {
-+        if (window->fb_mem != MAP_FAILED) {
-+            munmap(window->fb_mem, window->fb_screensize);
-+            window->fb_mem = MAP_FAILED;
-+        }
-+        if (window->fb_fd != -1) {
-+            close(window->fb_fd);
-+            window->fb_fd = -1;
-+        }
-+    }
- 
-     if (window->vk_renderer != NULL) {
- #ifdef HAVE_VULKAN
-@@ -1801,6 +2048,17 @@ static void dummy_window_deinit(struct window *window) {
+@@ -1801,6 +1882,17 @@ static void dummy_window_deinit(struct window *window) {
          UNREACHABLE();
  #endif
      }
