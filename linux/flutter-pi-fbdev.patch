@@ -1,5 +1,5 @@
 diff --git a/src/egl_gbm_render_surface.c b/src/egl_gbm_render_surface.c
-index abc352a..629eafb 100644
+index abc352a..72ac536 100644
 --- a/src/egl_gbm_render_surface.c
 +++ b/src/egl_gbm_render_surface.c
 @@ -12,6 +12,7 @@
@@ -35,7 +35,7 @@ index abc352a..629eafb 100644
              ok = errno;
              LOG_ERROR("Couldn't create GBM surface for rendering. gbm_surface_create: %s\n", strerror(ok));
              return ok;
-@@ -213,7 +214,17 @@ static int egl_gbm_render_surface_init(
+@@ -213,7 +214,22 @@ static int egl_gbm_render_surface_init(
          goto fail_destroy_gbm_surface;
      }
  
@@ -50,11 +50,16 @@ index abc352a..629eafb 100644
 +            EGL_NONE,
 +        };
 +        egl_surface = eglCreatePbufferSurface(egl_display, egl_config, pbuffer_attribs);
++        if (egl_surface == EGL_NO_SURFACE) {
++            LOG_EGL_ERROR(eglGetError(), "Failed to create Pbuffer surface. eglCreatePbufferSurface");
++        } else {
++            fprintf(stderr, "[flutter-pi] FBDEV: Pbuffer surface created: %p\n", egl_surface);
++        }
 +    }
      if (egl_surface == EGL_NO_SURFACE) {
          ok = EIO;
          goto fail_destroy_gbm_surface;
-@@ -254,7 +265,7 @@ fail_destroy_egl_surface:
+@@ -254,7 +270,7 @@ fail_destroy_egl_surface:
      eglDestroySurface(egl_display, egl_surface);
  
  fail_destroy_gbm_surface:
@@ -63,7 +68,7 @@ index abc352a..629eafb 100644
      return ok;
  }
  
-@@ -783,3 +794,28 @@ ATTR_PURE EGLSurface egl_gbm_render_surface_get_egl_surface(struct egl_gbm_rende
+@@ -783,3 +799,28 @@ ATTR_PURE EGLSurface egl_gbm_render_surface_get_egl_surface(struct egl_gbm_rende
  ATTR_PURE EGLConfig egl_gbm_render_surface_get_egl_config(struct egl_gbm_render_surface *s) {
      return s->egl_config;
  }
@@ -103,10 +108,36 @@ index ad7f028..f6f59ad 100644
 +
 +void egl_gbm_render_surface_read_pixels(struct egl_gbm_render_surface *s, void *buffer, size_t buffer_size);
 diff --git a/src/flutter-pi.c b/src/flutter-pi.c
-index 877ef49..860d3d1 100644
+index 877ef49..c9690d2 100644
 --- a/src/flutter-pi.c
 +++ b/src/flutter-pi.c
-@@ -1860,6 +1860,7 @@ bool flutterpi_parse_cmdline_args(int argc, char **argv, struct flutterpi_cmdlin
+@@ -292,6 +292,8 @@ static bool on_make_current(void *userdata) {
+     ASSERT_NOT_NULL(userdata);
+     flutterpi = userdata;
+     ASSERT_NOT_NULL(flutterpi->gl_renderer);
++    
++    fprintf(stderr, "[flutter-pi] DEBUG: on_make_current called\n");
+ 
+     // Ideally we don't make a surface current here at all.
+     // But that doesn't work right now.
+@@ -319,11 +321,16 @@ static bool on_make_current(void *userdata) {
+         LOG_ERROR("Couldn't get an EGL surface from the compositor.\n");
+         return false;
+     }
++    
++    fprintf(stderr, "[flutter-pi] DEBUG: on_make_current: Got surface %p\n", surface);
+ 
+     ok = gl_renderer_make_flutter_rendering_context_current(flutterpi->gl_renderer, surface);
+     if (ok != 0) {
++        fprintf(stderr, "[flutter-pi] DEBUG: on_make_current: gl_renderer_make_flutter_rendering_context_current failed\n");
+         return false;
+     }
++    
++    fprintf(stderr, "[flutter-pi] DEBUG: on_make_current: Success\n");
+ 
+     return true;
+ }
+@@ -1860,6 +1867,7 @@ bool flutterpi_parse_cmdline_args(int argc, char **argv, struct flutterpi_cmdlin
      int runtime_mode_int = FLUTTER_RUNTIME_MODE_DEBUG;
      int vulkan_int = false;
      int dummy_display_int = 0;
@@ -114,7 +145,7 @@ index 877ef49..860d3d1 100644
      int longopt_index = 0;
      int opt, ok;
  
-@@ -1878,6 +1879,7 @@ bool flutterpi_parse_cmdline_args(int argc, char **argv, struct flutterpi_cmdlin
+@@ -1878,6 +1886,7 @@ bool flutterpi_parse_cmdline_args(int argc, char **argv, struct flutterpi_cmdlin
          { "videomode", required_argument, NULL, 'v' },
          { "dummy-display", no_argument, &dummy_display_int, 1 },
          { "dummy-display-size", required_argument, NULL, 's' },
@@ -122,7 +153,7 @@ index 877ef49..860d3d1 100644
          { "drm-fd", required_argument, NULL, 'f' },
          { 0, 0, 0, 0 },
      };
-@@ -1889,6 +1891,7 @@ bool flutterpi_parse_cmdline_args(int argc, char **argv, struct flutterpi_cmdlin
+@@ -1889,6 +1898,7 @@ bool flutterpi_parse_cmdline_args(int argc, char **argv, struct flutterpi_cmdlin
      result_out->has_pixel_format = false;
      result_out->has_runtime_mode = false;
      result_out->has_drm_fd = false;
@@ -130,7 +161,7 @@ index 877ef49..860d3d1 100644
      result_out->bundle_path = NULL;
      result_out->engine_argc = 0;
      result_out->engine_argv = NULL;
-@@ -2040,6 +2043,7 @@ valid_format:
+@@ -2040,6 +2050,7 @@ valid_format:
      result_out->use_vulkan = vulkan_int;
  
      result_out->dummy_display = !!dummy_display_int;
@@ -138,7 +169,7 @@ index 877ef49..860d3d1 100644
  
      return true;
  }
-@@ -2156,7 +2160,7 @@ static struct drmdev *find_drmdev(struct libseat *libseat) {
+@@ -2156,7 +2167,7 @@ static struct drmdev *find_drmdev(struct libseat *libseat) {
              }
          }
          LOG_ERROR("Device \"%s\" doesn't have a display connected. Skipping.\n", device->nodes[DRM_NODE_PRIMARY]);
@@ -147,7 +178,7 @@ index 877ef49..860d3d1 100644
          continue;
  
  found_connected_connector:
-@@ -2451,7 +2455,7 @@ struct flutterpi *flutterpi_new_from_args(int argc, char **argv) {
+@@ -2451,7 +2462,7 @@ struct flutterpi *flutterpi_new_from_args(int argc, char **argv) {
  
      locales_print(locales);
  
@@ -156,7 +187,7 @@ index 877ef49..860d3d1 100644
          drmdev = NULL;
  
          // for off-screen rendering, we just open the unprivileged /dev/dri/renderD128 (or whatever)
-@@ -2462,6 +2466,10 @@ struct flutterpi *flutterpi_new_from_args(int argc, char **argv) {
+@@ -2462,6 +2473,10 @@ struct flutterpi *flutterpi_new_from_args(int argc, char **argv) {
          if (gbm_device == NULL) {
              goto fail_destroy_locales;
          }
@@ -167,7 +198,7 @@ index 877ef49..860d3d1 100644
      } else {
          if(cmd_args.has_drm_fd){
              /* --drm-fd is passed, we don't want flutter-pi to handle the DRM choice */
-@@ -2508,7 +2516,9 @@ struct flutterpi *flutterpi_new_from_args(int argc, char **argv) {
+@@ -2508,7 +2523,9 @@ struct flutterpi *flutterpi_new_from_args(int argc, char **argv) {
      } else if (renderer_type == kOpenGL_RendererType) {
  #ifdef HAVE_EGL_GLES2
          vk_renderer = NULL;
@@ -178,7 +209,7 @@ index 877ef49..860d3d1 100644
          if (gl_renderer == NULL) {
              LOG_ERROR("Couldn't create EGL/OpenGL renderer.\n");
              ok = EIO;
-@@ -2536,7 +2546,7 @@ struct flutterpi *flutterpi_new_from_args(int argc, char **argv) {
+@@ -2536,7 +2553,7 @@ struct flutterpi *flutterpi_new_from_args(int argc, char **argv) {
          goto fail_unref_scheduler;
      }
  
@@ -187,7 +218,7 @@ index 877ef49..860d3d1 100644
          window = dummy_window_new(
              tracer,
              scheduler,
-@@ -2547,7 +2557,8 @@ struct flutterpi *flutterpi_new_from_args(int argc, char **argv) {
+@@ -2547,7 +2564,8 @@ struct flutterpi *flutterpi_new_from_args(int argc, char **argv) {
              cmd_args.has_physical_dimensions,
              cmd_args.physical_dimensions.x,
              cmd_args.physical_dimensions.y,
@@ -197,7 +228,7 @@ index 877ef49..860d3d1 100644
          );
      } else {
          window = kms_window_new(
-@@ -2583,7 +2594,7 @@ struct flutterpi *flutterpi_new_from_args(int argc, char **argv) {
+@@ -2583,7 +2601,7 @@ struct flutterpi *flutterpi_new_from_args(int argc, char **argv) {
      }
  
      /// TODO: Do we really need the window after this?
@@ -206,7 +237,7 @@ index 877ef49..860d3d1 100644
          ok = sd_event_add_io(event_loop, NULL, drmdev_get_event_fd(drmdev), EPOLLIN | EPOLLHUP | EPOLLPRI, on_drmdev_ready, drmdev);
          if (ok < 0) {
              LOG_ERROR("Could not add DRM pageflip event listener. sd_event_add_io: %s\n", strerror(-ok));
-@@ -2781,7 +2792,7 @@ fail_unref_tracer:
+@@ -2781,7 +2799,7 @@ fail_unref_tracer:
      tracer_unref(tracer);
  
  fail_destroy_drmdev:
@@ -404,7 +435,7 @@ index d6c8160..d5da2df 100644
  
  void gl_renderer_destroy(struct gl_renderer *renderer);
 diff --git a/src/window.c b/src/window.c
-index b13fd82..7d73f80 100644
+index b13fd82..454d346 100644
 --- a/src/window.c
 +++ b/src/window.c
 @@ -11,6 +11,11 @@
@@ -538,7 +569,18 @@ index b13fd82..7d73f80 100644
      (void) composition;
  
      window_unlock(window);
-@@ -1801,6 +1894,17 @@ static void dummy_window_deinit(struct window *window) {
+@@ -1772,6 +1865,10 @@ static EGLSurface dummy_window_get_egl_surface(struct window *window) {
+ 
+     if (window->renderer_type == kOpenGL_RendererType) {
+         struct render_surface *render_surface = dummy_window_get_render_surface_internal(window, false, VEC2I(0, 0));
++        if (render_surface == NULL) {
++            LOG_ERROR("Failed to get render surface in dummy_window_get_egl_surface\n");
++            return EGL_NO_SURFACE;
++        }
+         return egl_gbm_render_surface_get_egl_surface(CAST_EGL_GBM_RENDER_SURFACE(render_surface));
+     } else {
+         return EGL_NO_SURFACE;
+@@ -1801,6 +1898,17 @@ static void dummy_window_deinit(struct window *window) {
          UNREACHABLE();
  #endif
      }
