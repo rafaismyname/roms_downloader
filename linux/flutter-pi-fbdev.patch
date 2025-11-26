@@ -78,7 +78,7 @@ index ad7f028..f6f59ad 100644
 +
 +void egl_gbm_render_surface_read_pixels(struct egl_gbm_render_surface *s, void *buffer, size_t buffer_size);
 diff --git a/src/flutter-pi.c b/src/flutter-pi.c
-index 877ef49..340dd50 100644
+index 877ef49..860d3d1 100644
 --- a/src/flutter-pi.c
 +++ b/src/flutter-pi.c
 @@ -1860,6 +1860,7 @@ bool flutterpi_parse_cmdline_args(int argc, char **argv, struct flutterpi_cmdlin
@@ -158,11 +158,21 @@ index 877ef49..340dd50 100644
      }
  
 -    if (cmd_args.dummy_display) {
-+    if (cmd_args.dummy_display && !cmd_args.use_fbdev) {
++    if (cmd_args.dummy_display || cmd_args.use_fbdev) {
          window = dummy_window_new(
              tracer,
              scheduler,
-@@ -2583,7 +2593,7 @@ struct flutterpi *flutterpi_new_from_args(int argc, char **argv) {
+@@ -2547,7 +2557,8 @@ struct flutterpi *flutterpi_new_from_args(int argc, char **argv) {
+             cmd_args.has_physical_dimensions,
+             cmd_args.physical_dimensions.x,
+             cmd_args.physical_dimensions.y,
+-            60.0
++            60.0,
++            cmd_args.use_fbdev
+         );
+     } else {
+         window = kms_window_new(
+@@ -2583,7 +2594,7 @@ struct flutterpi *flutterpi_new_from_args(int argc, char **argv) {
      }
  
      /// TODO: Do we really need the window after this?
@@ -171,7 +181,7 @@ index 877ef49..340dd50 100644
          ok = sd_event_add_io(event_loop, NULL, drmdev_get_event_fd(drmdev), EPOLLIN | EPOLLHUP | EPOLLPRI, on_drmdev_ready, drmdev);
          if (ok < 0) {
              LOG_ERROR("Could not add DRM pageflip event listener. sd_event_add_io: %s\n", strerror(-ok));
-@@ -2781,7 +2791,7 @@ fail_unref_tracer:
+@@ -2781,7 +2792,7 @@ fail_unref_tracer:
      tracer_unref(tracer);
  
  fail_destroy_drmdev:
@@ -193,7 +203,7 @@ index b2b3dc1..b642134 100644
  
      bool has_drm_fd;
 diff --git a/src/gl_renderer.c b/src/gl_renderer.c
-index 58b25ea..9533230 100644
+index 58b25ea..fee0bb6 100644
 --- a/src/gl_renderer.c
 +++ b/src/gl_renderer.c
 @@ -100,7 +100,9 @@ static ATTR_PURE EGLConfig choose_config_with_pixel_format(EGLDisplay display, c
@@ -206,17 +216,18 @@ index 58b25ea..9533230 100644
      if (egl_ok != EGL_TRUE) {
          LOG_EGL_ERROR(eglGetError(), "Could not query number of EGL framebuffer configurations with fitting attributes. eglChooseConfig");
          return EGL_NO_CONFIG_KHR;
-@@ -108,7 +110,9 @@ static ATTR_PURE EGLConfig choose_config_with_pixel_format(EGLDisplay display, c
+@@ -108,7 +110,10 @@ static ATTR_PURE EGLConfig choose_config_with_pixel_format(EGLDisplay display, c
  
      matching = alloca(n_matched * sizeof *matching);
  
 +    fprintf(stderr, "[flutter-pi] DEBUG: Calling eglChooseConfig (get)...\n");
++
      egl_ok = eglChooseConfig(display, attrib_list, matching, n_matched, &n_matched);
 +    fprintf(stderr, "[flutter-pi] DEBUG: eglChooseConfig (get) returned %d\n", egl_ok);
      if (egl_ok != EGL_TRUE) {
          LOG_EGL_ERROR(eglGetError(), "Could not query EGL framebuffer configurations with fitting attributes. eglChooseConfig");
          return EGL_NO_CONFIG_KHR;
-@@ -136,7 +140,8 @@ struct gl_renderer *gl_renderer_new_from_gbm_device(
+@@ -136,7 +141,8 @@ struct gl_renderer *gl_renderer_new_from_gbm_device(
      struct tracer *tracer,
      struct gbm_device *gbm_device,
      bool has_forced_pixel_format,
@@ -226,7 +237,7 @@ index 58b25ea..9533230 100644
  ) {
      struct gl_renderer *renderer;
      const char *egl_client_exts, *egl_display_exts;
-@@ -221,7 +226,7 @@ struct gl_renderer *gl_renderer_new_from_gbm_device(
+@@ -221,7 +227,7 @@ struct gl_renderer *gl_renderer_new_from_gbm_device(
      PFNEGLCREATEPLATFORMWINDOWSURFACEPROC egl_create_platform_window_surface = try_get_proc_address("eglCreatePlatformWindowSurface");
  
      if (egl_display == EGL_NO_DISPLAY && egl_get_platform_display != NULL) {
@@ -235,7 +246,7 @@ index 58b25ea..9533230 100644
          if (egl_display == EGL_NO_DISPLAY) {
              LOG_EGL_ERROR(eglGetError(), "Could not get EGL display from GBM device. eglGetPlatformDisplay");
              failed_before = true;
-@@ -235,7 +240,7 @@ struct gl_renderer *gl_renderer_new_from_gbm_device(
+@@ -235,7 +241,7 @@ struct gl_renderer *gl_renderer_new_from_gbm_device(
              LOG_DEBUG("Attempting eglGetPlatformDisplayEXT...\n");
          }
  
@@ -244,7 +255,7 @@ index 58b25ea..9533230 100644
          if (egl_display == EGL_NO_DISPLAY) {
              LOG_EGL_ERROR(eglGetError(), "Could not get EGL display from GBM device. eglGetPlatformDisplayEXT");
              failed_before = true;
-@@ -248,7 +253,14 @@ struct gl_renderer *gl_renderer_new_from_gbm_device(
+@@ -248,7 +254,14 @@ struct gl_renderer *gl_renderer_new_from_gbm_device(
              LOG_DEBUG("Attempting eglGetDisplay...\n");
          }
  
@@ -260,7 +271,7 @@ index 58b25ea..9533230 100644
          if (egl_display == EGL_NO_DISPLAY) {
              LOG_EGL_ERROR(eglGetError(), "Could not get EGL display from GBM device. eglGetDisplay");
          }
-@@ -259,7 +271,9 @@ struct gl_renderer *gl_renderer_new_from_gbm_device(
+@@ -259,7 +272,9 @@ struct gl_renderer *gl_renderer_new_from_gbm_device(
          goto fail_free_renderer;
      }
  
@@ -270,7 +281,7 @@ index 58b25ea..9533230 100644
      if (egl_ok != EGL_TRUE) {
          LOG_EGL_ERROR(eglGetError(), "Failed to initialize EGL! eglInitialize:");
          goto fail_free_renderer;
-@@ -305,7 +319,9 @@ struct gl_renderer *gl_renderer_new_from_gbm_device(
+@@ -305,7 +320,9 @@ struct gl_renderer *gl_renderer_new_from_gbm_device(
          }
      }
  
@@ -295,7 +306,7 @@ index d6c8160..d5da2df 100644
  
  void gl_renderer_destroy(struct gl_renderer *renderer);
 diff --git a/src/window.c b/src/window.c
-index b13fd82..d01c65a 100644
+index b13fd82..8128191 100644
 --- a/src/window.c
 +++ b/src/window.c
 @@ -11,6 +11,11 @@
@@ -333,11 +344,10 @@ index b13fd82..d01c65a 100644
      // clang-format on
  ) {
      struct window *window;
-@@ -1641,6 +1653,52 @@ MUST_CHECK struct window *dummy_window_new(
-     if (window == NULL) {
+@@ -1642,6 +1654,52 @@ MUST_CHECK struct window *dummy_window_new(
          return NULL;
      }
-+    
+ 
 +    window->use_fbdev = use_fbdev;
 +    window->fb_fd = -1;
 +    window->fb_mem = MAP_FAILED;
@@ -383,9 +393,10 @@ index b13fd82..d01c65a 100644
 +             has_explicit_dimensions = true;
 +        }
 +    }
- 
++
      window_init(
          // clang-format off
+         window,
 @@ -1688,6 +1746,31 @@ static int dummy_window_push_composition(struct window *window, struct fl_layer_
      window_lock(window);
  
