@@ -203,9 +203,18 @@ index b2b3dc1..b642134 100644
  
      bool has_drm_fd;
 diff --git a/src/gl_renderer.c b/src/gl_renderer.c
-index 58b25ea..fee0bb6 100644
+index 58b25ea..30c40df 100644
 --- a/src/gl_renderer.c
 +++ b/src/gl_renderer.c
+@@ -90,7 +90,7 @@ static void *get_proc_address(const char *name) {
+     return address;
+ }
+ 
+-static ATTR_PURE EGLConfig choose_config_with_pixel_format(EGLDisplay display, const EGLint *attrib_list, enum pixfmt pixel_format) {
++static ATTR_PURE EGLConfig choose_config_with_pixel_format(EGLDisplay display, const EGLint *attrib_list, enum pixfmt pixel_format, bool check_gbm_format) {
+     EGLConfig *matching;
+     EGLBoolean egl_ok;
+     EGLint value, n_matched;
 @@ -100,7 +100,9 @@ static ATTR_PURE EGLConfig choose_config_with_pixel_format(EGLDisplay display, c
      LOG_DEBUG("Choosing EGL config with pixel format %s...\n", get_pixfmt_info(pixel_format)->name);
  
@@ -216,7 +225,7 @@ index 58b25ea..fee0bb6 100644
      if (egl_ok != EGL_TRUE) {
          LOG_EGL_ERROR(eglGetError(), "Could not query number of EGL framebuffer configurations with fitting attributes. eglChooseConfig");
          return EGL_NO_CONFIG_KHR;
-@@ -108,7 +110,10 @@ static ATTR_PURE EGLConfig choose_config_with_pixel_format(EGLDisplay display, c
+@@ -108,13 +110,35 @@ static ATTR_PURE EGLConfig choose_config_with_pixel_format(EGLDisplay display, c
  
      matching = alloca(n_matched * sizeof *matching);
  
@@ -227,7 +236,44 @@ index 58b25ea..fee0bb6 100644
      if (egl_ok != EGL_TRUE) {
          LOG_EGL_ERROR(eglGetError(), "Could not query EGL framebuffer configurations with fitting attributes. eglChooseConfig");
          return EGL_NO_CONFIG_KHR;
-@@ -136,7 +141,8 @@ struct gl_renderer *gl_renderer_new_from_gbm_device(
+     }
+ 
+     for (int i = 0; i < n_matched; i++) {
++        if (!check_gbm_format) {
++            // If we are not checking for a specific GBM format (e.g. fbdev mode),
++            // we try to find a config that matches the requested pixel format in terms of bit depth.
++            // For PIXFMT_ARGB8888, we want 8 bits for R, G, B, A.
++            
++            EGLint r, g, b, a;
++            eglGetConfigAttrib(display, matching[i], EGL_RED_SIZE, &r);
++            eglGetConfigAttrib(display, matching[i], EGL_GREEN_SIZE, &g);
++            eglGetConfigAttrib(display, matching[i], EGL_BLUE_SIZE, &b);
++            eglGetConfigAttrib(display, matching[i], EGL_ALPHA_SIZE, &a);
++            
++            // TODO: Make this generic based on pixel_format if needed.
++            // For now, we assume ARGB8888 is what we want if we are in this fallback mode.
++            if (r == 8 && g == 8 && b == 8 && a == 8) {
++                return matching[i];
++            }
++            continue;
++        }
++
+         egl_ok = eglGetConfigAttrib(display, matching[i], EGL_NATIVE_VISUAL_ID, &value);
+         if (egl_ok != EGL_TRUE) {
+             LOG_EGL_ERROR(eglGetError(), "Could not query pixel format of EGL framebuffer config. eglGetConfigAttrib");
+@@ -126,6 +150,11 @@ static ATTR_PURE EGLConfig choose_config_with_pixel_format(EGLDisplay display, c
+             return matching[i];
+         }
+     }
++    
++    // Fallback: if we didn't find an exact match in non-GBM mode, return the first one.
++    if (!check_gbm_format && n_matched > 0) {
++        return matching[0];
++    }
+ 
+     return EGL_NO_CONFIG_KHR;
+ }
+@@ -136,7 +165,8 @@ struct gl_renderer *gl_renderer_new_from_gbm_device(
      struct tracer *tracer,
      struct gbm_device *gbm_device,
      bool has_forced_pixel_format,
@@ -237,7 +283,7 @@ index 58b25ea..fee0bb6 100644
  ) {
      struct gl_renderer *renderer;
      const char *egl_client_exts, *egl_display_exts;
-@@ -221,7 +227,7 @@ struct gl_renderer *gl_renderer_new_from_gbm_device(
+@@ -221,7 +251,7 @@ struct gl_renderer *gl_renderer_new_from_gbm_device(
      PFNEGLCREATEPLATFORMWINDOWSURFACEPROC egl_create_platform_window_surface = try_get_proc_address("eglCreatePlatformWindowSurface");
  
      if (egl_display == EGL_NO_DISPLAY && egl_get_platform_display != NULL) {
@@ -246,7 +292,7 @@ index 58b25ea..fee0bb6 100644
          if (egl_display == EGL_NO_DISPLAY) {
              LOG_EGL_ERROR(eglGetError(), "Could not get EGL display from GBM device. eglGetPlatformDisplay");
              failed_before = true;
-@@ -235,7 +241,7 @@ struct gl_renderer *gl_renderer_new_from_gbm_device(
+@@ -235,7 +265,7 @@ struct gl_renderer *gl_renderer_new_from_gbm_device(
              LOG_DEBUG("Attempting eglGetPlatformDisplayEXT...\n");
          }
  
@@ -255,7 +301,7 @@ index 58b25ea..fee0bb6 100644
          if (egl_display == EGL_NO_DISPLAY) {
              LOG_EGL_ERROR(eglGetError(), "Could not get EGL display from GBM device. eglGetPlatformDisplayEXT");
              failed_before = true;
-@@ -248,7 +254,14 @@ struct gl_renderer *gl_renderer_new_from_gbm_device(
+@@ -248,7 +278,14 @@ struct gl_renderer *gl_renderer_new_from_gbm_device(
              LOG_DEBUG("Attempting eglGetDisplay...\n");
          }
  
@@ -271,7 +317,7 @@ index 58b25ea..fee0bb6 100644
          if (egl_display == EGL_NO_DISPLAY) {
              LOG_EGL_ERROR(eglGetError(), "Could not get EGL display from GBM device. eglGetDisplay");
          }
-@@ -259,7 +272,9 @@ struct gl_renderer *gl_renderer_new_from_gbm_device(
+@@ -259,7 +296,9 @@ struct gl_renderer *gl_renderer_new_from_gbm_device(
          goto fail_free_renderer;
      }
  
@@ -281,7 +327,15 @@ index 58b25ea..fee0bb6 100644
      if (egl_ok != EGL_TRUE) {
          LOG_EGL_ERROR(eglGetError(), "Failed to initialize EGL! eglInitialize:");
          goto fail_free_renderer;
-@@ -305,7 +320,9 @@ struct gl_renderer *gl_renderer_new_from_gbm_device(
+@@ -298,14 +337,16 @@ struct gl_renderer *gl_renderer_new_from_gbm_device(
+             pixel_format = PIXFMT_ARGB8888;
+         }
+ 
+-        forced_egl_config = choose_config_with_pixel_format(egl_display, config_attribs, pixel_format);
++        forced_egl_config = choose_config_with_pixel_format(egl_display, config_attribs, pixel_format, gbm_device != NULL);
+         if (forced_egl_config == EGL_NO_CONFIG_KHR) {
+             LOG_ERROR("No fitting EGL framebuffer configuration found.\n");
+             goto fail_terminate_display;
          }
      }
  
@@ -291,6 +345,25 @@ index 58b25ea..fee0bb6 100644
      if (root_context == EGL_NO_CONTEXT) {
          LOG_EGL_ERROR(eglGetError(), "Could not create EGL context for OpenGL ES. eglCreateContext");
          goto fail_terminate_display;
+@@ -669,7 +710,8 @@ gl_renderer_choose_config(struct gl_renderer *renderer, bool has_desired_pixel_f
+         config_attribs,
+         renderer->has_forced_pixel_format ? renderer->pixel_format :
+         has_desired_pixel_format          ? desired_pixel_format :
+-                                            PIXFMT_ARGB8888
++                                            PIXFMT_ARGB8888,
++        renderer->gbm_device != NULL
+     );
+ }
+ 
+@@ -681,7 +723,7 @@ ATTR_PURE EGLConfig gl_renderer_choose_config_direct(struct gl_renderer *rendere
+         EGL_SURFACE_TYPE, EGL_WINDOW_BIT, EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT, EGL_SAMPLES, 0, EGL_NONE,
+     };
+ 
+-    return choose_config_with_pixel_format(renderer->egl_display, config_attribs, pixel_format);
++    return choose_config_with_pixel_format(renderer->egl_display, config_attribs, pixel_format, renderer->gbm_device != NULL);
+ }
+ 
+ EGLSurface gl_renderer_create_gbm_window_surface(
 diff --git a/src/gl_renderer.h b/src/gl_renderer.h
 index d6c8160..d5da2df 100644
 --- a/src/gl_renderer.h
