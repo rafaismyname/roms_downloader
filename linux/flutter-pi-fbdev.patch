@@ -1,0 +1,456 @@
+diff --git a/src/egl_gbm_render_surface.c b/src/egl_gbm_render_surface.c
+index 1234567..89abcdef 100644
+--- a/src/egl_gbm_render_surface.c
++++ b/src/egl_gbm_render_surface.c
+@@ -147,7 +147,7 @@ static int egl_gbm_render_surface_init(
+     }
+ #endif
+ 
+-    gbm_surface = NULL;
++    gbm_surface = NULL;
+     if (allowed_modifiers != NULL) {
+         gbm_surface = gbm_surface_create_with_modifiers(
+             gbm_device,
+@@ -163,7 +163,7 @@ static int egl_gbm_render_surface_init(
+             LOG_ERROR("Will retry without modifiers\n");
+         }
+     }
+-    if (gbm_surface == NULL) {
++    if (gbm_surface == NULL && gbm_device != NULL) {
+         gbm_surface = gbm_surface_create(
+             gbm_device,
+             size.x,
+@@ -214,7 +214,16 @@ static int egl_gbm_render_surface_init(
+         goto fail_destroy_gbm_surface;
+     }
+ 
+-    egl_surface = gl_renderer_create_gbm_window_surface(renderer, egl_config, gbm_surface, NULL, NULL);
++    if (gbm_surface != NULL) {
++        egl_surface = gl_renderer_create_gbm_window_surface(renderer, egl_config, gbm_surface, NULL, NULL);
++    } else {
++        // Fallback to Pbuffer surface if no GBM surface (e.g. fbdev mode)
++        const EGLint pbuffer_attribs[] = {
++            EGL_WIDTH, size.x,
++            EGL_HEIGHT, size.y,
++            EGL_NONE,
++        };
++        egl_surface = eglCreatePbufferSurface(egl_display, egl_config, pbuffer_attribs);
++    }
++
+     if (egl_surface == EGL_NO_SURFACE) {
+         ok = EIO;
+         goto fail_destroy_gbm_surface;
+@@ -254,7 +263,9 @@ fail_destroy_egl_surface:
+     eglDestroySurface(egl_display, egl_surface);
+ 
+ fail_destroy_gbm_surface:
+-    gbm_surface_destroy(gbm_surface);
++    if (gbm_surface != NULL) {
++        gbm_surface_destroy(gbm_surface);
++    }
+     return ok;
+ }
+ 
+@@ -678,3 +689,18 @@ ATTR_PURE EGLConfig egl_gbm_render_surface_get_egl_config(struct egl_gbm_render_surface *s) {
+     return s->egl_config;
+ }
+ 
++void egl_gbm_render_surface_read_pixels(struct egl_gbm_render_surface *s, void *buffer, size_t buffer_size) {
++    // Ensure context is current
++    gl_renderer_make_flutter_rendering_context_current(s->renderer, s->egl_surface);
++    
++    // Read pixels
++    // Assuming ARGB8888 or similar 4-byte format
++    // Flutter usually renders upside down relative to what we expect? 
++    // glReadPixels reads from bottom-left.
++    // We might need to flip it, but let's just read it first.
++    // The user's patch handles flipping in window.c
++    
++    // We assume the buffer is large enough (width * height * 4)
++    // We use GL_RGBA because that's standard.
++    glReadPixels(0, 0, s->render_surface.size.x, s->render_surface.size.y, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
++}
+diff --git a/src/egl_gbm_render_surface.h b/src/egl_gbm_render_surface.h
+index 1234567..89abcdef 100644
+--- a/src/egl_gbm_render_surface.h
++++ b/src/egl_gbm_render_surface.h
+@@ -49,4 +49,6 @@ ATTR_PURE EGLSurface egl_gbm_render_surface_get_egl_surface(struct egl_gbm_render_surface *s);
+ 
+ ATTR_PURE EGLConfig egl_gbm_render_surface_get_egl_config(struct egl_gbm_render_surface *s);
+ 
++void egl_gbm_render_surface_read_pixels(struct egl_gbm_render_surface *s, void *buffer, size_t buffer_size);
++
+ #endif  // _FLUTTERPI_SRC_EGL_GBM_RENDER_SURFACE_H
+diff --git a/src/flutter-pi.c b/src/flutter-pi.c
+index 1234567..89abcdef 100644
+--- a/src/flutter-pi.c
++++ b/src/flutter-pi.c
+@@ -126,6 +126,8 @@ OPTIONS:\n\
+   --dummy-display-size \"width,height\" The width & height of the dummy display\n\
+                              in pixels.\n\
+ \n\
++  --fbdev                    Use /dev/fb0 for display (framebuffer mode).\n\
++\n\
+   --drm-fd                   An opened and valid DRM file descriptor\n\
+ \n\
+   -h, --help                 Show this help and exit.\n\
+@@ -1088,6 +1090,7 @@ bool flutterpi_parse_cmdline_args(int argc, char **argv, struct flutterpi_cmdline_args *result_out) {
+     int runtime_mode_int = FLUTTER_RUNTIME_MODE_DEBUG;
+     int vulkan_int = false;
+     int dummy_display_int = 0;
++    int fbdev_int = 0;
+     int longopt_index = 0;
+     int opt, ok;
+ 
+@@ -1105,6 +1108,7 @@ bool flutterpi_parse_cmdline_args(int argc, char **argv, struct flutterpi_cmdline_args *result_out) {
+         { "videomode", required_argument, NULL, 'v' },
+         { "dummy-display", no_argument, &dummy_display_int, 1 },
+         { "dummy-display-size", required_argument, NULL, 's' },
++        { "fbdev", no_argument, &fbdev_int, 1 },
+         { "drm-fd", required_argument, NULL, 'f' },
+         { 0, 0, 0, 0 },
+     };
+@@ -1116,6 +1120,7 @@ bool flutterpi_parse_cmdline_args(int argc, char **argv, struct flutterpi_cmdline_args *result_out) {
+     result_out->has_pixel_format = false;
+     result_out->has_runtime_mode = false;
+     result_out->has_drm_fd = false;
++    result_out->use_fbdev = false;
+     result_out->bundle_path = NULL;
+     result_out->engine_argc = 0;
+     result_out->engine_argv = NULL;
+@@ -1203,6 +1208,10 @@ valid_format:
+                 result_out->dummy_display_size = VEC2I(0, 0);
+                 break;
+ 
++            case 0: // Long option with no short equivalent
++                // Handled by variable binding (fbdev_int)
++                break;
++
+             case 'f':;  // --drm-fd
+                 char *drm_fd = strdup(optarg);
+                 int fd = atoi(drm_fd);
+@@ -1242,6 +1251,7 @@ valid_format:
+     result_out->use_vulkan = vulkan_int;
+ 
+     result_out->dummy_display = !!dummy_display_int;
++    result_out->use_fbdev = !!fbdev_int;
+ 
+     return true;
+ }
+@@ -1475,7 +1485,7 @@ struct flutterpi *flutterpi_new_from_args(int argc, char **argv) {
+ 
+     locales_print(locales);
+ 
+-    if (cmd_args.dummy_display) {
++    if (cmd_args.dummy_display && !cmd_args.use_fbdev) {
+         drmdev = NULL;
+ 
+         // for off-screen rendering, we just open the unprivileged /dev/dri/renderD128 (or whatever)
+@@ -1485,7 +1495,10 @@ struct flutterpi *flutterpi_new_from_args(int argc, char **argv) {
+         if (gbm_device == NULL) {
+             goto fail_destroy_locales;
+         }
+-    } else {
++    } else if (cmd_args.use_fbdev) {
++        drmdev = NULL;
++        gbm_device = NULL; // No GBM in fbdev mode
++    } else {
+         if(cmd_args.has_drm_fd){
+             /* --drm-fd is passed, we don't want flutter-pi to handle the DRM choice */
+             drmdev = drmdev_new_from_interface_fd(cmd_args.drm_fd, NULL, &drmdev_interface, libseat);
+@@ -1531,7 +1544,7 @@ struct flutterpi *flutterpi_new_from_args(int argc, char **argv) {
+     } else if (renderer_type == kOpenGL_RendererType) {
+ #ifdef HAVE_EGL_GLES2
+         vk_renderer = NULL;
+-        gl_renderer = gl_renderer_new_from_gbm_device(tracer, gbm_device, cmd_args.has_pixel_format, cmd_args.pixel_format);
++        gl_renderer = gl_renderer_new_from_gbm_device(tracer, gbm_device, cmd_args.has_pixel_format, cmd_args.pixel_format, cmd_args.use_fbdev);
+         if (gl_renderer == NULL) {
+             LOG_ERROR("Couldn't create EGL/OpenGL renderer.\n");
+             ok = EIO;
+@@ -1559,7 +1572,7 @@ struct flutterpi *flutterpi_new_from_args(int argc, char **argv) {
+         goto fail_unref_scheduler;
+     }
+ 
+-    if (cmd_args.dummy_display) {
++    if (cmd_args.dummy_display || cmd_args.use_fbdev) {
+         window = dummy_window_new(
+             tracer,
+             scheduler,
+@@ -1569,7 +1582,8 @@ struct flutterpi *flutterpi_new_from_args(int argc, char **argv) {
+             cmd_args.dummy_display_size,
+             cmd_args.has_physical_dimensions,
+             cmd_args.physical_dimensions.x,
+             cmd_args.physical_dimensions.y,
+-            60.0
++            60.0,
++            cmd_args.use_fbdev
+         );
+     } else {
+         window = kms_window_new(
+@@ -1605,7 +1619,7 @@ struct flutterpi *flutterpi_new_from_args(int argc, char **argv) {
+     }
+ 
+     /// TODO: Do we really need the window after this?
+-    if (drmdev != NULL) {
++    if (drmdev != NULL && !cmd_args.use_fbdev) {
+         ok = sd_event_add_io(event_loop, NULL, drmdev_get_event_fd(drmdev), EPOLLIN | EPOLLHUP | EPOLLPRI, on_drmdev_ready, drmdev);
+         if (ok < 0) {
+             LOG_ERROR("Could not add DRM pageflip event listener. sd_event_add_io: %s\n", strerror(-ok));
+@@ -1748,7 +1762,9 @@ fail_unref_tracer:
+     tracer_unref(tracer);
+ 
+ fail_destroy_drmdev:
+-    drmdev_unref(drmdev);
++    if (drmdev) {
++        drmdev_unref(drmdev);
++    }
+ 
+ fail_destroy_locales:
+     locales_destroy(locales);
+diff --git a/src/flutter-pi.h b/src/flutter-pi.h
+index 1234567..89abcdef 100644
+--- a/src/flutter-pi.h
++++ b/src/flutter-pi.h
+@@ -43,6 +43,7 @@ struct flutterpi_cmdline_args {
+     bool has_pixel_format;
+     enum pixfmt pixel_format;
+     bool dummy_display;
++    bool use_fbdev;
+     struct vec2i dummy_display_size;
+     char *desired_videomode;
+     bool has_drm_fd;
+diff --git a/src/gl_renderer.c b/src/gl_renderer.c
+index 1234567..89abcdef 100644
+--- a/src/gl_renderer.c
++++ b/src/gl_renderer.c
+@@ -136,7 +136,8 @@ struct gl_renderer *gl_renderer_new_from_gbm_device(
+     struct tracer *tracer,
+     struct gbm_device *gbm_device,
+     bool has_forced_pixel_format,
+-    enum pixfmt pixel_format
++    enum pixfmt pixel_format,
++    bool use_fbdev
+ ) {
+     struct gl_renderer *renderer;
+     const char *egl_client_exts, *egl_display_exts;
+@@ -221,7 +222,7 @@ struct gl_renderer *gl_renderer_new_from_gbm_device(
+     PFNEGLCREATEPLATFORMWINDOWSURFACEPROC egl_create_platform_window_surface = try_get_proc_address("eglCreatePlatformWindowSurface");
+ 
+     if (egl_display == EGL_NO_DISPLAY && egl_get_platform_display != NULL) {
+-        egl_display = egl_get_platform_display(EGL_PLATFORM_GBM_KHR, gbm_device, NULL);
++        if (gbm_device) egl_display = egl_get_platform_display(EGL_PLATFORM_GBM_KHR, gbm_device, NULL);
+         if (egl_display == EGL_NO_DISPLAY) {
+             LOG_EGL_ERROR(eglGetError(), "Could not get EGL display from GBM device. eglGetPlatformDisplay");
+             failed_before = true;
+@@ -235,7 +236,7 @@ struct gl_renderer *gl_renderer_new_from_gbm_device(
+             LOG_DEBUG("Attempting eglGetPlatformDisplayEXT...\n");
+         }
+ 
+-        egl_display = egl_get_platform_display_ext(EGL_PLATFORM_GBM_KHR, gbm_device, NULL);
++        if (gbm_device) egl_display = egl_get_platform_display_ext(EGL_PLATFORM_GBM_KHR, gbm_device, NULL);
+         if (egl_display == EGL_NO_DISPLAY) {
+             LOG_EGL_ERROR(eglGetError(), "Could not get EGL display from GBM device. eglGetPlatformDisplayEXT");
+             failed_before = true;
+@@ -248,7 +249,11 @@ struct gl_renderer *gl_renderer_new_from_gbm_device(
+             LOG_DEBUG("Attempting eglGetDisplay...\n");
+         }
+ 
+-        egl_display = eglGetDisplay((void *) gbm_device);
++        if (gbm_device) {
++            egl_display = eglGetDisplay((void *) gbm_device);
++        } else {
++            egl_display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
++        }
+         if (egl_display == EGL_NO_DISPLAY) {
+             LOG_EGL_ERROR(eglGetError(), "Could not get EGL display from GBM device. eglGetDisplay");
+         }
+diff --git a/src/gl_renderer.h b/src/gl_renderer.h
+index 1234567..89abcdef 100644
+--- a/src/gl_renderer.h
++++ b/src/gl_renderer.h
+@@ -30,7 +30,8 @@ struct gl_renderer *gl_renderer_new_from_gbm_device(
+     struct tracer *tracer,
+     struct gbm_device *gbm_device,
+     bool has_forced_pixel_format,
+-    enum pixfmt pixel_format
++    enum pixfmt pixel_format,
++    bool use_fbdev
+ );
+ 
+ void gl_renderer_destroy(struct gl_renderer *renderer);
+diff --git a/src/window.c b/src/window.c
+index 1234567..89abcdef 100644
+--- a/src/window.c
++++ b/src/window.c
+@@ -11,7 +11,11 @@
+ #include "window.h"
+ 
+ #include <errno.h>
++#include <fcntl.h>
+ #include <stdlib.h>
++#include <sys/ioctl.h>
++#include <sys/mman.h>
++#include <unistd.h>
+ 
+ #include <pthread.h>
+ 
+@@ -226,6 +230,15 @@ struct window {
+      */
+     struct vec2i cursor_pos;
+ 
++    /**
++     * @brief Framebuffer file descriptor and memory mapping for direct FB access.
++     */
++    bool use_fbdev;
++    int fb_fd;
++    void *fb_mem;
++    long fb_screensize;
++    struct fb_var_screeninfo fb_vinfo;
++
+     int (*push_composition)(struct window *window, struct fl_layer_composition *composition);
+     struct render_surface *(*get_render_surface)(struct window *window, struct vec2i size);
+ 
+@@ -1681,14 +1694,89 @@ MUST_CHECK struct window *dummy_window_new(
+     struct vk_renderer *vk_renderer,
+     struct vec2i size,
+     bool has_explicit_dimensions, int width_mm, int height_mm,
+-    double refresh_rate
++    double refresh_rate,
++    bool use_fbdev
+ ) {
+     struct window *window;
+ 
+     window = malloc(sizeof *window);
+     if (window == NULL) {
+         return NULL;
+     }
++    
++    window->use_fbdev = use_fbdev;
++    window->fb_fd = -1;
++    window->fb_mem = MAP_FAILED;
++    window->fb_screensize = 0;
++
++    if (use_fbdev) {
++        // Open framebuffer to get size
++        int fb_fd = open("/dev/fb0", O_RDWR);
++        if (fb_fd == -1) {
++            LOG_ERROR("Error: cannot open framebuffer device. open: %s\n", strerror(errno));
++            free(window);
++            return NULL;
++        }
++        
++        struct fb_var_screeninfo vinfo;
++        if (ioctl(fb_fd, FBIOGET_VSCREENINFO, &vinfo)) {
++            LOG_ERROR("Error reading variable information. ioctl: %s\n", strerror(errno));
++            close(fb_fd);
++            free(window);
++            return NULL;
++        }
++        
++        size.x = vinfo.xres;
++        size.y = vinfo.yres;
++        
++        // We keep it open? Or open later?
++        // Let's keep it open in the window struct
++        window->fb_fd = fb_fd;
++        window->fb_vinfo = vinfo;
++        window->fb_screensize = vinfo.yres_virtual * vinfo.xres_virtual * vinfo.bits_per_pixel / 8;
++        window->fb_mem = mmap(0, window->fb_screensize, PROT_READ | PROT_WRITE, MAP_SHARED, fb_fd, 0);
++        
++        if (window->fb_mem == MAP_FAILED) {
++            LOG_ERROR("Error: failed to map framebuffer device to memory. mmap: %s\n", strerror(errno));
++            close(fb_fd);
++            free(window);
++            return NULL;
++        }
++        
++        LOG_DEBUG("Framebuffer initialized: %dx%d, %dbpp\n", vinfo.xres, vinfo.yres, vinfo.bits_per_pixel);
++        
++        // If dimensions not provided, try to calculate from DPI if available (unlikely on FB)
++        if (!has_explicit_dimensions) {
++             // Assume standard DPI or just use pixels?
++             // Flutter needs mm.
++             // If we don't have it, default to something reasonable.
++             // 160 DPI is a safe bet?
++             // width_mm = width_px / (160 / 25.4)
++             width_mm = size.x * 25.4 / 160;
++             height_mm = size.y * 25.4 / 160;
++             has_explicit_dimensions = true;
++        }
++    }
+ 
+     window_init(
+         // clang-format off
+@@ -1734,8 +1822,33 @@ static int dummy_window_push_composition(struct window *window, struct fl_layer_composition *composition) {
+     window_lock(window);
+ 
+-    /// TODO: Maybe allow to export the layer composition as an image, for testing purposes.
+-    (void) composition;
++    if (window->use_fbdev && window->render_surface != NULL) {
++        struct egl_gbm_render_surface *egl_surface = CAST_EGL_GBM_RENDER_SURFACE(window->render_surface);
++        
++        size_t buffer_size = (size_t)(window->view_size.x * window->view_size.y * 4);
++        void *buffer = malloc(buffer_size);
++        if (buffer != NULL) {
++            egl_gbm_render_surface_read_pixels(egl_surface, buffer, buffer_size);
++            
++            int width = (int)window->view_size.x;
++            int height = (int)window->view_size.y;
++            int stride = window->fb_vinfo.xres_virtual * (window->fb_vinfo.bits_per_pixel / 8);
++            
++            // Copy row by row, flipping Y axis because OpenGL is bottom-up and FB is top-down
++            for (int y = 0; y < height; y++) {
++                void *src_row = buffer + (y * width * 4);
++                void *dst_row = (char *)window->fb_mem + ((height - 1 - y) * stride);
++                
++                // Ensure we don't write out of bounds
++                if ((char *)dst_row + (width * 4) <= (char *)window->fb_mem + window->fb_screensize) {
++                     memcpy(dst_row, src_row, width * 4);
++                }
++            }
++            free(buffer);
++        }
++    }
+ 
+     window_unlock(window);
+ 
+@@ -1800,6 +1913,17 @@ static void dummy_window_deinit(struct window *window) {
+ #else
+         UNREACHABLE();
+ #endif
++    }
++    
++    if (window->use_fbdev) {
++        if (window->fb_mem != MAP_FAILED) {
++            munmap(window->fb_mem, window->fb_screensize);
++            window->fb_mem = MAP_FAILED;
++        }
++        if (window->fb_fd != -1) {
++            close(window->fb_fd);
++            window->fb_fd = -1;
++        }
+     }
+ 
+     window_deinit(window);
+diff --git a/src/window.h b/src/window.h
+index 1234567..89abcdef 100644
+--- a/src/window.h
++++ b/src/window.h
+@@ -13,6 +13,7 @@
+ #include <stdbool.h>
+ 
+ #include <flutter_embedder.h>
++#include <linux/fb.h>
+ 
+ #include "compositor_ng.h"
+ #include "pixel_format.h"
+@@ -128,7 +129,8 @@ MUST_CHECK struct window *dummy_window_new(
+     struct vk_renderer *vk_renderer,
+     struct vec2i size,
+     bool has_explicit_dimensions, int width_mm, int height_mm,
+-    double refresh_rate
++    double refresh_rate,
++    bool use_fbdev
+ );
+ 
+ #endif  // _FLUTTERPI_SRC_WINDOW_H
