@@ -51,7 +51,7 @@ jobs:
             
             # Apply Patch
             echo "Applying FBDEV patch..."
-            patch -p1 < ../../linux/flutter-pi-fbdev.patch
+            patch -p1 -l < ../../linux/flutter-pi-fbdev.patch
             
             # Build
             mkdir -p build
