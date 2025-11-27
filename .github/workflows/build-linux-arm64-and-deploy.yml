@@ -1,4 +1,4 @@
-name: Build Linux ARM64 FBDEV (PortMaster/flutter-pi)
+name: Build Linux ARM64 (PortMaster/flutter-pi) and Deploy ROMs Downloader
 
 on:
   push:
@@ -6,9 +6,24 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-arm64-fbdev:
-    name: Build Linux ARM64 FBDEV
+  build:
+    name: Build Linux ${{ matrix.name }}
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - name: ARM64
+            flutter_pi_source: zip
+            patch: false
+            dart_define: ""
+            launch_script: linux/roms_downloader.sh
+            artifact_name: roms_downloader
+          - name: ARM64 FBDEV
+            flutter_pi_source: git
+            patch: true
+            dart_define: "--dart-define=DISABLE_ANIMATIONS=true"
+            launch_script: linux/roms_downloader_fbdev.sh
+            artifact_name: roms_downloader_fbdev
     steps:
       - uses: actions/checkout@v4
 
@@ -16,7 +31,7 @@ jobs:
         uses: docker/setup-qemu-action@v3
 
       - uses: uraimo/run-on-arch-action@v2
-        name: Build Artifact
+        name: Build
         id: build
         with:
           arch: aarch64
@@ -24,12 +39,15 @@ jobs:
           githubToken: ${{ github.token }}
           install: |
             apt-get update
+            # Install dependencies for Flutter and flutter-pi compilation
+            # Split installation to avoid dpkg errors with python3
             apt-get install -y curl git unzip xz-utils zip build-essential cmake pkg-config
             apt-get install -y libc6-dev
             apt-get install -y libgl1-mesa-dev libgles2-mesa-dev libegl1-mesa-dev
             apt-get install -y libdrm-dev libgbm-dev fontconfig
             apt-get install -y libsystemd-dev libinput-dev libudev-dev libxkbcommon-dev
             apt-get install -y libgtk-3-dev
+            # Install build tools for Flutter (clang, ninja)
             apt-get install -y ninja-build clang
           run: |
             # 1. Install Flutter (Pinned to 3.35.4 for compatible Release Engine)
@@ -40,20 +58,26 @@ jobs:
             # 2. Configure Flutter
             flutter config --enable-linux-desktop
             
-            # 3. Build flutter-pi (Patched for FBDEV)
-            echo "Building flutter-pi with FBDEV patch..."
+            # 3. Build flutter-pi
+            echo "Building flutter-pi..."
             mkdir -p build_flutter
             cd build_flutter
             
-            # Clone flutter-pi
-            git clone https://github.com/ardera/flutter-pi.git
+            if [ "${{ matrix.flutter_pi_source }}" = "zip" ]; then
+                curl -L -o flutter-pi.zip https://github.com/ardera/flutter-pi/archive/refs/heads/master.zip
+                unzip flutter-pi.zip
+                mv flutter-pi-master flutter-pi
+            else
+                git clone https://github.com/ardera/flutter-pi.git
+            fi
+            
             cd flutter-pi
             
-            # Apply Patch
-            echo "Applying FBDEV patch..."
-            patch -p1 -l < ../../linux/flutter-pi-fbdev.patch
+            if [ "${{ matrix.patch }}" = "true" ]; then
+                echo "Applying FBDEV patch..."
+                patch -p1 -l < ../../linux/flutter-pi-fbdev.patch
+            fi
             
-            # Build
             mkdir -p build
             cd build
             cmake .. \
@@ -70,7 +94,7 @@ jobs:
                 -DENABLE_WAYLAND=OFF \
                 -DENABLE_TESTS=OFF \
                 -DENABLE_SYSTEMD=OFF \
-                -DENABLE_DBUS=OFF  \
+                -DENABLE_DBUS=OFF \
                 || (cat CMakeFiles/CMakeError.log && exit 1)
             
             make -j$(nproc) || make -j1
@@ -79,11 +103,10 @@ jobs:
             cd ../../..
             cp build_flutter/flutter-pi/build/flutter-pi flutter-pi-bin
             
-            # 4. Build the Flutter App (Assets + Engine)
+            # 4. Build the Flutter App
             echo "Building Flutter App..."
             flutter pub get
-            # Build standard Linux release with optimizations
-            flutter build linux --release --dart-define=DISABLE_ANIMATIONS=true
+            flutter build linux --release ${{ matrix.dart_define }}
             
             # 5. Package for PortMaster
             echo "Packaging..."
@@ -93,12 +116,7 @@ jobs:
             cp flutter-pi-bin dist/ports/roms_downloader/flutter-pi
             
             # Copy the build output
-            # Source: build/linux/arm64/release/bundle/
-            
-            # 1. Assets
             cp -r build/linux/arm64/release/bundle/data/flutter_assets/* dist/ports/roms_downloader/flutter_assets/
-            
-            # 2. AOT Blob (app.so) - Must be inside flutter_assets for flutter-pi
             cp build/linux/arm64/release/bundle/lib/libapp.so dist/ports/roms_downloader/flutter_assets/app.so
             
             # Bundle shared libraries
@@ -127,7 +145,7 @@ jobs:
                 fi
             done
             
-            # 3. Engine - MANUAL DOWNLOAD (Community Release Binary)
+            # 3. Engine - MANUAL DOWNLOAD
             echo "Downloading correct Release engine for ARM64..."
             
             curl -L -o engine.zip https://github.com/ardera/flutter-engine-binaries-for-arm/archive/refs/tags/engine_c29809135135e262a912cf583b2c90deb9ded610.zip
@@ -142,9 +160,7 @@ jobs:
                exit 1
             fi
             
-            echo "Found engine at: $ENGINE_PATH"
             cp "$ENGINE_PATH" dist/ports/roms_downloader/libflutter_engine.so
-            
             rm -rf engine-binaries
             
             # 4. ICU Data
@@ -159,20 +175,58 @@ jobs:
                exit 1
             fi
             
-            echo "Found ICU data at: $ICU_DATA_PATH"
             cp "$ICU_DATA_PATH" dist/ports/roms_downloader/flutter_assets/
             
             # Copy launch script
-            cp linux/roms_downloader_fbdev.sh dist/ports/roms_downloader.sh
+            cp ${{ matrix.launch_script }} dist/ports/roms_downloader.sh
             chmod +x dist/ports/roms_downloader.sh
             chmod +x dist/ports/roms_downloader/flutter-pi
             
             # Create ZIP
             cd dist
-            zip -r ../roms_downloader_portmaster_fbdev.zip ports/
+            zip -r ../${{ matrix.artifact_name }}.zip ports/
 
-      - name: Upload Artifact
+      - name: Upload Linux ARM64 Builds
         uses: actions/upload-artifact@v4
         with:
-          name: roms_downloader_portmaster_fbdev
-          path: roms_downloader_portmaster_fbdev.zip
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.artifact_name }}.zip
+
+  generate-download-links:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+
+      - name: Generate download links summary
+        run: |
+          echo "# 🚀 ROMs Downloader - Linux ARM64 Build Artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Build completed successfully! Download links for Linux ARM64 builds:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "## 🐧 Linux ARM64" >> $GITHUB_STEP_SUMMARY
+          echo "| Variant | ZIP | Size |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|-----|------|" >> $GITHUB_STEP_SUMMARY
+          
+          for artifact in roms_downloader roms_downloader_fbdev; do
+            if [ -f "./artifacts/${artifact}/${artifact}.zip" ]; then
+              size=$(du -h "./artifacts/${artifact}/${artifact}.zip" | cut -f1)
+              variant_name="ARM64"
+              if [ "${artifact}" = "roms_downloader_fbdev" ]; then
+                variant_name="ARM64 FBDEV"
+              fi
+              echo "| ${variant_name} | [Download ZIP](https://nightly.link/${{ github.repository }}/actions/runs/${{ github.run_id }}/${artifact}.zip) | ${size} |" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "**Build Information:**" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build Date:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "- **Workflow Run:** [#${{ github.run_number }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY

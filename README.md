@@ -7,7 +7,7 @@ I plan to add more utilities that I often need for my voluntary work at my churc
 
 ## Data
 
-The data inside `assets/consoles.json` is **merely fictional** for **testing purposes**, it's a placeholder/template.
+The data inside `assets/consoles.json` is **merely fictional** for **testing purposes**, it's a placeholder/template, it was randomly generated and is untested.
 I **do not** own nor recommend those sources. As a matter of fact, the first step in setting up this app to run locally is to edit that file, removing all the nonsense data and bringing your own index URLs.
 
 ## Downloading builds
@@ -41,7 +41,7 @@ I'm currently not relying on releases **JUST BECAUSE**. Meanwhile you can access
 - [ ] List sorting
 - [x] Info/About page
 - [x] Android, Mac, and Windows support
-- [x] Linux arm64 support (Tested on Odin2 Pro Mini via Rocknix)
+- [x] Linux arm64 support [Tested on Odin2 Pro Mini via Rocknix (DRM) and RG34XXSP via Knulli and MuOS (FBDEV)]
 - [ ] Linux x86_64 support
 - [ ] ~~iOS support~~ No iOS support for now, *cry about it*.
 
