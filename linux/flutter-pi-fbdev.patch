@@ -1,5 +1,5 @@
 diff --git a/src/egl_gbm_render_surface.c b/src/egl_gbm_render_surface.c
-index abc352a..d277269 100644
+index abc352a..33b6a3b 100644
 --- a/src/egl_gbm_render_surface.c
 +++ b/src/egl_gbm_render_surface.c
 @@ -12,10 +12,12 @@
@@ -15,7 +15,7 @@ index abc352a..d277269 100644
  #include "modesetting.h"
  #include "pixel_format.h"
  #include "render_surface.h"
-@@ -58,6 +60,18 @@ struct egl_gbm_render_surface {
+@@ -58,6 +60,22 @@ struct egl_gbm_render_surface {
      // more than 4 here either.
      struct locked_fb locked_fbs[4];
      struct locked_fb *locked_front_fb;
@@ -30,11 +30,15 @@ index abc352a..d277269 100644
 +    int pbo_index;
 +    bool has_pbos;
 +    bool pbo_mapped;
++    
++    // Preferred read format
++    GLint read_format;
++    GLint read_type;
 +
  #ifdef DEBUG
      atomic_int n_locked_fbs;
      bool logged_format_and_modifier;
-@@ -156,13 +170,13 @@ static int egl_gbm_render_surface_init(
+@@ -156,13 +174,13 @@ static int egl_gbm_render_surface_init(
              allowed_modifiers,
              n_allowed_modifiers
          );
@@ -50,7 +54,7 @@ index abc352a..d277269 100644
          gbm_surface = gbm_surface_create(
              gbm_device,
              size.x,
-@@ -170,7 +184,7 @@ static int egl_gbm_render_surface_init(
+@@ -170,7 +188,7 @@ static int egl_gbm_render_surface_init(
              get_pixfmt_info(pixel_format)->gbm_format,
              GBM_BO_USE_RENDERING | GBM_BO_USE_SCANOUT
          );
@@ -59,7 +63,7 @@ index abc352a..d277269 100644
              ok = errno;
              LOG_ERROR("Couldn't create GBM surface for rendering. gbm_surface_create: %s\n", strerror(ok));
              return ok;
-@@ -213,7 +227,22 @@ static int egl_gbm_render_surface_init(
+@@ -213,7 +231,22 @@ static int egl_gbm_render_surface_init(
          goto fail_destroy_gbm_surface;
      }
  
@@ -83,7 +87,7 @@ index abc352a..d277269 100644
      if (egl_surface == EGL_NO_SURFACE) {
          ok = EIO;
          goto fail_destroy_gbm_surface;
-@@ -244,6 +273,40 @@ static int egl_gbm_render_surface_init(
+@@ -244,6 +277,48 @@ static int egl_gbm_render_surface_init(
          s->locked_fbs[i].is_locked = (atomic_flag) ATOMIC_FLAG_INIT;
      }
      s->locked_front_fb = NULL;
@@ -93,8 +97,16 @@ index abc352a..d277269 100644
 +    s->has_pbos = false;
 +    s->pbo_mapped = false;
 +    s->pbo_size = 0;
++    s->read_format = GL_RGBA;
++    s->read_type = GL_UNSIGNED_BYTE;
 +
 +    if (gbm_surface == NULL) {
++        // Query implementation preferred format
++        glGetIntegerv(GL_IMPLEMENTATION_COLOR_READ_FORMAT, &s->read_format);
++        glGetIntegerv(GL_IMPLEMENTATION_COLOR_READ_TYPE, &s->read_type);
++        
++        fprintf(stderr, "[flutter-pi] FBDEV: Preferred read format: 0x%x, type: 0x%x\n", s->read_format, s->read_type);
++        
 +        // Initialize PBOs for fbdev mode
 +        glGenBuffers(2, s->pbos);
 +        if (glGetError() == GL_NO_ERROR) {
@@ -102,10 +114,10 @@ index abc352a..d277269 100644
 +            s->pbo_size = buffer_size;
 +            
 +            glBindBuffer(GL_PIXEL_PACK_BUFFER, s->pbos[0]);
-+            glBufferData(GL_PIXEL_PACK_BUFFER, buffer_size, NULL, GL_DYNAMIC_READ);
++            glBufferData(GL_PIXEL_PACK_BUFFER, buffer_size, NULL, GL_STREAM_READ);
 +            
 +            glBindBuffer(GL_PIXEL_PACK_BUFFER, s->pbos[1]);
-+            glBufferData(GL_PIXEL_PACK_BUFFER, buffer_size, NULL, GL_DYNAMIC_READ);
++            glBufferData(GL_PIXEL_PACK_BUFFER, buffer_size, NULL, GL_STREAM_READ);
 +            
 +            glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 +            
@@ -124,7 +136,7 @@ index abc352a..d277269 100644
  #ifdef DEBUG
      s->n_locked_fbs = 0;
      s->logged_format_and_modifier = false;
-@@ -254,7 +317,7 @@ fail_destroy_egl_surface:
+@@ -254,7 +329,7 @@ fail_destroy_egl_surface:
      eglDestroySurface(egl_display, egl_surface);
  
  fail_destroy_gbm_surface:
@@ -133,7 +145,7 @@ index abc352a..d277269 100644
      return ok;
  }
  
-@@ -339,6 +402,16 @@ void egl_gbm_render_surface_deinit(struct surface *s) {
+@@ -339,6 +414,16 @@ void egl_gbm_render_surface_deinit(struct surface *s) {
  
      egl_surface = CAST_EGL_GBM_RENDER_SURFACE(s);
  
@@ -150,7 +162,7 @@ index abc352a..d277269 100644
      gl_renderer_unref(egl_surface->renderer);
      render_surface_deinit(s);
  }
-@@ -626,7 +699,42 @@ static int egl_gbm_render_surface_queue_present(struct render_surface *s, const
+@@ -626,7 +711,38 @@ static int egl_gbm_render_surface_queue_present(struct render_surface *s, const
          locked_fb_unrefp(&egl_surface->locked_front_fb);
      }
  
@@ -167,20 +179,13 @@ index abc352a..d277269 100644
 +            TRACER_BEGIN(s->surface.tracer, "glReadPixels (PBO)");
 +            glBindBuffer(GL_PIXEL_PACK_BUFFER, egl_surface->pbos[index]);
 +            
-+            #ifndef GL_BGRA_EXT
-+            #define GL_BGRA_EXT 0x80E1
-+            #endif
-+            
-+            // Read from Back buffer (where we just rendered)
-+            glReadPixels(0, 0, s->size.x, s->size.y, GL_BGRA_EXT, GL_UNSIGNED_BYTE, 0);
++            // Read from Back buffer using preferred format
++            glReadPixels(0, 0, s->size.x, s->size.y, egl_surface->read_format, egl_surface->read_type, 0);
 +            
 +            GLenum err = glGetError();
 +            if (err != GL_NO_ERROR) {
-+                glReadPixels(0, 0, s->size.x, s->size.y, GL_RGBA, GL_UNSIGNED_BYTE, 0);
++                fprintf(stderr, "[flutter-pi] FBDEV: glReadPixels(0x%x) failed: 0x%x\n", egl_surface->read_format, err);
 +            }
-+            
-+            // Flush to ensure DMA starts
-+            glFlush();
 +            
 +            glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 +            TRACER_END(s->surface.tracer, "glReadPixels (PBO)");
@@ -188,13 +193,16 @@ index abc352a..d277269 100644
 +            egl_surface->pbo_index++;
 +        }
 +        
-+        // Fall through to eglSwapBuffers to ensure driver state is updated
-+        // and to avoid potential hangs if the driver expects it.
++        // Ensure rendering is flushed
++        eglSwapBuffers(egl_surface->egl_display, egl_surface->egl_surface);
++        
++        surface_unlock(CAST_SURFACE(s));
++        return 0;
 +    }
  
      // create the in fence here
      TRACER_BEGIN(s->surface.tracer, "eglSwapBuffers");
-@@ -638,6 +746,11 @@ static int egl_gbm_render_surface_queue_present(struct render_surface *s, const
+@@ -638,6 +754,11 @@ static int egl_gbm_render_surface_queue_present(struct render_surface *s, const
          return EIO;
      }
  
@@ -206,7 +214,7 @@ index abc352a..d277269 100644
      TRACER_BEGIN(s->surface.tracer, "gbm_surface_lock_front_buffer");
      bo = gbm_surface_lock_front_buffer(egl_surface->gbm_surface);
      TRACER_END(s->surface.tracer, "gbm_surface_lock_front_buffer");
-@@ -783,3 +896,84 @@ ATTR_PURE EGLSurface egl_gbm_render_surface_get_egl_surface(struct egl_gbm_rende
+@@ -783,3 +904,92 @@ ATTR_PURE EGLSurface egl_gbm_render_surface_get_egl_surface(struct egl_gbm_rende
  ATTR_PURE EGLConfig egl_gbm_render_surface_get_egl_config(struct egl_gbm_render_surface *s) {
      return s->egl_config;
  }
@@ -265,14 +273,18 @@ index abc352a..d277269 100644
 +        s->pixel_buffer_size = required_size;
 +    }
 +
-+    #ifndef GL_BGRA_EXT
-+    #define GL_BGRA_EXT 0x80E1
-+    #endif
-+
-+    glReadPixels(0, 0, s->render_surface.size.x, s->render_surface.size.y, GL_BGRA_EXT, GL_UNSIGNED_BYTE, s->pixel_buffer);
++    // Use preferred format for sync read
++    glReadPixels(0, 0, s->render_surface.size.x, s->render_surface.size.y, s->read_format, s->read_type, s->pixel_buffer);
 +    
 +    if (glGetError() != GL_NO_ERROR) {
-+        glReadPixels(0, 0, s->render_surface.size.x, s->render_surface.size.y, GL_RGBA, GL_UNSIGNED_BYTE, s->pixel_buffer);
++        // Fallback if preferred fails (shouldn't happen if queried correctly)
++        #ifndef GL_BGRA_EXT
++        #define GL_BGRA_EXT 0x80E1
++        #endif
++        glReadPixels(0, 0, s->render_surface.size.x, s->render_surface.size.y, GL_BGRA_EXT, GL_UNSIGNED_BYTE, s->pixel_buffer);
++        if (glGetError() != GL_NO_ERROR) {
++             glReadPixels(0, 0, s->render_surface.size.x, s->render_surface.size.y, GL_RGBA, GL_UNSIGNED_BYTE, s->pixel_buffer);
++        }
 +    }
 +
 +    return s->pixel_buffer;
@@ -291,13 +303,20 @@ index abc352a..d277269 100644
 +        s->pbo_mapped = false;
 +    }
 +}
++
++uint32_t egl_gbm_render_surface_get_read_format(struct egl_gbm_render_surface *s) {
++    return s->read_format;
++}
 diff --git a/src/egl_gbm_render_surface.h b/src/egl_gbm_render_surface.h
-index ad7f028..95ac34f 100644
+index ad7f028..c56953d 100644
 --- a/src/egl_gbm_render_surface.h
 +++ b/src/egl_gbm_render_surface.h
-@@ -50,3 +50,6 @@ ATTR_PURE EGLSurface egl_gbm_render_surface_get_egl_surface(struct egl_gbm_rende
+@@ -49,4 +49,9 @@ ATTR_PURE EGLSurface egl_gbm_render_surface_get_egl_surface(struct egl_gbm_rende
+ 
  ATTR_PURE EGLConfig egl_gbm_render_surface_get_egl_config(struct egl_gbm_render_surface *s);
  
++uint32_t egl_gbm_render_surface_get_read_format(struct egl_gbm_render_surface *s);
++
  #endif  // _FLUTTERPI_SRC_EGL_GBM_RENDER_SURFACE_H
 +
 +void *egl_gbm_render_surface_map_pixels(struct egl_gbm_render_surface *s);
@@ -585,7 +604,7 @@ index d6c8160..d5da2df 100644
  
  void gl_renderer_destroy(struct gl_renderer *renderer);
 diff --git a/src/window.c b/src/window.c
-index b13fd82..0b55f5c 100644
+index b13fd82..00bcf59 100644
 --- a/src/window.c
 +++ b/src/window.c
 @@ -11,6 +11,11 @@
@@ -676,7 +695,7 @@ index b13fd82..0b55f5c 100644
      window_init(
          // clang-format off
          window,
-@@ -1687,7 +1745,40 @@ MUST_CHECK struct window *dummy_window_new(
+@@ -1687,7 +1745,96 @@ MUST_CHECK struct window *dummy_window_new(
  static int dummy_window_push_composition(struct window *window, struct fl_layer_composition *composition) {
      window_lock(window);
  
@@ -688,6 +707,15 @@ index b13fd82..0b55f5c 100644
 +        
 +        // Map pixels (PBO or fallback)
 +        void *buffer = egl_gbm_render_surface_map_pixels(egl_surface);
++        uint32_t format = egl_gbm_render_surface_get_read_format(egl_surface);
++        
++        #ifndef GL_RGBA
++        #define GL_RGBA 0x1908
++        #endif
++
++        #ifndef GL_BGRA_EXT
++        #define GL_BGRA_EXT 0x80E1
++        #endif
 +        
 +        if (buffer != NULL) {
 +            int width = (int)window->view_size.x;
@@ -696,14 +724,61 @@ index b13fd82..0b55f5c 100644
 +            
 +            // fprintf(stderr, "[flutter-pi] DEBUG: Copying to framebuffer. width=%d, height=%d, stride=%d\n", width, height, stride);
 +
-+            for (int y = 0; y < height; y++) {
-+                void *src_row = (char*)buffer + (y * width * 4);
-+                void *dst_row = (char *)window->fb_mem + ((height - 1 - y) * stride);
-+                
-+                if ((char *)dst_row + (width * 4) <= (char *)window->fb_mem + window->fb_screensize) {
-+                     memcpy(dst_row, src_row, width * 4);
-+                } else {
-+                    // fprintf(stderr, "[flutter-pi] DEBUG: Skipping row %d (out of bounds)\n", y);
++            int bpp = window->fb_vinfo.bits_per_pixel;
++            if (bpp == 32) {
++                for (int y = 0; y < height; y++) {
++                    void *src_row = (char*)buffer + (y * width * 4);
++                    void *dst_row = (char *)window->fb_mem + ((height - 1 - y) * stride);
++                    
++                    if ((char *)dst_row + (width * 4) <= (char *)window->fb_mem + window->fb_screensize) {
++                         if (format == GL_RGBA) {
++                             // Convert RGBA to BGRA (if framebuffer is BGRA, which is typical for 32bpp)
++                             // Or maybe framebuffer is RGBA? Usually it's BGRA (ARGB8888).
++                             // Let's assume framebuffer is BGRA.
++                             uint32_t *src = (uint32_t*)src_row;
++                             uint32_t *dst = (uint32_t*)dst_row;
++                             for (int x = 0; x < width; x++) {
++                                 uint32_t pixel = src[x];
++                                 // RGBA: 0xAABBGGRR (Little Endian) -> R is lowest byte
++                                 // BGRA: 0xAARRGGBB (Little Endian) -> B is lowest byte
++                                 uint8_t r = pixel & 0xFF;
++                                 uint8_t g = (pixel >> 8) & 0xFF;
++                                 uint8_t b = (pixel >> 16) & 0xFF;
++                                 uint8_t a = (pixel >> 24) & 0xFF;
++                                 dst[x] = (a << 24) | (r << 16) | (g << 8) | b;
++                             }
++                         } else {
++                             // Assume BGRA or compatible
++                             memcpy(dst_row, src_row, width * 4);
++                         }
++                    }
++                }
++            } else if (bpp == 16) {
++                for (int y = 0; y < height; y++) {
++                    uint32_t *src_row = (uint32_t*)((char*)buffer + (y * width * 4));
++                    uint16_t *dst_row = (uint16_t*)((char *)window->fb_mem + ((height - 1 - y) * stride));
++                    
++                    if ((char *)dst_row + (width * 2) <= (char *)window->fb_mem + window->fb_screensize) {
++                        for (int x = 0; x < width; x++) {
++                            uint32_t pixel = src_row[x];
++                            uint8_t r, g, b;
++                            
++                            if (format == GL_RGBA) {
++                                // GL_RGBA -> 0xAABBGGRR (Little Endian)
++                                r = pixel & 0xFF;
++                                g = (pixel >> 8) & 0xFF;
++                                b = (pixel >> 16) & 0xFF;
++                            } else {
++                                // GL_BGRA -> 0xAARRGGBB (Little Endian)
++                                b = pixel & 0xFF;
++                                g = (pixel >> 8) & 0xFF;
++                                r = (pixel >> 16) & 0xFF;
++                            }
++                            
++                            // RGB565: RRRRRGGGGGGBBBBB
++                            dst_row[x] = ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3);
++                        }
++                    }
 +                }
 +            }
 +            
@@ -717,7 +792,7 @@ index b13fd82..0b55f5c 100644
      (void) composition;
  
      window_unlock(window);
-@@ -1772,6 +1863,10 @@ static EGLSurface dummy_window_get_egl_surface(struct window *window) {
+@@ -1772,6 +1919,10 @@ static EGLSurface dummy_window_get_egl_surface(struct window *window) {
  
      if (window->renderer_type == kOpenGL_RendererType) {
          struct render_surface *render_surface = dummy_window_get_render_surface_internal(window, false, VEC2I(0, 0));
@@ -728,7 +803,7 @@ index b13fd82..0b55f5c 100644
          return egl_gbm_render_surface_get_egl_surface(CAST_EGL_GBM_RENDER_SURFACE(render_surface));
      } else {
          return EGL_NO_SURFACE;
-@@ -1801,6 +1896,17 @@ static void dummy_window_deinit(struct window *window) {
+@@ -1801,6 +1952,17 @@ static void dummy_window_deinit(struct window *window) {
          UNREACHABLE();
  #endif
      }
