@@ -83,7 +83,7 @@ jobs:
             echo "Building Flutter App..."
             flutter pub get
             # Build standard Linux release (produces ARM64 AOT since we are on ARM64)
-            flutter build linux --release
+            flutter build linux --release --dart-define=DISABLE_ANIMATIONS=true
             
             # 5. Package for PortMaster
             echo "Packaging..."

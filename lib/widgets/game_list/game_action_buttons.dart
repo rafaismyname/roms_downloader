@@ -5,6 +5,7 @@ import 'package:roms_downloader/models/game_model.dart';
 import 'package:roms_downloader/models/game_state_model.dart';
 import 'package:roms_downloader/services/task_queue_service.dart';
 import 'package:roms_downloader/providers/favorites_provider.dart';
+import 'package:roms_downloader/widgets/common/loading_indicator.dart';
 
 class GameActionButtons extends ConsumerWidget {
   final Game game;
@@ -155,9 +156,10 @@ class GameActionButtons extends ConsumerWidget {
                 child: SizedBox(
                   width: buttonSize,
                   height: buttonSize,
-                  child: CircularProgressIndicator(
+                  child: LoadingIndicator(
                     strokeWidth: 2,
                     color: Theme.of(context).colorScheme.primary,
+                    size: buttonSize,
                   ),
                 ),
               ),

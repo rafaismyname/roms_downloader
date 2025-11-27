@@ -7,6 +7,7 @@ import 'package:roms_downloader/widgets/header/header.dart';
 import 'package:roms_downloader/widgets/game_list/game_list.dart';
 import 'package:roms_downloader/widgets/game_grid/game_grid.dart';
 import 'package:roms_downloader/widgets/footer/footer.dart';
+import 'package:roms_downloader/widgets/common/loading_indicator.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -55,7 +56,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          CircularProgressIndicator(),
+                          LoadingIndicator(),
                           SizedBox(height: 16),
                           Text('Loading (this can take a while)...'),
                         ],

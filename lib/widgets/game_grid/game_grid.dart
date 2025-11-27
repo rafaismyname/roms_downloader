@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:roms_downloader/providers/app_state_provider.dart';
 import 'package:roms_downloader/providers/catalog_provider.dart';
+import 'package:roms_downloader/widgets/common/loading_indicator.dart';
 import 'package:roms_downloader/widgets/game_grid/game_grid_item.dart';
 
 class GameGrid extends ConsumerStatefulWidget {
@@ -133,10 +134,9 @@ class _GameGridState extends ConsumerState<GameGrid> {
                           ),
                         ),
                         child: Center(
-                          child: SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(strokeWidth: 2),
+                          child: LoadingIndicator(
+                            size: 24,
+                            strokeWidth: 2,
                           ),
                         ),
                       );

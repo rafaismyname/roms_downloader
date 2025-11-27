@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:roms_downloader/services/permission_service.dart';
+import 'package:roms_downloader/widgets/common/loading_indicator.dart';
 
 class PermissionsSetting extends StatefulWidget {
   const PermissionsSetting({super.key});
@@ -132,10 +133,9 @@ class _PermissionsSettingState extends State<PermissionsSetting> {
               SizedBox(width: 12),
               Text('Permissions'),
               Spacer(),
-              SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2),
+              LoadingIndicator(
+                size: 16,
+                strokeWidth: 2,
               ),
             ],
           ),
@@ -161,10 +161,9 @@ class _PermissionsSettingState extends State<PermissionsSetting> {
                   ),
                   const Spacer(),
                   if (_loading)
-                    const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                    const LoadingIndicator(
+                      size: 16,
+                      strokeWidth: 2,
                     ),
                 ],
               ),

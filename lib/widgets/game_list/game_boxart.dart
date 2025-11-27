@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:roms_downloader/models/game_model.dart';
+import 'package:roms_downloader/widgets/common/loading_indicator.dart';
 
 class GameBoxart extends StatefulWidget {
   final Game game;
@@ -78,9 +79,10 @@ class _GameBoxartState extends State<GameBoxart> {
                 child: SizedBox(
                   width: widget.size * 0.4,
                   height: widget.size * 0.4,
-                  child: CircularProgressIndicator(
+                  child: LoadingIndicator(
                     strokeWidth: 2,
                     value: downloadProgress.progress,
+                    size: widget.size * 0.4,
                   ),
                 ),
               ),

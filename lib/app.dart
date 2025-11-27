@@ -12,7 +12,20 @@ class RomsDownloaderApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(appStateProvider.select((s) => s.themeMode));
-    
+    const bool disableAnimations = bool.fromEnvironment('DISABLE_ANIMATIONS');
+
+    final pageTransitionsTheme = disableAnimations
+        ? const PageTransitionsTheme(
+            builders: {
+              TargetPlatform.android: NoTransitionsBuilder(),
+              TargetPlatform.iOS: NoTransitionsBuilder(),
+              TargetPlatform.linux: NoTransitionsBuilder(),
+              TargetPlatform.macOS: NoTransitionsBuilder(),
+              TargetPlatform.windows: NoTransitionsBuilder(),
+            },
+          )
+        : null;
+
     return GamepadListener(
       child: MaterialApp(
         navigatorKey: navigatorKey,
@@ -37,6 +50,7 @@ class RomsDownloaderApp extends ConsumerWidget {
             selectedColor: const Color(0xFF646CFF),
             selectedTileColor: const Color(0xFF646CFF).withValues(alpha: 0.1),
           ),
+          pageTransitionsTheme: pageTransitionsTheme,
         ),
         darkTheme: ThemeData(
           colorScheme: ColorScheme.fromSeed(
@@ -52,10 +66,38 @@ class RomsDownloaderApp extends ConsumerWidget {
             selectedColor: const Color(0xFF747BFF),
             selectedTileColor: const Color(0xFF747BFF).withValues(alpha: 0.1),
           ),
+          pageTransitionsTheme: pageTransitionsTheme,
         ),
         themeMode: themeMode,
+        builder: (context, child) {
+          final Widget finalChild = child ?? const SizedBox.shrink();
+
+          if (disableAnimations) {
+            return MediaQuery(
+              data: MediaQuery.of(context).copyWith(disableAnimations: true),
+              child: finalChild,
+            );
+          }
+
+          return finalChild;
+        },
         home: const HomeScreen(),
       ),
     );
+  }
+}
+
+class NoTransitionsBuilder extends PageTransitionsBuilder {
+  const NoTransitionsBuilder();
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    return child;
   }
 }

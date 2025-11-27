@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:roms_downloader/providers/favorites_provider.dart';
+import 'package:roms_downloader/widgets/common/loading_indicator.dart';
 
 class FavoritesSettings extends ConsumerStatefulWidget {
   const FavoritesSettings({super.key});
@@ -226,7 +227,7 @@ class _FavoritesSettingsState extends ConsumerState<FavoritesSettings> {
                     OutlinedButton.icon(
                       onPressed: favorites.isNotEmpty && !_isExporting ? _exportFavorites : null,
                       icon: _isExporting
-                          ? SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                          ? LoadingIndicator(size: 18, strokeWidth: 2)
                           : Icon(Icons.cloud_upload_outlined, size: 18),
                       label: Text(_isExporting ? 'Exporting' : 'Export'),
                       style: OutlinedButton.styleFrom(
@@ -311,7 +312,7 @@ class _FavoritesSettingsState extends ConsumerState<FavoritesSettings> {
                               IconButton(
                                 onPressed: _isDeleting ? null : _deleteExport,
                                 icon: _isDeleting
-                                    ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                                    ? LoadingIndicator(size: 16, strokeWidth: 2)
                                     : Icon(Icons.delete_outline, size: 18),
                                 tooltip: 'Delete export',
                                 style: IconButton.styleFrom(
@@ -407,7 +408,7 @@ class _FavoritesSettingsState extends ConsumerState<FavoritesSettings> {
                           minimumSize: Size(48, 48),
                         ),
                         child:
-                            _isImporting ? SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : Icon(Icons.download, size: 24),
+                            _isImporting ? LoadingIndicator(size: 18, strokeWidth: 2) : Icon(Icons.download, size: 24),
                       ),
                     ),
                   ],

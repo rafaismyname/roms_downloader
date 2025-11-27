@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:roms_downloader/providers/app_state_provider.dart';
 import 'package:roms_downloader/providers/catalog_provider.dart';
+import 'package:roms_downloader/widgets/common/loading_indicator.dart';
 import 'package:roms_downloader/widgets/game_list/game_row.dart';
 
 class GameList extends ConsumerStatefulWidget {
@@ -127,10 +128,9 @@ class _GameListState extends ConsumerState<GameList> {
                     return Padding(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       child: Center(
-                        child: SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                        child: LoadingIndicator(
+                          size: 24,
+                          strokeWidth: 2,
                         ),
                       ),
                     );

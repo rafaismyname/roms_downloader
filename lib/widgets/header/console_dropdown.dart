@@ -37,14 +37,101 @@ class _ConsoleDropdownState extends State<ConsoleDropdown> {
     super.dispose();
   }
 
-  void _onFocusChange() {
+  void _onFocusChange([bool? hasFocus]) {
     setState(() {
-      _hasFocus = _focusNode.hasFocus;
+      _hasFocus = hasFocus ?? _focusNode.hasFocus;
     });
+  }
+
+  void _performTap() {
+    if (!widget.isInteractive) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: const Text('Select Console'),
+        children: widget.consoles.map((console) {
+          return SimpleDialogOption(
+            onPressed: () {
+              widget.onConsoleSelect(console);
+              Navigator.pop(context);
+            },
+            child: Text(
+              console.name,
+              style: TextStyle(
+                fontWeight: widget.selectedConsole?.id == console.id ? FontWeight.bold : FontWeight.normal,
+                color: widget.selectedConsole?.id == console.id ? Theme.of(context).colorScheme.primary : null,
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    const bool disableAnimations = bool.fromEnvironment('DISABLE_ANIMATIONS');
+
+    if (disableAnimations) {
+      return FocusableActionDetector(
+        focusNode: _focusNode,
+        actions: {
+          ActivateIntent: CallbackAction<ActivateIntent>(onInvoke: (intent) => _performTap()),
+        },
+        child: InkWell(
+          onFocusChange: _onFocusChange,
+          onTap: _performTap,
+          child: Container(
+            height: 50,
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Theme.of(context).colorScheme.primaryContainer.withValues(alpha: _hasFocus ? 0.2 : 0.1),
+                  Theme.of(context).colorScheme.primaryContainer.withValues(alpha: _hasFocus ? 0.1 : 0.05),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: _hasFocus
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+                width: _hasFocus ? 3 : 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.gamepad_rounded,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: 18,
+                ),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    widget.selectedConsole?.name ?? 'Select Console',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 14,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return Container(
       height: 50,
       padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
