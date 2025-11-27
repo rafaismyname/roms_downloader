@@ -2,7 +2,7 @@ name: Build Linux ARM64 FBDEV (PortMaster/flutter-pi)
 
 on:
   push:
-    branches: [ "arm64-fbdev" ]
+    branches: [ "arm64-fb0" ]
   workflow_dispatch:
 
 jobs:
