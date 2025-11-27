@@ -2,7 +2,7 @@ name: Build Linux ARM64 FBDEV (PortMaster/flutter-pi)
 
 on:
   push:
-    branches: [ "arm64-fb0" ]
+    branches: [ "arm64" ]
   workflow_dispatch:
 
 jobs:
@@ -82,7 +82,7 @@ jobs:
             # 4. Build the Flutter App (Assets + Engine)
             echo "Building Flutter App..."
             flutter pub get
-            # Build standard Linux release (produces ARM64 AOT since we are on ARM64)
+            # Build standard Linux release with optimizations
             flutter build linux --release --dart-define=DISABLE_ANIMATIONS=true
             
             # 5. Package for PortMaster

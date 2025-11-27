@@ -45,17 +45,49 @@ jobs:
             
             # 3. Build flutter-pi (The Embedder)
             echo "Building flutter-pi with minimal dependencies..."
-            chmod +x linux/compile_flutter_pi.sh
-            ./linux/compile_flutter_pi.sh
-            
-            # Save the binary for later
-            # The script builds in build_flutter/flutter-pi/build/flutter-pi
+            set -e
+            # Directory setup
+            BUILD_DIR="build_flutter"
+            mkdir -p $BUILD_DIR
+            cd $BUILD_DIR
+            # Clone flutter-pi if not present
+            if [ ! -d "flutter-pi" ]; then
+                curl -L -o flutter-pi.zip https://github.com/ardera/flutter-pi/archive/refs/heads/master.zip
+                unzip flutter-pi.zip
+                mv flutter-pi-master flutter-pi
+            fi
+            cd flutter-pi
+
+            # Build
+            mkdir -p build
+            cd build
+            cmake .. \
+                -DCMAKE_BUILD_TYPE=Release \
+                -DENABLE_SESSION_SWITCHING=OFF \
+                -DENABLE_VULKAN=OFF \
+                -DENABLE_OPENGL=ON \
+                -DENABLE_EGL=ON \
+                -DENABLE_GLES=ON \
+                -DENABLE_LIBINPUT=ON \
+                -DENABLE_UDEV=ON \
+                -DENABLE_KMS=ON \
+                -DENABLE_X11=OFF \
+                -DENABLE_WAYLAND=OFF \
+                -DENABLE_TESTS=OFF \
+                -DENABLE_SYSTEMD=OFF \
+                -DENABLE_DBUS=OFF \
+                || (cat CMakeFiles/CMakeError.log && exit 1)
+
+            make -j$(nproc) || make -j1
+
+            # Copy binary back to root
+            cd ../../..
             cp build_flutter/flutter-pi/build/flutter-pi flutter-pi-bin
             
             # 4. Build the Flutter App (Assets + Engine)
             echo "Building Flutter App..."
             flutter pub get
-            # Build standard Linux release (produces ARM64 AOT since we are on ARM64)
+            # Build standard Linux release
             flutter build linux --release
             
             # 5. Package for PortMaster
