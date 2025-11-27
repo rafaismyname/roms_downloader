@@ -1,5 +1,5 @@
 diff --git a/src/egl_gbm_render_surface.c b/src/egl_gbm_render_surface.c
-index abc352a..cc84a59 100644
+index abc352a..c3a1a66 100644
 --- a/src/egl_gbm_render_surface.c
 +++ b/src/egl_gbm_render_surface.c
 @@ -12,10 +12,12 @@
@@ -167,11 +167,11 @@ index abc352a..cc84a59 100644
 +            #endif
 +            
 +            // Read from Back buffer (where we just rendered)
-+            glReadPixels(0, 0, s->render_surface.size.x, s->render_surface.size.y, GL_BGRA_EXT, GL_UNSIGNED_BYTE, 0);
++            glReadPixels(0, 0, s->size.x, s->size.y, GL_BGRA_EXT, GL_UNSIGNED_BYTE, 0);
 +            
 +            GLenum err = glGetError();
 +            if (err != GL_NO_ERROR) {
-+                glReadPixels(0, 0, s->render_surface.size.x, s->render_surface.size.y, GL_RGBA, GL_UNSIGNED_BYTE, 0);
++                glReadPixels(0, 0, s->size.x, s->size.y, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 +            }
 +            
 +            glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
