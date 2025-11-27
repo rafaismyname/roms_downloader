@@ -1,5 +1,5 @@
 diff --git a/src/egl_gbm_render_surface.c b/src/egl_gbm_render_surface.c
-index abc352a..c3a1a66 100644
+index abc352a..2522585 100644
 --- a/src/egl_gbm_render_surface.c
 +++ b/src/egl_gbm_render_surface.c
 @@ -12,10 +12,12 @@
@@ -174,17 +174,17 @@ index abc352a..c3a1a66 100644
 +                glReadPixels(0, 0, s->size.x, s->size.y, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 +            }
 +            
++            // Flush to ensure DMA starts
++            glFlush();
++            
 +            glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 +            TRACER_END(s->surface.tracer, "glReadPixels (PBO)");
 +            
 +            egl_surface->pbo_index++;
 +        }
 +        
-+        // Skip eglSwapBuffers to avoid hangs and because we read from Back buffer.
-+        // glFlush(); 
-+        
-+        surface_unlock(CAST_SURFACE(s));
-+        return 0;
++        // Fall through to eglSwapBuffers to ensure driver state is updated
++        // and to avoid potential hangs if the driver expects it.
 +    }
  
      // create the in fence here
@@ -201,7 +201,7 @@ index abc352a..c3a1a66 100644
      TRACER_BEGIN(s->surface.tracer, "gbm_surface_lock_front_buffer");
      bo = gbm_surface_lock_front_buffer(egl_surface->gbm_surface);
      TRACER_END(s->surface.tracer, "gbm_surface_lock_front_buffer");
-@@ -783,3 +891,69 @@ ATTR_PURE EGLSurface egl_gbm_render_surface_get_egl_surface(struct egl_gbm_rende
+@@ -783,3 +891,78 @@ ATTR_PURE EGLSurface egl_gbm_render_surface_get_egl_surface(struct egl_gbm_rende
  ATTR_PURE EGLConfig egl_gbm_render_surface_get_egl_config(struct egl_gbm_render_surface *s) {
      return s->egl_config;
  }
@@ -220,14 +220,23 @@ index abc352a..c3a1a66 100644
 +    size_t required_size = s->render_surface.size.x * s->render_surface.size.y * 4;
 +
 +    if (s->has_pbos) {
-+        // Map the PBO containing the latest frame
-+        // pbo_index points to the next PBO to write, so pbo_index-1 is the last written one.
-+        if (s->pbo_index == 0) return NULL; // No frames yet
++        // Map the PBO containing the previous frame to avoid blocking
++        // We use a pipeline depth of 2 (double buffering PBOs).
++        // Frame N: Write PBO[N%2]. Map PBO[(N-1)%2].
++        // But to be safe and truly async, we might want to map frame N-1.
 +        
-+        int index = (s->pbo_index - 1) % 2;
++        if (s->pbo_index < 2) return NULL; // Need at least 2 frames to start pipelining
++        
++        int index = (s->pbo_index - 2) % 2;
 +        
 +        glBindBuffer(GL_PIXEL_PACK_BUFFER, s->pbos[index]);
 +        void *ptr = glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0, required_size, GL_MAP_READ_BIT);
++        
++        if (ptr == NULL) {
++            GLenum err = glGetError();
++            fprintf(stderr, "[flutter-pi] FBDEV: glMapBufferRange failed: 0x%x\n", err);
++        }
++        
 +        glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 +        
 +        return ptr;
@@ -255,8 +264,8 @@ index abc352a..c3a1a66 100644
 +}
 +
 +void egl_gbm_render_surface_unmap_pixels(struct egl_gbm_render_surface *s) {
-+    if (s->has_pbos && s->pbo_index > 0) {
-+        int index = (s->pbo_index - 1) % 2;
++    if (s->has_pbos && s->pbo_index >= 2) {
++        int index = (s->pbo_index - 2) % 2;
 +        
 +        // We need context current to unmap? Yes, usually.
 +        // Assuming context is still current from map_pixels or we make it current.
