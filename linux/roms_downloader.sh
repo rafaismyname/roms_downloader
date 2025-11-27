@@ -53,10 +53,7 @@ check_and_link_lib() {
         fi
     done
     
-    if [ -n "$found_path" ]; then
-        echo "System $libname found at $found_path. Copying..."
-        cp "$found_path" "$GAMEDIR/runtime_libs/$libname"
-    else
+    if [ -z "$found_path" ]; then
         echo "System $libname NOT found. Using bundled version."
         if [ -f "$GAMEDIR/bundled_libs/$libname" ]; then
             cp "$GAMEDIR/bundled_libs/$libname" "$GAMEDIR/runtime_libs/$libname"
