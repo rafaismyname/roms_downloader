@@ -21,8 +21,24 @@ class _AboutScreenState extends State<AboutScreen> {
   }
 
   Future<void> _loadPackageInfo() async {
-    final info = await PackageInfo.fromPlatform();
-    setState(() => _packageInfo = info);
+    try {
+      final info = await PackageInfo.fromPlatform();
+      if (mounted) {
+        setState(() => _packageInfo = info);
+      }
+    } catch (e) {
+      debugPrint('Failed to load package info: $e');
+      if (mounted) {
+        setState(() {
+          _packageInfo = PackageInfo(
+            appName: 'Roms Downloader',
+            packageName: 'roms_downloader',
+            version: 'N/A',
+            buildNumber: 'N/A',
+          );
+        });
+      }
+    }
   }
 
   void _copyToClipboard(BuildContext context, String text) {

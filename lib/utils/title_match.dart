@@ -43,29 +43,53 @@ String? matchTitle({
   }).toList();
 
   final numericTokens = titleTokens.where((t) => numericRegExp.hasMatch(t)).toList();
+  final meaningfulTokens = titleTokens.where((t) => !numericRegExp.hasMatch(t)).toSet();
 
-  Set<String> candidateNames = {};
+  Set<String>? candidateNames;
 
   if (numericTokens.isNotEmpty) {
-    Set<String>? intersection;
     for (final nt in numericTokens) {
       final names = tokenIndex[nt];
       if (names == null) {
-        intersection = <String>{};
+        candidateNames = {};
         break;
       }
       final nameSet = names.toSet();
-      intersection = intersection == null ? nameSet : intersection.intersection(nameSet);
-      if (intersection.isEmpty) break;
+      candidateNames = candidateNames == null ? nameSet : candidateNames.intersection(nameSet);
+      if (candidateNames.isEmpty) break;
     }
-    candidateNames = intersection ?? <String>{};
+    candidateNames ??= {};
   }
 
-  if (candidateNames.isEmpty && numericTokens.isEmpty) {
-    for (final token in titleTokens.where((t) => !numericRegExp.hasMatch(t))) {
+  if (meaningfulTokens.isNotEmpty) {
+    final threshold = (meaningfulTokens.length * 0.7).ceil();
+    final Map<String, int> counts = {};
+    
+    for (final token in meaningfulTokens) {
       final names = tokenIndex[token];
-      if (names != null) candidateNames.addAll(names);
+      if (names != null) {
+        for (final name in names) {
+          if (candidateNames == null || candidateNames.contains(name)) {
+            counts[name] = (counts[name] ?? 0) + 1;
+          }
+        }
+      }
     }
+
+    final passed = <String>{};
+    counts.forEach((name, count) {
+      if (count >= threshold) {
+        passed.add(name);
+      }
+    });
+
+    if (candidateNames == null) {
+      candidateNames = passed;
+    } else {
+      candidateNames = candidateNames.intersection(passed);
+    }
+  } else {
+    candidateNames ??= {};
   }
 
   if (candidateNames.isEmpty) {
@@ -81,22 +105,6 @@ String? matchTitle({
     }
     return true;
   }).toSet();
-
-  // Generic meaningful-token Jaccard style filter.
-  if (candidateNames.isNotEmpty) {
-    final Set<String> meaningfulGameTokens = {
-      for (final t in titleTokens)
-        if (!numericRegExp.hasMatch(t) && t.length > 1) t
-    };
-
-    if (meaningfulGameTokens.isNotEmpty) {
-      candidateNames = candidateNames.where((name) {
-        final tokens = name.split(' ').where((tok) => tok.length > 1 && !numericRegExp.hasMatch(tok)).toSet();
-        final int common = tokens.intersection(meaningfulGameTokens).length;
-        return common >= meaningfulGameTokens.length * 0.7;
-      }).toSet();
-    }
-  }
 
   if (candidateNames.isEmpty) return null;
 
