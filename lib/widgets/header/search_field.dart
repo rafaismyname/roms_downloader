@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
 import 'dart:io';
+import 'dart:math';
 import 'package:virtual_keyboard_multi_language/virtual_keyboard_multi_language.dart';
 
 class SearchField extends StatefulWidget {
@@ -87,8 +88,11 @@ class _SearchFieldState extends State<SearchField> {
   }
 
   void _showVirtualKeyboard() {
+    const bool disableAnimations = bool.fromEnvironment('DISABLE_ANIMATIONS');
     showModalBottomSheet(
       context: context,
+      enableDrag: !disableAnimations,
+      sheetAnimationStyle: disableAnimations ? AnimationStyle.noAnimation : null,
       builder: (context) => Container(
         color: Theme.of(context).colorScheme.surface,
         child: Column(
@@ -107,6 +111,7 @@ class _SearchFieldState extends State<SearchField> {
               ),
             ),
             VirtualKeyboard(
+              height: min(300, MediaQuery.of(context).size.height * 0.6),
               type: VirtualKeyboardType.Alphanumeric,
               textController: _controller,
               textColor: Theme.of(context).colorScheme.onSurface,

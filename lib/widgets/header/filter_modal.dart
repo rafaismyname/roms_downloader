@@ -7,8 +7,11 @@ class FilterModal extends ConsumerWidget {
   const FilterModal({super.key});
 
   static void show(BuildContext context) {
+    const bool disableAnimations = bool.fromEnvironment('DISABLE_ANIMATIONS');
     showModalBottomSheet(
       context: context,
+      enableDrag: !disableAnimations,
+      sheetAnimationStyle: disableAnimations ? AnimationStyle.noAnimation : null,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       useSafeArea: true,

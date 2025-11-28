@@ -8,10 +8,13 @@ class TaskPanelModal extends ConsumerStatefulWidget {
   const TaskPanelModal({super.key});
 
   static void show(BuildContext context) {
+    const bool disableAnimations = bool.fromEnvironment('DISABLE_ANIMATIONS');
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      enableDrag: !disableAnimations,
+      sheetAnimationStyle: disableAnimations ? AnimationStyle.noAnimation : null,
       constraints: BoxConstraints(
         minWidth: MediaQuery.of(context).size.width * 0.9,
         maxHeight: MediaQuery.of(context).size.height * 0.9,

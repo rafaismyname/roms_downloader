@@ -20,6 +20,7 @@ class InfoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final bool disableAnimations = bool.fromEnvironment('DISABLE_ANIMATIONS');
 
     return Material(
       color: theme.colorScheme.surfaceContainerHighest,
@@ -62,7 +63,7 @@ class InfoCard extends StatelessWidget {
                   ],
                 ),
               ),
-              if (url != null) ...[
+              if (!disableAnimations && url != null) ...[
                 SizedBox(width: 8),
                 IconButton(
                   icon: Icon(Icons.open_in_new_rounded, size: 16, color: theme.colorScheme.onSurfaceVariant),
@@ -75,7 +76,7 @@ class InfoCard extends StatelessWidget {
                   },
                 ),
               ],
-              if (onTap != null) ...[
+              if (!disableAnimations && onTap != null) ...[
                 SizedBox(width: 8),
                 Icon(Icons.copy_rounded, size: 16, color: theme.colorScheme.onSurfaceVariant),
               ],

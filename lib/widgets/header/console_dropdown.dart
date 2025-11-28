@@ -45,9 +45,11 @@ class _ConsoleDropdownState extends State<ConsoleDropdown> {
 
   void _performTap() {
     if (!widget.isInteractive) return;
+    bool disableAnimations = bool.fromEnvironment('DISABLE_ANIMATIONS');
 
     showDialog(
       context: context,
+      animationStyle: disableAnimations ? AnimationStyle.noAnimation : null,
       builder: (context) => SimpleDialog(
         title: const Text('Select Console'),
         children: widget.consoles.map((console) {

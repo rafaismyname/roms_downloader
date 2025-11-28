@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -12,7 +13,13 @@ class AboutScreen extends StatefulWidget {
 }
 
 class _AboutScreenState extends State<AboutScreen> {
-  PackageInfo? _packageInfo;
+  final bool disableAnimations = bool.fromEnvironment('DISABLE_ANIMATIONS');
+  PackageInfo? _packageInfo = PackageInfo(
+    appName: 'Roms Downloader',
+    packageName: 'roms_downloader',
+    version: 'N/A',
+    buildNumber: 'N/A',
+  );
 
   @override
   void initState() {
@@ -21,23 +28,12 @@ class _AboutScreenState extends State<AboutScreen> {
   }
 
   Future<void> _loadPackageInfo() async {
+    if(Platform.isLinux) return;
     try {
       final info = await PackageInfo.fromPlatform();
-      if (mounted) {
-        setState(() => _packageInfo = info);
-      }
+      if (mounted) setState(() => _packageInfo = info);
     } catch (e) {
       debugPrint('Failed to load package info: $e');
-      if (mounted) {
-        setState(() {
-          _packageInfo = PackageInfo(
-            appName: 'Roms Downloader',
-            packageName: 'roms_downloader',
-            version: 'N/A',
-            buildNumber: 'N/A',
-          );
-        });
-      }
     }
   }
 
@@ -151,7 +147,7 @@ class _AboutScreenState extends State<AboutScreen> {
             ),
             SizedBox(height: 40),
             Text(
-              'Made with ❤️ in NYC 🗽',
+              disableAnimations ? 'Made with <3 in NYC' : 'Made with ❤️ in NYC 🗽',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
                 fontStyle: FontStyle.italic,

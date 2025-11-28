@@ -22,6 +22,7 @@ class GameBoxart extends StatefulWidget {
 
 class _GameBoxartState extends State<GameBoxart> {
   bool _hasFocus = false;
+  bool disableAnimations = bool.fromEnvironment('DISABLE_ANIMATIONS');
 
   @override
   Widget build(BuildContext context) {
@@ -69,6 +70,8 @@ class _GameBoxartState extends State<GameBoxart> {
             width: widget.size,
             height: widget.size,
             fit: BoxFit.cover,
+            fadeInDuration: disableAnimations ? Duration.zero : const Duration(milliseconds: 300),
+            fadeOutDuration: disableAnimations ? Duration.zero : const Duration(milliseconds: 300),
             errorWidget: (context, url, error) => _DefaultPlaceholder(size: widget.size),
             errorListener: (value) => debugPrint('Error loading boxart: $value'),
             progressIndicatorBuilder: (context, url, downloadProgress) => Container(
